@@ -12,6 +12,7 @@ from flask import Flask, render_template, request
 from config import config
 from routes.admin_routes import admin_bp
 from routes.auth_routes import auth_bp
+from routes.board_routes import board_bp
 from routes.health_routes import health_bp
 from routes.issue_routes import issue_bp
 from routes.project_routes import project_bp
@@ -37,6 +38,7 @@ def create_app() -> Flask:
     app.register_blueprint(admin_bp)
     app.register_blueprint(project_bp)
     app.register_blueprint(issue_bp)
+    app.register_blueprint(board_bp)
 
     @app.errorhandler(404)
     def not_found(_error):
@@ -71,6 +73,17 @@ def create_app() -> Flask:
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
         return response
+
+    @app.template_filter("label_color_index")
+    def label_color_index(label: str) -> int:
+        """Deterministic small-palette index for a label's colored dot on
+        the Stage 7 board. There is no per-label color column (labels are
+        just a comma-separated VARCHAR, unchanged since Stage 5), so the
+        same label text always maps to the same one of a handful of CSS
+        dot colors (`static/style.css`'s `.board-label-dot-0`..`-5`)
+        instead of a random/positional color.
+        """
+        return sum(ord(char) for char in label) % 6
 
     @app.context_processor
     def inject_globals():

@@ -57,6 +57,8 @@
         <nav class="sidebar-nav">
           <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint in ('projects.list_projects', 'projects.project_detail') else '' }}"
              href="{{ url_for('projects.list_projects') }}">Projects</a>
+          <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'board.board' else '' }}"
+             href="{{ url_for('board.board') }}">Board</a>
           {% if current_user.role == 'admin' %}
             <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'admin.users_page' else '' }}"
                href="{{ url_for('admin.users_page') }}">Users</a>

@@ -163,6 +163,166 @@
     });
   }
 
+  /* ------------------------------------------------------------ board (Stage 7) */
+
+  function boardShowToast(message) {
+    var toast = document.querySelector("[data-board-toast]");
+    if (!toast) return;
+    toast.textContent = message;
+    toast.hidden = false;
+    window.clearTimeout(toast._hideTimer);
+    toast._hideTimer = window.setTimeout(function () {
+      toast.hidden = true;
+    }, 4000);
+  }
+
+  function boardUpdateColumnCounts() {
+    document.querySelectorAll("[data-board-column-list]").forEach(function (list) {
+      var cards = list.querySelectorAll(".board-card");
+      var column = list.closest(".board-column");
+      var countEl = column && column.querySelector("[data-column-count]");
+      if (countEl) countEl.textContent = String(cards.length);
+
+      var placeholder = list.querySelector("[data-empty-placeholder]");
+      if (cards.length === 0 && !placeholder) {
+        var li = document.createElement("li");
+        li.className = "board-empty-placeholder";
+        li.setAttribute("data-empty-placeholder", "");
+        li.textContent = "No issues";
+        list.appendChild(li);
+      } else if (cards.length > 0 && placeholder) {
+        placeholder.remove();
+      }
+    });
+  }
+
+  function boardPostMove(issueId, status) {
+    var container = document.querySelector("[data-board-columns]");
+    var url = container.getAttribute("data-move-url");
+    var csrfToken = container.getAttribute("data-csrf-token");
+
+    var formData = new FormData();
+    formData.append("issue_id", issueId);
+    formData.append("status", status);
+    formData.append("csrf_token", csrfToken);
+
+    return fetch(url, { method: "POST", body: formData, credentials: "same-origin" })
+      .then(function (response) { return response.json(); })
+      .catch(function () { return { ok: false, error: "Network error -- could not reach the server." }; });
+  }
+
+  function initBoardDragAndDrop() {
+    var container = document.querySelector("[data-board-columns]");
+    if (!container) return;
+
+    var draggedCard = null;
+
+    container.addEventListener("dragstart", function (event) {
+      var card = event.target.closest(".board-card");
+      if (!card) return;
+      draggedCard = card;
+      card.classList.add("board-card-dragging");
+      event.dataTransfer.effectAllowed = "move";
+      // Firefox requires setData to be called for drag to start at all.
+      event.dataTransfer.setData("text/plain", card.getAttribute("data-issue-id") || "");
+    });
+
+    container.addEventListener("dragend", function (event) {
+      var card = event.target.closest(".board-card");
+      if (card) card.classList.remove("board-card-dragging");
+      draggedCard = null;
+      document.querySelectorAll(".board-column-list-hover").forEach(function (list) {
+        list.classList.remove("board-column-list-hover");
+      });
+    });
+
+    container.querySelectorAll("[data-board-column-list]").forEach(function (list) {
+      list.addEventListener("dragover", function (event) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        list.classList.add("board-column-list-hover");
+      });
+
+      list.addEventListener("dragleave", function (event) {
+        if (event.target === list) list.classList.remove("board-column-list-hover");
+      });
+
+      list.addEventListener("drop", function (event) {
+        event.preventDefault();
+        list.classList.remove("board-column-list-hover");
+        if (!draggedCard) return;
+
+        var sourceList = draggedCard.parentElement;
+        var newStatus = list.getAttribute("data-status");
+        var oldStatus = sourceList.getAttribute("data-status");
+        if (sourceList === list || newStatus === oldStatus) return;
+
+        var issueId = draggedCard.getAttribute("data-issue-id");
+
+        // Optimistic move -- the server is still the authority; this just
+        // avoids a round-trip before the card visibly moves.
+        list.appendChild(draggedCard);
+        boardUpdateColumnCounts();
+
+        boardPostMove(issueId, newStatus).then(function (result) {
+          if (!result.ok) {
+            // Not authorized (or some other server-side rejection): snap
+            // the card back to its original column exactly as the spec
+            // describes, and surface the server's error message.
+            sourceList.appendChild(draggedCard);
+            draggedCard.classList.add("board-card-returning");
+            window.setTimeout(function () {
+              draggedCard.classList.remove("board-card-returning");
+            }, 250);
+            boardUpdateColumnCounts();
+            boardShowToast(result.error || "You do not have permission to make that change.");
+          }
+        });
+      });
+    });
+  }
+
+  function initBoardLoadMore() {
+    document.querySelectorAll("[data-load-more]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var column = button.closest(".board-column");
+        if (!column) return;
+        column.querySelectorAll(".board-card[hidden]").forEach(function (card) {
+          card.hidden = false;
+        });
+        button.remove();
+      });
+    });
+  }
+
+  function initBoardAssigneeFilter() {
+    var row = document.querySelector("[data-assignee-filter-row]");
+    if (!row) return;
+
+    row.querySelectorAll("[data-assignee-filter-trigger]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var alreadyActive = button.classList.contains("board-assignee-avatar-active");
+        var assigneeId = button.getAttribute("data-assignee-id");
+
+        row.querySelectorAll("[data-assignee-filter-trigger]").forEach(function (b) {
+          b.classList.remove("board-assignee-avatar-active");
+        });
+        document.querySelectorAll(".board-card").forEach(function (card) {
+          card.classList.remove("board-card-filtered-out");
+        });
+
+        if (!alreadyActive) {
+          button.classList.add("board-assignee-avatar-active");
+          document.querySelectorAll(".board-card").forEach(function (card) {
+            if (card.getAttribute("data-assignee-id") !== assigneeId) {
+              card.classList.add("board-card-filtered-out");
+            }
+          });
+        }
+      });
+    });
+  }
+
   /* ------------------------------------------ register password matching */
   /* Convenience only - services/auth_service.py re-validates on the server. */
 
@@ -205,6 +365,9 @@
     initParentFilter();
     initScreenshotPreview();
     initHistoryToggle();
+    initBoardDragAndDrop();
+    initBoardLoadMore();
+    initBoardAssigneeFilter();
     initRegisterForm();
   });
 })();

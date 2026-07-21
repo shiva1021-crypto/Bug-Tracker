@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Board · Bug Tracker{% endblock %}
+{% block main_class %}app-main-board{% endblock %}
+
+{% block content %}
+<div class="board-page">
+
+  {% include "partials/flashes.html" %}
+
+  <div class="board-topbar">
+    <form method="get" action="{{ url_for('board.board') }}" class="board-filter-form">
+      <div class="board-filter-field">
+        <label class="label" for="board-project">Project</label>
+        <select id="board-project" name="project" class="input board-select" onchange="this.form.submit()">
+          {% for p in projects %}
+            <option value="{{ p.id }}" {{ 'selected' if selected_project and p.id == selected_project.id else '' }}>{{ p.project_key }} — {{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="board-filter-field">
+        <label class="label" for="board-sprint">Sprint</label>
+        <select id="board-sprint" name="sprint" class="input board-select" disabled title="Sprints arrive in Stage 8">
+          <option value="">All Sprints</option>
+        </select>
+      </div>
+
+      <div class="board-filter-field">
+        <label class="label" for="board-group-by">Group By</label>
+        <select id="board-group-by" name="group_by" class="input board-select" onchange="this.form.submit()">
+          {% for option in group_by_options %}
+            <option value="{{ option }}" {{ 'selected' if option == group_by else '' }}>
+              {{ {'none': 'None', 'assignee': 'Assignee', 'priority': 'Priority', 'type': 'Issue Type'}[option] }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+
+    {% if board and board.assignees %}
+    <div class="board-assignee-row" data-assignee-filter-row>
+      {% for a in board.assignees %}
+        <button type="button" class="board-assignee-avatar avatar" data-assignee-filter-trigger data-assignee-id="{{ a.id }}" title="Filter to {{ a.name }} (click again to clear)">{{ a.name[0] | upper }}</button>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if not projects %}
+    <p class="empty-state">Create a project first to use the board.</p>
+  {% elif not board %}
+    <p class="empty-state">Select a project to see its board.</p>
+  {% else %}
+    <div class="board-columns" data-board-columns data-move-url="{{ url_for('board.move_issue') }}" data-csrf-token="{{ csrf_token() }}">
+      {% for column in board.columns %}
+        <div class="board-column">
+          <div class="board-column-head">
+            <h2 class="board-column-title">{{ column.status }}</h2>
+            <span class="board-column-count" data-column-count>{{ column.count }}</span>
+          </div>
+
+          <ul class="board-column-list" data-board-column-list data-status="{{ column.status }}">
+            {% if column.count == 0 %}
+              <li class="board-empty-placeholder" data-empty-placeholder>No issues</li>
+            {% endif %}
+            {% for entry in column.entries %}
+              {% if entry.kind == 'header' %}
+                <li class="board-group-header">{{ entry.label }}</li>
+              {% else %}
+                {% set card = entry.card %}
+                <li class="board-card"
+                    draggable="true"
+                    data-issue-id="{{ card.id }}"
+                    data-assignee-id="{{ card.assigned_to or '' }}"
+                    {{ 'hidden' if entry.hidden else '' }}>
+                  <div class="board-card-top">
+                    <span class="board-card-key">{{ card.issue_key }}</span>
+                    <span class="type-badge type-{{ card.issue_type | lower }}">{{ card.issue_type }}</span>
+                  </div>
+                  <p class="board-card-title">{{ card.title }}</p>
+                  {% if card.labels %}
+                  <div class="board-card-labels">
+                    {% for label in card.labels.split(',') %}
+                      {% set label = label.strip() %}
+                      {% if label %}
+                        <span class="board-label-dot board-label-dot-{{ label | label_color_index }}" title="{{ label }}"></span>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                  <div class="board-card-bottom">
+                    <span class="board-priority-flag priority-flag-{{ card.priority | lower }}" title="Priority: {{ card.priority }}">&#9679;</span>
+                    {% if card.story_points is not none %}
+                      <span class="board-points-badge">{{ card.story_points }}</span>
+                    {% else %}
+                      <span class="board-points-badge board-points-badge-empty"></span>
+                    {% endif %}
+                    {% if card.assigned_to_name %}
+                      <span class="avatar board-card-avatar" title="{{ card.assigned_to_name }}">{{ card.assigned_to_name[0] | upper }}</span>
+                    {% else %}
+                      <span class="avatar board-card-avatar board-card-avatar-empty" title="Unassigned">&mdash;</span>
+                    {% endif %}
+                  </div>
+                </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+
+          {% if column.hidden_count > 0 %}
+            <button type="button" class="btn btn-secondary btn-sm board-load-more" data-load-more>Load {{ column.hidden_count }} more</button>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="board-toast" data-board-toast hidden></div>
+
+</div>
+{% endblock %}

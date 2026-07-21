@@ -225,6 +225,39 @@ def update(
             cursor.close()
 
 
+def list_board_issues(organization_id: int, project_id: int) -> list[dict]:
+    """Every non-"Idea" issue in one project, for the Kanban board.
+
+    Per the Stage 7 spec's own query-design note: fetch every board-relevant
+    row in a single query and let the caller (services/board_service.py)
+    group them into columns/sub-groups in application code, rather than
+    running one query per column -- simpler, and avoids column-count
+    mismatches if a status changes mid-request. "Idea" issues are excluded
+    at the SQL level since they can never appear on the board at all (they
+    live in the Stage 8 backlog).
+    """
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                """
+                SELECT b.id, b.issue_key, b.issue_type, b.title, b.priority,
+                       b.severity, b.status, b.assigned_to, b.story_points,
+                       b.labels, b.created_at,
+                       assignee.full_name AS assigned_to_name
+                FROM bugs b
+                LEFT JOIN users assignee ON assignee.id = b.assigned_to
+                WHERE b.organization_id = %s AND b.project_id = %s
+                  AND b.status <> 'Idea'
+                ORDER BY b.created_at ASC
+                """,
+                (organization_id, project_id),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
 def update_status(issue_id: int, organization_id: int, new_status: str) -> bool:
     """Update only the status column. `updated_at` refreshes automatically."""
     with get_connection() as conn:

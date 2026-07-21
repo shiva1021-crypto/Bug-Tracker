@@ -41,6 +41,19 @@
     });
   }
 
+  /* ------------------------------------------------------ sidebar toggle */
+
+  function initSidebarToggle() {
+    var toggle = document.querySelector("[data-sidebar-toggle]");
+    var shell = document.querySelector("[data-app-shell]");
+    if (!toggle || !shell) return;
+
+    toggle.addEventListener("click", function () {
+      var collapsed = shell.classList.toggle("sidebar-collapsed");
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+    });
+  }
+
   /* ------------------------------------------ register password matching */
   /* Convenience only — services/auth_service.py re-validates on the server. */
 
@@ -78,6 +91,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     initUserMenu();
+    initSidebarToggle();
     initRegisterForm();
   });
 })();

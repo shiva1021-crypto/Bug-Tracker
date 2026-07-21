@@ -10,6 +10,7 @@ from datetime import timedelta
 from flask import Flask, render_template, request
 
 from config import config
+from routes.admin_routes import admin_bp
 from routes.auth_routes import auth_bp
 from routes.health_routes import health_bp
 from utils.auth import current_user
@@ -31,6 +32,7 @@ def create_app() -> Flask:
     # Blueprints (route layer).
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_bp)
 
     @app.before_request
     def enforce_csrf():

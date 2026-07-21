@@ -9,10 +9,20 @@
 <body>
 
   <header class="app-header">
-    <a class="brand" href="{{ url_for('auth.profile') if current_user else url_for('auth.login') }}">
-      <span class="brand-mark" aria-hidden="true">BT</span>
-      <span class="brand-name">Bug Tracker</span>
-    </a>
+    <div class="header-left">
+      {% if current_user %}
+        <button type="button" class="sidebar-toggle" data-sidebar-toggle
+                aria-label="Toggle navigation" aria-expanded="true">
+          <span class="sidebar-toggle-bar"></span>
+          <span class="sidebar-toggle-bar"></span>
+          <span class="sidebar-toggle-bar"></span>
+        </button>
+      {% endif %}
+      <a class="brand" href="{{ url_for('auth.profile') if current_user else url_for('auth.login') }}">
+        <span class="brand-mark" aria-hidden="true">BT</span>
+        <span class="brand-name">Bug Tracker</span>
+      </a>
+    </div>
 
     <nav class="header-nav">
       {% if current_user %}
@@ -38,9 +48,24 @@
     </nav>
   </header>
 
-  <main class="app-main {% block main_class %}{% endblock %}">
-    {% block content %}{% endblock %}
-  </main>
+  <!-- Blocks can only be defined once per template, so the sidebar's
+       presence is a conditional *inside* a single shell rather than two
+       branches that each redefine main_class/content. -->
+  <div class="app-shell {{ '' if current_user else 'no-sidebar' }}" data-app-shell>
+    {% if current_user %}
+      <aside class="sidebar" data-sidebar>
+        <nav class="sidebar-nav">
+          {% if current_user.role == 'admin' %}
+            <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'admin.users_page' else '' }}"
+               href="{{ url_for('admin.users_page') }}">Users</a>
+          {% endif %}
+        </nav>
+      </aside>
+    {% endif %}
+    <main class="app-main {% block main_class %}{% endblock %}">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

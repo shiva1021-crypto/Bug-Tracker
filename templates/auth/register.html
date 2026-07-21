@@ -22,10 +22,18 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <div class="field">
+        <label class="label" for="organization_name">Organization Name</label>
+        <input class="input" type="text" id="organization_name" name="organization_name"
+               value="{{ organization_name or '' }}" maxlength="150"
+               autocomplete="organization" required autofocus>
+        <p class="hint">New name → you become the admin. Existing name → your request needs approval.</p>
+      </div>
+
+      <div class="field">
         <label class="label" for="full_name">Full Name</label>
         <input class="input" type="text" id="full_name" name="full_name"
                value="{{ full_name or '' }}" maxlength="150"
-               autocomplete="name" required autofocus>
+               autocomplete="name" required>
       </div>
 
       <div class="field">

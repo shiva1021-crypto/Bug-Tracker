@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Registration Pending · Bug Tracker{% endblock %}
+{% block main_class %}auth-shell{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+
+  <div class="auth-logo">
+    <span class="brand-mark brand-mark-lg" aria-hidden="true">BT</span>
+    <h1 class="auth-logo-name">Bug Tracker</h1>
+  </div>
+
+  <div class="card auth-card">
+    <h2 class="auth-title">Request submitted</h2>
+    <p class="pending-message">
+      Your request to join
+      {% if organization_name %}<strong>{{ organization_name }}</strong>{% else %}this organization{% endif %}
+      has been sent to that organization's admin for approval. You'll be able
+      to log in once it's approved.
+    </p>
+  </div>
+
+  <p class="auth-alt">
+    <a href="{{ url_for('auth.login') }}">Back to log in</a>
+  </p>
+
+</div>
+{% endblock %}

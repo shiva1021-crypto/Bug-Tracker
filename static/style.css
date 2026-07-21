@@ -125,6 +125,32 @@ h1, h2, h3 { margin: 0; font-weight: 600; color: var(--text); }
 .brand-mark-lg { width: 44px; height: 44px; font-size: 16px; }
 .brand-name { font-size: 15px; }
 
+.header-left { display: flex; align-items: center; gap: 12px; }
+
+.sidebar-toggle {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+}
+.sidebar-toggle:hover { background: var(--bg); }
+
+.sidebar-toggle-bar {
+  display: block;
+  width: 16px;
+  height: 2px;
+  background: var(--text-muted);
+  border-radius: 1px;
+}
+
 .header-nav { display: flex; align-items: center; gap: 8px; }
 
 .nav-link {
@@ -214,11 +240,56 @@ h1, h2, h3 { margin: 0; font-weight: 600; color: var(--text); }
   color: var(--text);
 }
 
+/* ------------------------------------------------------------ app shell -- */
+
+.app-shell {
+  display: flex;
+  align-items: flex-start;
+  min-height: calc(100vh - var(--header-h));
+}
+
+.sidebar {
+  width: 220px;
+  flex: 0 0 220px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  min-height: calc(100vh - var(--header-h));
+  overflow: hidden;
+  transition: width 0.15s ease, flex-basis 0.15s ease, border-color 0.15s ease;
+}
+
+.app-shell.sidebar-collapsed .sidebar {
+  width: 0;
+  flex-basis: 0;
+  border-right-color: transparent;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 220px;
+  padding: 12px 8px;
+}
+
+.sidebar-link {
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.sidebar-link:hover { background: var(--bg); color: var(--text); text-decoration: none; }
+.sidebar-link-active { background: var(--accent-soft); color: var(--accent); }
+
+.app-shell .app-main { flex: 1 1 auto; min-width: 0; }
+
 /* ---------------------------------------------------------------- main -- */
 
 .app-main { padding: 24px 16px; }
 
 .page { max-width: 720px; margin: 0 auto; }
+.page-wide { max-width: 960px; }
 .page-title { font-size: 20px; margin-bottom: 16px; }
 
 .card {
@@ -313,6 +384,14 @@ h1, h2, h3 { margin: 0; font-weight: 600; color: var(--text); }
 .btn-primary { background: var(--accent); color: var(--accent-contrast); }
 .btn-primary:hover { background: var(--accent-hover); }
 
+.btn-success { background: var(--success); color: var(--accent-contrast); }
+.btn-success:hover { filter: brightness(1.1); }
+
+.btn-danger { background: var(--danger); color: var(--accent-contrast); }
+.btn-danger:hover { filter: brightness(1.1); }
+
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+
 .btn-block { width: 100%; margin-top: 4px; }
 
 /* -------------------------------------------------------------- flash --- */
@@ -367,3 +446,59 @@ h1, h2, h3 { margin: 0; font-weight: 600; color: var(--text); }
   font-weight: 500;
 }
 .detail-row dd { margin: 0; }
+
+/* ---------------------------------------------------------------- admin -- */
+
+.card + .card { margin-top: 20px; }
+
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.data-table { width: 100%; border-collapse: collapse; }
+
+.data-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--border);
+}
+
+.data-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td { border-bottom: 0; }
+
+.empty-row { text-align: center; color: var(--text-muted); padding: 20px !important; }
+
+.inline-form { margin: 0; display: inline-block; }
+
+.role-select {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.actions-cell { display: flex; gap: 8px; }
+
+/* ------------------------------------------------------------- pending -- */
+
+.pending-message {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+  text-align: center;
+}

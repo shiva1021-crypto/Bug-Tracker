@@ -2,7 +2,7 @@
 {% block title %}{{ project.name }} · Bug Tracker{% endblock %}
 
 {% block content %}
-<div class="page">
+<div class="page page-wide">
 
   {% include "partials/flashes.html" %}
 
@@ -11,12 +11,43 @@
       <span class="project-key-badge">{{ project.project_key }}</span>
       {{ project.name }}
     </h1>
-    <a class="btn btn-secondary" href="{{ url_for('projects.list_projects') }}">Back to Projects</a>
+    <div class="page-head-actions">
+      <a class="btn btn-primary" href="{{ url_for('issues.add_issue', project_id=project.id) }}">+ Create Issue</a>
+      <a class="btn btn-secondary" href="{{ url_for('projects.list_projects') }}">Back to Projects</a>
+    </div>
   </div>
 
   <div class="card">
     <p>{{ project.description or 'No description.' }}</p>
-    <p class="hint">The board for this project isn't built yet - that arrives in a later stage.</p>
+    <p class="hint">The board for this project isn't built yet — that arrives in a later stage.</p>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Issues</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Type</th>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for issue in issues %}
+        <tr>
+          <td><a href="{{ url_for('issues.issue_detail', issue_id=issue.id) }}">{{ issue.issue_key }}</a></td>
+          <td><span class="type-badge type-{{ issue.issue_type | lower }}">{{ issue.issue_type }}</span></td>
+          <td><a href="{{ url_for('issues.issue_detail', issue_id=issue.id) }}">{{ issue.title }}</a></td>
+          <td>{{ issue.status }}</td>
+          <td><span class="badge priority-{{ issue.priority | lower }}">{{ issue.priority }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="empty-row">No issues yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 
 </div>

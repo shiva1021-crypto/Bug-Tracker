@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Create Issue · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page page-wide">
+
+  {% include "partials/flashes.html" %}
+
+  <h1 class="page-title">Create Issue</h1>
+
+  <form method="post" action="{{ url_for('issues.add_issue') }}" enctype="multipart/form-data"
+        novalidate class="issue-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="issue-form-grid">
+      <div class="issue-form-main">
+        <div class="field">
+          <label class="label" for="title">Title</label>
+          <input class="input" type="text" id="title" name="title" value="{{ title or '' }}"
+                 maxlength="255" required autofocus>
+        </div>
+
+        <div class="field">
+          <label class="label" for="description">Description</label>
+          <textarea class="input" id="description" name="description" rows="8" required>{{ description or '' }}</textarea>
+        </div>
+
+        <div class="field">
+          <label class="label" for="reproduction_steps">Reproduction Steps</label>
+          <textarea class="input" id="reproduction_steps" name="reproduction_steps" rows="5"
+                    placeholder="Mainly useful for Bugs">{{ reproduction_steps or '' }}</textarea>
+        </div>
+      </div>
+
+      <div class="issue-form-side">
+        <div class="field">
+          <label class="label" for="project_id">Project</label>
+          <select class="input" id="project_id" name="project_id" required data-project-select>
+            <option value="">Select a project…</option>
+            {% for p in projects %}
+              <option value="{{ p.id }}" {{ "selected" if preselect_project_id == p.id else "" }}>{{ p.project_key }} — {{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="label" for="issue_type">Issue Type</label>
+          <select class="input" id="issue_type" name="issue_type" required data-issue-type-select>
+            <option value="">Select a type…</option>
+            {% for t in issue_types %}
+              <option value="{{ t }}" {{ "selected" if selected_issue_type == t else "" }}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="label" for="priority">Priority</label>
+          <select class="input" id="priority" name="priority" required>
+            {% for p in priorities %}
+              <option value="{{ p }}" {{ "selected" if (selected_priority or "Medium") == p else "" }}>{{ p }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="label" for="severity">Severity</label>
+          <select class="input" id="severity" name="severity" required>
+            {% for s in severities %}
+              <option value="{{ s }}" {{ "selected" if (selected_severity or "Minor") == s else "" }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="label" for="category">Category</label>
+          <input class="input" type="text" id="category" name="category" value="{{ category or 'General' }}" maxlength="80">
+        </div>
+
+        <div class="field">
+          <label class="label" for="parent_id">Parent</label>
+          <select class="input" id="parent_id" name="parent_id" data-parent-select
+                  data-selected="{{ selected_parent_id or '' }}">
+            <option value="">No parent</option>
+          </select>
+          <p class="hint">Filtered to valid parent types once Project and Issue Type are chosen.</p>
+        </div>
+
+        <div class="field">
+          <label class="label" for="labels">Labels</label>
+          <input class="input" type="text" id="labels" name="labels" value="{{ labels or '' }}" placeholder="frontend, urgent">
+          <p class="hint">Comma-separated.</p>
+        </div>
+
+        <div class="field">
+          <label class="label" for="story_points">Story Points</label>
+          <input class="input" type="number" id="story_points" name="story_points" min="0" step="1" value="{{ story_points or '' }}">
+        </div>
+
+        <div class="field">
+          <label class="label" for="due_date">Due Date</label>
+          <input class="input" type="date" id="due_date" name="due_date" value="{{ due_date or '' }}">
+        </div>
+
+        <div class="field">
+          <label class="label" for="screenshot">Screenshot</label>
+          <input class="input" type="file" id="screenshot" name="screenshot"
+                 accept=".png,.jpg,.jpeg,.gif,.webp" data-screenshot-input>
+          <img class="screenshot-preview" data-screenshot-preview hidden alt="Screenshot preview">
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Issue</button>
+  </form>
+
+</div>
+
+<script id="parent-candidates-data" type="application/json">{{ parent_candidates | tojson }}</script>
+{% endblock %}

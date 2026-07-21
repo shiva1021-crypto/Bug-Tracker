@@ -9,7 +9,7 @@ generic "not found," no information about other organizations leaks out.
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from services import project_service
+from services import issue_service, project_service
 from utils.auth import current_user, login_required
 
 project_bp = Blueprint("projects", __name__)
@@ -67,4 +67,9 @@ def project_detail(project_id):
     if project is None:
         flash("Project not found.", "error")
         return redirect(url_for("projects.list_projects"))
-    return render_template("projects/detail.html", project=project)
+    # There is no board yet (that's a later stage), so this page is also
+    # the only place to browse a project's issues -- without this, an
+    # issue created via /issues/add would have no link to reach it from
+    # again except a direct URL.
+    issues = issue_service.list_by_project(project_id, user["organization_id"])
+    return render_template("projects/detail.html", project=project, issues=issues)

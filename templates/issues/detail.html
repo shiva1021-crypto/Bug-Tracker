@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}{{ issue.issue_key }} · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page page-wide">
+
+  {% include "partials/flashes.html" %}
+
+  <div class="page-head">
+    <h1 class="page-title">
+      <span class="type-badge type-{{ issue.issue_type | lower }}">{{ issue.issue_type }}</span>
+      <span class="project-key-badge">{{ issue.issue_key }}</span>
+      {{ issue.title }}
+    </h1>
+    <div class="page-head-actions">
+      {% if can_edit %}
+        <a class="btn btn-primary" href="{{ url_for('issues.edit_issue', issue_id=issue.id) }}">Edit</a>
+      {% endif %}
+      <a class="btn btn-secondary" href="{{ url_for('projects.project_detail', project_id=issue.project_id) }}">Back to {{ issue.project_key }}</a>
+    </div>
+  </div>
+
+  <div class="issue-detail-badges">
+    <span class="badge priority-{{ issue.priority | lower }}">Priority: {{ issue.priority }}</span>
+    <span class="badge severity-{{ issue.severity | lower }}">Severity: {{ issue.severity }}</span>
+    <span class="badge status-badge">{{ issue.status }}</span>
+  </div>
+
+  <div class="issue-detail-grid">
+    <div class="issue-detail-main">
+      <div class="card">
+        <h2 class="section-title">Description</h2>
+        <p class="issue-body-text">{{ issue.description }}</p>
+      </div>
+
+      {% if issue.reproduction_steps %}
+      <div class="card">
+        <h2 class="section-title">Reproduction Steps</h2>
+        <p class="issue-body-text">{{ issue.reproduction_steps }}</p>
+      </div>
+      {% endif %}
+
+      {% if issue.screenshot_path %}
+      <div class="card">
+        <h2 class="section-title">Screenshot</h2>
+        <img class="issue-screenshot" src="{{ url_for('issues.issue_screenshot', issue_id=issue.id) }}" alt="Issue screenshot">
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="issue-detail-side">
+      <div class="card">
+        <dl class="detail-list">
+          <div class="detail-row">
+            <dt>Reporter</dt>
+            <dd>{{ issue.reporter_name }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Category</dt>
+            <dd>{{ issue.category }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Story Points</dt>
+            <dd>{{ issue.story_points if issue.story_points is not none else '—' }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Due Date</dt>
+            <dd>{{ issue.due_date.strftime('%d %b %Y') if issue.due_date else '—' }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Parent</dt>
+            <dd>
+              {% if issue.parent_id %}
+                <a href="{{ url_for('issues.issue_detail', issue_id=issue.parent_id) }}">{{ issue.parent_issue_key }} — {{ issue.parent_title }}</a>
+              {% else %}
+                —
+              {% endif %}
+            </dd>
+          </div>
+        </dl>
+
+        {% if issue.labels %}
+        <div class="label-pills">
+          {% for label in issue.labels.split(',') %}
+            <span class="label-pill">{{ label.strip() }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      {% if children %}
+      <div class="card">
+        <h2 class="section-title">Child Issues</h2>
+        <ul class="child-issue-list">
+          {% for child in children %}
+            <li>
+              <a href="{{ url_for('issues.issue_detail', issue_id=child.id) }}">{{ child.issue_key }}</a>
+              <span class="type-badge type-{{ child.issue_type | lower }}">{{ child.issue_type }}</span>
+              {{ child.title }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

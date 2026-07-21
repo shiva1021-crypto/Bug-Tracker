@@ -70,15 +70,58 @@ CREATE TABLE IF NOT EXISTS projects (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 """
 
-# Order matters: organizations before users/projects/registration_requests
-# (all three FK to it). users is created here only for a brand-new
-# database; on an existing Stage-2 database this is a no-op and
-# _migrate_users_table() below handles adding the new columns.
+BUGS_TABLE = """
+CREATE TABLE IF NOT EXISTS bugs (
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    organization_id     INT NOT NULL,
+    project_id          INT NOT NULL,
+    issue_key           VARCHAR(30) NOT NULL,
+    issue_type          ENUM('Epic','Story','Task','Bug','Subtask') NOT NULL,
+    parent_id           INT NULL,
+    title               VARCHAR(255) NOT NULL,
+    description         TEXT NOT NULL,
+    reproduction_steps  TEXT,
+    category            VARCHAR(80) NOT NULL DEFAULT 'General',
+    priority            ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
+    severity            ENUM('Minor','Major','Critical','Blocker') NOT NULL DEFAULT 'Minor',
+    status              VARCHAR(50) NOT NULL DEFAULT 'To Do',
+    reporter_id         INT NOT NULL,
+    assigned_to         INT NULL,
+    screenshot_path     VARCHAR(255),
+    labels              VARCHAR(255),
+    story_points        INT,
+    due_date            DATE,
+    created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_bugs_organization
+        FOREIGN KEY (organization_id) REFERENCES organizations(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_bugs_project
+        FOREIGN KEY (project_id) REFERENCES projects(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_bugs_parent
+        FOREIGN KEY (parent_id) REFERENCES bugs(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_bugs_reporter
+        FOREIGN KEY (reporter_id) REFERENCES users(id),
+    CONSTRAINT fk_bugs_assigned_to
+        FOREIGN KEY (assigned_to) REFERENCES users(id)
+        ON DELETE SET NULL,
+    CONSTRAINT uq_bugs_org_key UNIQUE (organization_id, issue_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+# Order matters: organizations before users/projects/registration_requests,
+# and projects + users before bugs (bugs FKs to both, plus to itself for
+# parent_id). users is created here only for a brand-new database; on an
+# existing Stage-2 database this is a no-op and _migrate_users_table()
+# below handles adding the new columns.
 STATEMENTS = [
     ("organizations", ORGANIZATIONS_TABLE),
     ("users", USERS_TABLE),
     ("registration_requests", REGISTRATION_REQUESTS_TABLE),
     ("projects", PROJECTS_TABLE),
+    ("bugs", BUGS_TABLE),
 ]
 
 

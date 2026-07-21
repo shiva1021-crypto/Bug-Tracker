@@ -13,6 +13,7 @@ from config import config
 from routes.admin_routes import admin_bp
 from routes.auth_routes import auth_bp
 from routes.health_routes import health_bp
+from routes.issue_routes import issue_bp
 from routes.project_routes import project_bp
 from utils.auth import current_user
 from utils.security import CSRF_FORM_FIELD, generate_csrf_token, validate_csrf_token
@@ -35,6 +36,15 @@ def create_app() -> Flask:
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(project_bp)
+    app.register_blueprint(issue_bp)
+
+    @app.errorhandler(404)
+    def not_found(_error):
+        """One generic 404 page. Deliberately uninformative: an issue id
+        that doesn't exist and one that belongs to another organization
+        both land here via the same `abort(404)`, so the response can't be
+        used to distinguish the two cases."""
+        return render_template("errors/404.html"), 404
 
     @app.before_request
     def enforce_csrf():

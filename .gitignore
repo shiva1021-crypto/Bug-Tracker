@@ -2,6 +2,9 @@
 .env
 .secret_key
 
+# User-uploaded content (Stage 5 screenshots) -- never committed
+uploads/
+
 # Python
 __pycache__/
 *.py[cod]

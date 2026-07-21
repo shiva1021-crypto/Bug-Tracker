@@ -106,6 +106,13 @@ class Config:
     SESSION_COOKIE_SECURE: bool = _bool_env("SESSION_COOKIE_SECURE", False)
     SESSION_LIFETIME_SECONDS: int = _int_env("SESSION_LIFETIME_SECONDS", 28800)
 
+    # Stage 5: where issue screenshots are stored. Deliberately NOT under
+    # static/ -- the spec requires uploads live somewhere that isn't
+    # web-servable directly, so they're only ever reachable through the
+    # authenticated, organization-scoped `/issues/<id>/screenshot` route.
+    UPLOAD_DIR: Path = BASE_DIR / "uploads"
+    SCREENSHOT_UPLOAD_DIR: Path = BASE_DIR / "uploads" / "screenshots"
+
     @classmethod
     def db_connection_kwargs(cls, include_database: bool = True) -> dict:
         """Keyword args for a MySQL connection.

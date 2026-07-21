@@ -70,6 +70,87 @@
     });
   }
 
+  /* ------------------------------------------------- issue parent filter */
+  /* Mirrors services/issue_service.py::VALID_PARENT_TYPES_FOR_CHILD -- keep
+     the two in sync if the hierarchy rule ever changes. Convenience only:
+     the server re-validates the chosen parent (type, project, cycles)
+     regardless of what this filter allowed onto the page. */
+
+  function initParentFilter() {
+    var dataEl = document.getElementById("parent-candidates-data");
+    var projectSelect = document.querySelector("[data-project-select]");
+    var typeSelect = document.querySelector("[data-issue-type-select]");
+    var parentSelect = document.querySelector("[data-parent-select]");
+    if (!dataEl || !parentSelect) return;
+
+    var candidates;
+    try {
+      candidates = JSON.parse(dataEl.textContent);
+    } catch (e) {
+      candidates = [];
+    }
+
+    var validParentTypes = {
+      Epic: [],
+      Bug: [],
+      Story: ["Epic"],
+      Task: ["Epic"],
+      Subtask: ["Story"]
+    };
+
+    var preselected = parentSelect.getAttribute("data-selected") || "";
+
+    function refresh() {
+      var projectId = projectSelect ? projectSelect.value : "";
+      var issueType = typeSelect ? typeSelect.value : "";
+      var allowedParentTypes = validParentTypes[issueType] || [];
+
+      parentSelect.innerHTML = "";
+      var noneOption = document.createElement("option");
+      noneOption.value = "";
+      noneOption.textContent = "No parent";
+      parentSelect.appendChild(noneOption);
+
+      if (!projectId || allowedParentTypes.length === 0) return;
+
+      candidates
+        .filter(function (c) {
+          return String(c.project_id) === String(projectId) &&
+                 allowedParentTypes.indexOf(c.issue_type) !== -1;
+        })
+        .forEach(function (c) {
+          var option = document.createElement("option");
+          option.value = c.id;
+          option.textContent = c.issue_key + " — " + c.title;
+          if (String(c.id) === String(preselected)) option.selected = true;
+          parentSelect.appendChild(option);
+        });
+    }
+
+    if (projectSelect) projectSelect.addEventListener("change", refresh);
+    if (typeSelect) typeSelect.addEventListener("change", refresh);
+    refresh();
+  }
+
+  /* ---------------------------------------------------- screenshot preview */
+
+  function initScreenshotPreview() {
+    var input = document.querySelector("[data-screenshot-input]");
+    var preview = document.querySelector("[data-screenshot-preview]");
+    if (!input || !preview) return;
+
+    input.addEventListener("change", function () {
+      var file = input.files && input.files[0];
+      if (!file) {
+        preview.hidden = true;
+        preview.removeAttribute("src");
+        return;
+      }
+      preview.src = URL.createObjectURL(file);
+      preview.hidden = false;
+    });
+  }
+
   /* ------------------------------------------ register password matching */
   /* Convenience only - services/auth_service.py re-validates on the server. */
 
@@ -109,6 +190,8 @@
     initUserMenu();
     initSidebarToggle();
     initNewProjectToggle();
+    initParentFilter();
+    initScreenshotPreview();
     initRegisterForm();
   });
 })();

@@ -10,7 +10,7 @@ only decides how the result is presented (page vs. JSON).
 
 from flask import Blueprint, jsonify, render_template, request
 
-from services import board_service, issue_service, project_service, workflow_service
+from services import automation_service, board_service, issue_service, project_service, workflow_service
 from utils.auth import current_user, login_required
 
 board_bp = Blueprint("board", __name__)
@@ -80,5 +80,20 @@ def move_issue():
     if permitted_user is None:
         return jsonify(ok=False, error="You do not have permission to change this issue's status."), 403
 
+    old_status = issue["status"]
     ok, error = workflow_service.change_status(issue, new_status, permitted_user)
+    if ok and new_status != old_status:
+        # Drag-and-drop is just another way to change status -- it must
+        # trigger the same `status_changed` automation the detail page's
+        # status dropdown does (routes/issue_routes.py::change_status), or
+        # a rule like "on Testing, notify QA" would silently never fire
+        # for anyone using the board.
+        updated_issue = issue_service.get_issue(issue_id, user["organization_id"])
+        automation_service.execute_automation_rules(
+            organization_id=user["organization_id"],
+            project_id=issue["project_id"],
+            trigger_event="status_changed",
+            context={"issue": updated_issue, "old_status": old_status, "new_status": new_status},
+            actor_user_id=permitted_user["id"],
+        )
     return jsonify(ok=ok, error=error)

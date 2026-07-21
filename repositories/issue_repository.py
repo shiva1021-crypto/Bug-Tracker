@@ -14,7 +14,8 @@ _COLUMNS = (
     "id, organization_id, project_id, issue_key, issue_type, parent_id, "
     "title, description, reproduction_steps, category, priority, severity, "
     "status, reporter_id, assigned_to, screenshot_path, labels, "
-    "story_points, due_date, sprint_id, created_at, updated_at"
+    "story_points, due_date, sprint_id, time_estimate, time_remaining, "
+    "fix_version_id, created_at, updated_at"
 )
 
 
@@ -129,6 +130,7 @@ def create(
     labels: str | None,
     story_points: int | None,
     due_date,
+    fix_version_id: int | None = None,
 ) -> tuple[int, str] | None:
     """Insert a new issue with a concurrency-safe, gap-free key.
 
@@ -157,18 +159,18 @@ def create(
                     "  organization_id, project_id, issue_key, issue_type, parent_id,"
                     "  title, description, reproduction_steps, category, priority,"
                     "  severity, status, reporter_id, screenshot_path, labels,"
-                    "  story_points, due_date"
+                    "  story_points, due_date, fix_version_id"
                     ") VALUES ("
                     "  %s, %s, %s, %s, %s,"
                     "  %s, %s, %s, %s, %s,"
                     "  %s, %s, %s, %s, %s,"
-                    "  %s, %s"
+                    "  %s, %s, %s"
                     ")",
                     (
                         organization_id, project_id, issue_key, issue_type, parent_id,
                         title, description, reproduction_steps, category, priority,
                         severity, status, reporter_id, screenshot_path, labels,
-                        story_points, due_date,
+                        story_points, due_date, fix_version_id,
                     ),
                 )
                 issue_id = cursor.lastrowid
@@ -195,6 +197,7 @@ def update(
     labels: str | None,
     story_points: int | None,
     due_date,
+    fix_version_id: int | None = None,
 ) -> bool:
     """Update the editable fields of an issue.
 
@@ -211,16 +214,55 @@ def update(
                 "  parent_id = %s, title = %s, description = %s,"
                 "  reproduction_steps = %s, category = %s, priority = %s,"
                 "  severity = %s, screenshot_path = %s, labels = %s,"
-                "  story_points = %s, due_date = %s "
+                "  story_points = %s, due_date = %s, fix_version_id = %s "
                 "WHERE id = %s AND organization_id = %s",
                 (
                     parent_id, title, description, reproduction_steps, category,
                     priority, severity, screenshot_path, labels, story_points,
-                    due_date, issue_id, organization_id,
+                    due_date, fix_version_id, issue_id, organization_id,
                 ),
             )
             conn.commit()
             return cursor.rowcount > 0
+        finally:
+            cursor.close()
+
+
+def update_estimate(
+    issue_id: int, organization_id: int, time_estimate, time_remaining
+) -> bool:
+    """Set the original estimate and/or remaining estimate. Either may be
+    None (cleared)."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE bugs SET time_estimate = %s, time_remaining = %s "
+                "WHERE id = %s AND organization_id = %s",
+                (time_estimate, time_remaining, issue_id, organization_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            cursor.close()
+
+
+def count_by_fix_version(version_id: int, organization_id: int) -> dict:
+    """Issue counts for one version: total, resolved (status = 'Done'),
+    and open (everything else) -- the Versions page's per-row counts."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT COUNT(*) AS total, "
+                "       SUM(CASE WHEN status = 'Done' THEN 1 ELSE 0 END) AS resolved "
+                "FROM bugs WHERE fix_version_id = %s AND organization_id = %s",
+                (version_id, organization_id),
+            )
+            row = cursor.fetchone()
+            total = row["total"] or 0
+            resolved = int(row["resolved"] or 0)
+            return {"total": total, "resolved": resolved, "open": total - resolved}
         finally:
             cursor.close()
 

@@ -86,6 +86,22 @@ CREATE TABLE IF NOT EXISTS sprints (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 """
 
+VERSIONS_TABLE = """
+CREATE TABLE IF NOT EXISTS versions (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    organization_id  INT NOT NULL,
+    project_id       INT NOT NULL,
+    name             VARCHAR(120) NOT NULL,
+    description      TEXT,
+    release_date     DATE,
+    status           ENUM('unreleased','released','archived') NOT NULL DEFAULT 'unreleased',
+    created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_versions_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_versions_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    CONSTRAINT uq_versions_project_name UNIQUE (project_id, name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
 BUGS_TABLE = """
 CREATE TABLE IF NOT EXISTS bugs (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
@@ -108,6 +124,9 @@ CREATE TABLE IF NOT EXISTS bugs (
     story_points        INT,
     due_date            DATE,
     sprint_id           INT NULL,
+    time_estimate       DECIMAL(10,2) NULL,
+    time_remaining      DECIMAL(10,2) NULL,
+    fix_version_id      INT NULL,
     created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_bugs_organization
@@ -126,6 +145,9 @@ CREATE TABLE IF NOT EXISTS bugs (
         ON DELETE SET NULL,
     CONSTRAINT fk_bugs_sprint
         FOREIGN KEY (sprint_id) REFERENCES sprints(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_bugs_fix_version
+        FOREIGN KEY (fix_version_id) REFERENCES versions(id)
         ON DELETE SET NULL,
     CONSTRAINT uq_bugs_org_key UNIQUE (organization_id, issue_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -197,12 +219,74 @@ CREATE TABLE IF NOT EXISTS saved_filters (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 """
 
+CUSTOM_FIELD_DEFINITIONS_TABLE = """
+CREATE TABLE IF NOT EXISTS custom_field_definitions (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    organization_id  INT NOT NULL,
+    project_id       INT NOT NULL,
+    name             VARCHAR(120) NOT NULL,
+    field_type       ENUM('text','number','date','dropdown','checkbox') NOT NULL,
+    options          JSON,
+    required         TINYINT(1) NOT NULL DEFAULT 0,
+    display_order    INT NOT NULL DEFAULT 0,
+    created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_custom_field_definitions_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_custom_field_definitions_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+CUSTOM_FIELD_VALUES_TABLE = """
+CREATE TABLE IF NOT EXISTS custom_field_values (
+    id        INT AUTO_INCREMENT PRIMARY KEY,
+    bug_id    INT NOT NULL,
+    field_id  INT NOT NULL,
+    value     TEXT,
+    CONSTRAINT fk_custom_field_values_bug FOREIGN KEY (bug_id) REFERENCES bugs(id) ON DELETE CASCADE,
+    CONSTRAINT fk_custom_field_values_field FOREIGN KEY (field_id) REFERENCES custom_field_definitions(id) ON DELETE CASCADE,
+    CONSTRAINT uq_custom_field_values_bug_field UNIQUE (bug_id, field_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+AUTOMATION_RULES_TABLE = """
+CREATE TABLE IF NOT EXISTS automation_rules (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    organization_id  INT NOT NULL,
+    project_id       INT NULL,
+    name             VARCHAR(150) NOT NULL,
+    trigger_event    ENUM('issue_created','status_changed','field_updated') NOT NULL,
+    conditions       JSON,
+    actions          JSON NOT NULL,
+    enabled          TINYINT(1) NOT NULL DEFAULT 1,
+    created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_automation_rules_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_automation_rules_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+TIME_ENTRIES_TABLE = """
+CREATE TABLE IF NOT EXISTS time_entries (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    bug_id       INT NOT NULL,
+    user_id      INT NOT NULL,
+    hours_spent  DECIMAL(10,2) NOT NULL,
+    description  TEXT,
+    logged_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_time_entries_bug FOREIGN KEY (bug_id) REFERENCES bugs(id) ON DELETE CASCADE,
+    CONSTRAINT fk_time_entries_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
 # Order matters: organizations before users/projects/registration_requests;
-# projects before sprints (sprints FKs to it) and before bugs; sprints
-# before bugs (bugs.sprint_id FKs to it, new this stage); bugs before
-# comments/bug_history/issue_watchers/issue_links (all FK to it) and before
-# nothing else. saved_filters only needs users/organizations, so it can go
-# anywhere after those. users is created here only for a brand-new
+# projects before sprints/versions (both FK to it) and before bugs; sprints
+# and versions before bugs (bugs.sprint_id and bugs.fix_version_id FK to
+# them respectively); bugs before comments/bug_history/issue_watchers/
+# issue_links/custom_field_values/time_entries (all FK to it);
+# custom_field_definitions before custom_field_values (FKs to it) and
+# before bugs is NOT required (custom_field_values, not bugs, is what FKs
+# to custom_field_definitions) but is created here regardless since it
+# also needs projects/organizations first. saved_filters and
+# automation_rules only need users/projects/organizations, so either can
+# go anywhere after those. users is created here only for a brand-new
 # database; on an existing Stage-2 database this is a no-op and
 # _migrate_users_table() below handles adding the new columns.
 STATEMENTS = [
@@ -211,12 +295,17 @@ STATEMENTS = [
     ("registration_requests", REGISTRATION_REQUESTS_TABLE),
     ("projects", PROJECTS_TABLE),
     ("sprints", SPRINTS_TABLE),
+    ("versions", VERSIONS_TABLE),
+    ("custom_field_definitions", CUSTOM_FIELD_DEFINITIONS_TABLE),
     ("bugs", BUGS_TABLE),
     ("comments", COMMENTS_TABLE),
     ("bug_history", BUG_HISTORY_TABLE),
     ("issue_watchers", ISSUE_WATCHERS_TABLE),
     ("issue_links", ISSUE_LINKS_TABLE),
     ("saved_filters", SAVED_FILTERS_TABLE),
+    ("custom_field_values", CUSTOM_FIELD_VALUES_TABLE),
+    ("automation_rules", AUTOMATION_RULES_TABLE),
+    ("time_entries", TIME_ENTRIES_TABLE),
 ]
 
 
@@ -331,6 +420,37 @@ def _ensure_bugs_sprint_column(cursor) -> None:
         print("  Added FK bugs.sprint_id -> sprints.id.")
 
 
+def _ensure_bugs_stage9_columns(cursor) -> None:
+    """Add `bugs.time_estimate`, `bugs.time_remaining`, and
+    `bugs.fix_version_id` (+ its FK to `versions`) to a database that ran
+    an earlier stage's version of this script before Stage 9 existed.
+
+    A brand-new database gets all three directly from `BUGS_TABLE`'s own
+    DDL above -- this function only matters for a database whose `bugs`
+    table predates Stage 9. Checks `information_schema` first, exactly
+    like `_migrate_users_table` and `_ensure_bugs_sprint_column`, so
+    re-running this script is always safe.
+    """
+    if not _column_exists(cursor, "bugs", "time_estimate"):
+        cursor.execute("ALTER TABLE bugs ADD COLUMN time_estimate DECIMAL(10,2) NULL")
+        print("  Added bugs.time_estimate (nullable).")
+
+    if not _column_exists(cursor, "bugs", "time_remaining"):
+        cursor.execute("ALTER TABLE bugs ADD COLUMN time_remaining DECIMAL(10,2) NULL")
+        print("  Added bugs.time_remaining (nullable).")
+
+    if not _column_exists(cursor, "bugs", "fix_version_id"):
+        cursor.execute("ALTER TABLE bugs ADD COLUMN fix_version_id INT NULL")
+        print("  Added bugs.fix_version_id (nullable).")
+
+    if not _constraint_exists(cursor, "bugs", "fk_bugs_fix_version"):
+        cursor.execute(
+            "ALTER TABLE bugs ADD CONSTRAINT fk_bugs_fix_version "
+            "FOREIGN KEY (fix_version_id) REFERENCES versions(id) ON DELETE SET NULL"
+        )
+        print("  Added FK bugs.fix_version_id -> versions.id.")
+
+
 def main() -> int:
     print(f"Creating tables in '{config.DB_NAME}' on "
           f"{config.DB_HOST}:{config.DB_PORT} ...")
@@ -352,6 +472,7 @@ def main() -> int:
         _migrate_users_table(cursor)
         _ensure_bugs_status_default(cursor)
         _ensure_bugs_sprint_column(cursor)
+        _ensure_bugs_stage9_columns(cursor)
         conn.commit()
         cursor.close()
     except mysql.connector.Error as exc:

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Versions · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page page-wide">
+
+  {% include "partials/flashes.html" %}
+
+  <div class="page-head">
+    <h1 class="page-title">Versions</h1>
+    {% if can_manage %}
+      <button type="button" class="btn btn-primary" data-new-version-toggle>+ New Version</button>
+    {% endif %}
+  </div>
+
+  {% if can_manage %}
+  <div class="card new-version-form" data-new-version-form hidden>
+    <h2 class="section-title">New Version</h2>
+    <form method="post" action="{{ url_for('versions.list_versions') }}" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="field">
+        <label class="label" for="version-project">Project</label>
+        <select class="input" id="version-project" name="project_id" required>
+          <option value="">Select a project…</option>
+          {% for p in projects %}
+            <option value="{{ p.id }}">{{ p.project_key }} — {{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="version-name">Name</label>
+        <input class="input" type="text" id="version-name" name="name" maxlength="120" required>
+      </div>
+
+      <div class="field">
+        <label class="label" for="version-release-date">Release Date (optional)</label>
+        <input class="input" type="date" id="version-release-date" name="release_date">
+      </div>
+
+      <button type="submit" class="btn btn-primary">Create Version</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% for entry in versions_by_project %}
+    <div class="card">
+      <h2 class="section-title">
+        <span class="project-key-badge">{{ entry.project.project_key }}</span>
+        {{ entry.project.name }}
+      </h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Release Date</th>
+            <th>Status</th>
+            <th>Open</th>
+            <th>Resolved</th>
+            <th>Total</th>
+            {% if can_manage %}<th></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in entry.versions %}
+          <tr>
+            <td>{{ row.version.name }}</td>
+            <td>{{ row.version.release_date.strftime('%d %b %Y') if row.version.release_date else '—' }}</td>
+            <td><span class="badge version-status-{{ row.version.status }}">{{ row.version.status | capitalize }}</span></td>
+            <td>{{ row.counts.open }}</td>
+            <td>{{ row.counts.resolved }}</td>
+            <td>{{ row.counts.total }}</td>
+            {% if can_manage %}
+            <td class="version-row-actions">
+              {% if row.version.status == 'unreleased' %}
+                <form method="post" action="{{ url_for('versions.release_version', version_id=row.version.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-secondary btn-sm">Release</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{{ url_for('versions.archive_version', version_id=row.version.id) }}"
+                    onsubmit="return confirm('Archive this version? It will be hidden from this list, but issues already assigned to it keep their fix version.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm">Archive</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% else %}
+          <tr><td colspan="{{ 7 if can_manage else 6 }}" class="empty-row">No versions yet for this project.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty-state">Create a project first to add versions.</p>
+  {% endfor %}
+
+</div>
+{% endblock %}

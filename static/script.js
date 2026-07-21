@@ -381,6 +381,213 @@
     });
   }
 
+  /* ------------------------------------------------- Stage 9: versions page */
+
+  function initNewVersionToggle() {
+    var toggle = document.querySelector("[data-new-version-toggle]");
+    var form = document.querySelector("[data-new-version-form]");
+    if (!toggle || !form) return;
+
+    toggle.addEventListener("click", function () {
+      form.hidden = !form.hidden;
+      if (!form.hidden) {
+        var firstField = form.querySelector("input, select, textarea");
+        if (firstField) firstField.focus();
+      }
+    });
+  }
+
+  /* ------------------------------------------------- Stage 9: fields page */
+
+  function initNewFieldToggle() {
+    var toggle = document.querySelector("[data-new-field-toggle]");
+    var form = document.querySelector("[data-new-field-form]");
+    if (!toggle || !form) return;
+
+    toggle.addEventListener("click", function () {
+      form.hidden = !form.hidden;
+      if (!form.hidden) {
+        var firstField = form.querySelector("input, select, textarea");
+        if (firstField) firstField.focus();
+      }
+    });
+  }
+
+  function initFieldTypeOptionsToggle() {
+    var typeSelect = document.querySelector("[data-field-type-select]");
+    var optionsWrap = document.querySelector("[data-field-options-wrap]");
+    if (!typeSelect || !optionsWrap) return;
+
+    function refresh() {
+      optionsWrap.hidden = typeSelect.value !== "dropdown";
+    }
+
+    typeSelect.addEventListener("change", refresh);
+    refresh();
+  }
+
+  /* ------------------------------------------------- Stage 9: automation page */
+
+  function initNewRuleToggle() {
+    var toggle = document.querySelector("[data-new-rule-toggle]");
+    var form = document.querySelector("[data-new-rule-form]");
+    if (!toggle || !form) return;
+
+    toggle.addEventListener("click", function () {
+      form.hidden = !form.hidden;
+      if (!form.hidden) {
+        var firstField = form.querySelector("input, select, textarea");
+        if (firstField) firstField.focus();
+      }
+    });
+  }
+
+  function initConditionRows() {
+    var container = document.querySelector("[data-condition-rows]");
+    var addButton = document.querySelector("[data-add-condition-row]");
+    if (!container || !addButton) return;
+
+    addButton.addEventListener("click", function () {
+      var firstRow = container.querySelector("[data-condition-row]");
+      if (!firstRow) return;
+      var clone = firstRow.cloneNode(true);
+      clone.querySelectorAll("input").forEach(function (input) { input.value = ""; });
+      clone.querySelectorAll("select").forEach(function (select) { select.selectedIndex = 0; });
+      container.appendChild(clone);
+    });
+
+    container.addEventListener("click", function (event) {
+      if (!event.target.matches("[data-remove-condition-row]")) return;
+      var rows = container.querySelectorAll("[data-condition-row]");
+      if (rows.length <= 1) {
+        // Keep at least one row -- just clear it, rather than removing the
+        // only row a submitted rule could attach a condition to.
+        var row = event.target.closest("[data-condition-row]");
+        row.querySelectorAll("input").forEach(function (input) { input.value = ""; });
+        row.querySelectorAll("select").forEach(function (select) { select.selectedIndex = 0; });
+        return;
+      }
+      event.target.closest("[data-condition-row]").remove();
+    });
+  }
+
+  function initActionTypeFields() {
+    var select = document.querySelector("[data-action-type-select]");
+    var fieldGroups = document.querySelectorAll("[data-action-field]");
+    if (!select || !fieldGroups.length) return;
+
+    function refresh() {
+      fieldGroups.forEach(function (group) {
+        group.hidden = group.getAttribute("data-action-field") !== select.value;
+      });
+    }
+
+    select.addEventListener("change", refresh);
+    refresh();
+  }
+
+  /* ------------------------------------------------- Stage 9: dynamic fields */
+  /* Add-issue page only (edit page's project never changes, so its custom
+     fields/fix-version options are rendered server-side once, at load
+     time -- see routes/issue_routes.py::edit_issue). Reloads both the
+     custom-fields list and the Fix Version dropdown via AJAX whenever the
+     selected Project changes, per the spec's explicit instruction. */
+
+  function customFieldInputHtml(field) {
+    var id = "custom_field_" + field.id;
+    var requiredAttr = field.required ? " required" : "";
+    var label = field.name + (field.required ? " *" : "");
+
+    if (field.field_type === "dropdown") {
+      var options = "<option value=\"\">Select…</option>";
+      (field.options || []).forEach(function (option) {
+        options += "<option value=\"" + option + "\">" + option + "</option>";
+      });
+      return (
+        "<div class=\"field\"><label class=\"label\" for=\"" + id + "\">" + label + "</label>" +
+        "<select class=\"input\" id=\"" + id + "\" name=\"" + id + "\"" + requiredAttr + ">" + options + "</select></div>"
+      );
+    }
+    if (field.field_type === "checkbox") {
+      return (
+        "<div class=\"field\"><label class=\"checkbox-line\">" +
+        "<input type=\"checkbox\" id=\"" + id + "\" name=\"" + id + "\"> " + label +
+        "</label></div>"
+      );
+    }
+    var inputType = field.field_type === "number" ? "number" : (field.field_type === "date" ? "date" : "text");
+    return (
+      "<div class=\"field\"><label class=\"label\" for=\"" + id + "\">" + label + "</label>" +
+      "<input class=\"input\" type=\"" + inputType + "\" id=\"" + id + "\" name=\"" + id + "\"" + requiredAttr + "></div>"
+    );
+  }
+
+  function loadCustomFields(projectId) {
+    var container = document.querySelector("[data-custom-fields-container]");
+    var list = document.querySelector("[data-custom-fields-list]");
+    if (!container || !list) return;
+
+    if (!projectId) {
+      container.hidden = true;
+      list.innerHTML = "";
+      return;
+    }
+
+    fetch("/api/fields?project_id=" + encodeURIComponent(projectId), { credentials: "same-origin" })
+      .then(function (response) { return response.json(); })
+      .then(function (fields) {
+        list.innerHTML = fields.map(customFieldInputHtml).join("");
+        container.hidden = fields.length === 0;
+      })
+      .catch(function () {
+        container.hidden = true;
+        list.innerHTML = "";
+      });
+  }
+
+  function loadFixVersions(projectId) {
+    var select = document.querySelector("[data-fix-version-select]");
+    if (!select) return;
+
+    var preselected = select.getAttribute("data-selected") || "";
+
+    if (!projectId) {
+      select.innerHTML = "<option value=\"\">No fix version</option>";
+      return;
+    }
+
+    fetch("/api/versions?project_id=" + encodeURIComponent(projectId), { credentials: "same-origin" })
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        var versions = data.versions || [];
+        var html = "<option value=\"\">No fix version</option>";
+        versions.forEach(function (version) {
+          var selected = String(version.id) === String(preselected) ? " selected" : "";
+          html += "<option value=\"" + version.id + "\"" + selected + ">" + version.name + "</option>";
+        });
+        select.innerHTML = html;
+      })
+      .catch(function () {
+        select.innerHTML = "<option value=\"\">No fix version</option>";
+      });
+  }
+
+  function initDynamicFieldsAndVersions() {
+    var projectSelect = document.querySelector("[data-project-select]");
+    var hasCustomFields = document.querySelector("[data-custom-fields-container]");
+    var hasFixVersion = document.querySelector("[data-fix-version-select]");
+    if (!projectSelect || (!hasCustomFields && !hasFixVersion)) return;
+
+    function refresh() {
+      var projectId = projectSelect.value;
+      loadCustomFields(projectId);
+      loadFixVersions(projectId);
+    }
+
+    projectSelect.addEventListener("change", refresh);
+    if (projectSelect.value) refresh();
+  }
+
   /* ------------------------------------------ register password matching */
   /* Convenience only - services/auth_service.py re-validates on the server. */
 
@@ -430,5 +637,12 @@
     initBacklogSprintSelects();
     initSaveFilterForm();
     initRegisterForm();
+    initNewFieldToggle();
+    initFieldTypeOptionsToggle();
+    initNewVersionToggle();
+    initNewRuleToggle();
+    initConditionRows();
+    initActionTypeFields();
+    initDynamicFieldsAndVersions();
   });
 })();

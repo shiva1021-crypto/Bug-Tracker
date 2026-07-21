@@ -12,12 +12,15 @@ from flask import Flask, render_template, request
 from config import config
 from routes.admin_routes import admin_bp
 from routes.auth_routes import auth_bp
+from routes.automation_routes import automation_bp
 from routes.backlog_routes import backlog_bp
 from routes.board_routes import board_bp
+from routes.field_routes import field_bp
 from routes.filter_routes import filter_bp
 from routes.health_routes import health_bp
 from routes.issue_routes import issue_bp
 from routes.project_routes import project_bp
+from routes.version_routes import version_bp
 from utils.auth import current_user
 from utils.security import CSRF_FORM_FIELD, generate_csrf_token, validate_csrf_token
 
@@ -43,6 +46,9 @@ def create_app() -> Flask:
     app.register_blueprint(board_bp)
     app.register_blueprint(backlog_bp)
     app.register_blueprint(filter_bp)
+    app.register_blueprint(field_bp)
+    app.register_blueprint(automation_bp)
+    app.register_blueprint(version_bp)
 
     @app.errorhandler(404)
     def not_found(_error):

@@ -14,7 +14,17 @@ existed) is distinguishable from the response.
 from flask import Blueprint, abort, flash, redirect, render_template, request, send_from_directory, url_for
 
 from config import config
-from services import filter_service, issue_service, link_service, project_service, workflow_service
+from services import (
+    automation_service,
+    custom_field_service,
+    filter_service,
+    issue_service,
+    link_service,
+    project_service,
+    time_tracking_service,
+    version_service,
+    workflow_service,
+)
 from utils.auth import current_user, login_required
 
 issue_bp = Blueprint("issues", __name__)
@@ -71,9 +81,10 @@ def add_issue():
         )
 
     form = request.form
+    submitted_project_id = form.get("project_id", type=int) or 0
     errors, cleaned = issue_service.validate_issue(
         organization_id=user["organization_id"],
-        project_id=form.get("project_id", type=int) or 0,
+        project_id=submitted_project_id,
         issue_type=form.get("issue_type", ""),
         parent_id_raw=form.get("parent_id", ""),
         title=form.get("title", ""),
@@ -85,6 +96,16 @@ def add_issue():
         labels_raw=form.get("labels", ""),
         story_points_raw=form.get("story_points", ""),
         due_date_raw=form.get("due_date", ""),
+        fix_version_raw=form.get("fix_version_id", ""),
+    )
+
+    # Stage 9: custom field values are validated here (before the issue
+    # exists) but only *persisted* after creation succeeds below --
+    # `custom_field_service.save_values` needs a real issue id to attach
+    # values to, which doesn't exist until `issue_service.create_issue`
+    # returns one.
+    errors.extend(
+        custom_field_service.validate_values(submitted_project_id, user["organization_id"], form)
     )
 
     screenshot_path, screenshot_error = issue_service.validate_and_store_screenshot(
@@ -119,6 +140,7 @@ def add_issue():
                 labels=form.get("labels", ""),
                 story_points=form.get("story_points", ""),
                 due_date=form.get("due_date", ""),
+                selected_fix_version_id=form.get("fix_version_id", ""),
             ),
             400,
         )
@@ -132,6 +154,17 @@ def add_issue():
         return redirect(url_for("projects.list_projects"))
 
     issue_id, issue_key = result
+    custom_field_service.save_values(issue_id, user["organization_id"], project["id"], form)
+
+    created_issue = issue_service.get_issue(issue_id, user["organization_id"])
+    automation_service.execute_automation_rules(
+        organization_id=user["organization_id"],
+        project_id=project["id"],
+        trigger_event="issue_created",
+        context={"issue": created_issue},
+        actor_user_id=user["id"],
+    )
+
     flash(f'Issue "{issue_key}" created.', "success")
     return redirect(url_for("issues.issue_detail", issue_id=issue_id))
 
@@ -158,6 +191,17 @@ def issue_detail(issue_id):
     watcher_count = workflow_service.watcher_count(issue_id)
     links = link_service.list_links(issue_id, user["organization_id"])
 
+    custom_field_values = custom_field_service.list_values_for_issue(issue_id, user["organization_id"])
+
+    time_entries = time_tracking_service.list_entries(issue_id, user["organization_id"])
+    time_spent = time_tracking_service.total_spent(time_entries)
+
+    fix_version = (
+        version_service.get_version(issue["fix_version_id"], user["organization_id"])
+        if issue["fix_version_id"]
+        else None
+    )
+
     return render_template(
         "issues/detail.html",
         issue=issue,
@@ -173,6 +217,10 @@ def issue_detail(issue_id):
         watcher_count=watcher_count,
         links=links,
         link_form_options=link_service.LINK_FORM_OPTIONS,
+        custom_field_values=custom_field_values,
+        time_entries=time_entries,
+        time_spent=time_spent,
+        fix_version=fix_version,
     )
 
 
@@ -189,8 +237,18 @@ def change_status(issue_id):
         flash("You do not have permission to change this issue's status.", "error")
         return redirect(url_for("issues.issue_detail", issue_id=issue_id))
 
+    old_status = issue["status"]
     new_status = request.form.get("status", "")
     ok, error = workflow_service.change_status(issue, new_status, permitted_user)
+    if ok and new_status != old_status:
+        updated_issue = issue_service.get_issue(issue_id, user["organization_id"])
+        automation_service.execute_automation_rules(
+            organization_id=user["organization_id"],
+            project_id=issue["project_id"],
+            trigger_event="status_changed",
+            context={"issue": updated_issue, "old_status": old_status, "new_status": new_status},
+            actor_user_id=permitted_user["id"],
+        )
     flash("Status updated." if ok else (error or "Could not update status."),
           "success" if ok else "error")
     return redirect(url_for("issues.issue_detail", issue_id=issue_id))
@@ -209,10 +267,29 @@ def assign_issue(issue_id):
         flash("You do not have permission to assign this issue.", "error")
         return redirect(url_for("issues.issue_detail", issue_id=issue_id))
 
+    old_status = issue["status"]
     assigned_to_raw = request.form.get("assigned_to", "")
     ok, error = workflow_service.assign_issue(
         issue, assigned_to_raw, permitted_user, user["organization_id"]
     )
+    if ok:
+        # `assign_issue` can auto-transition To Do -> In Progress; only
+        # fire `status_changed` automation when that actually happened,
+        # not on every assignment (a plain reassignment with no status
+        # change should not trigger status-based rules).
+        updated_issue = issue_service.get_issue(issue_id, user["organization_id"])
+        if updated_issue["status"] != old_status:
+            automation_service.execute_automation_rules(
+                organization_id=user["organization_id"],
+                project_id=issue["project_id"],
+                trigger_event="status_changed",
+                context={
+                    "issue": updated_issue,
+                    "old_status": old_status,
+                    "new_status": updated_issue["status"],
+                },
+                actor_user_id=permitted_user["id"],
+            )
     flash("Assignment updated." if ok else (error or "Could not update assignment."),
           "success" if ok else "error")
     return redirect(url_for("issues.issue_detail", issue_id=issue_id))
@@ -295,6 +372,10 @@ def edit_issue(issue_id):
         parent_options = issue_service.list_valid_parents_for(
             user["organization_id"], issue["project_id"], issue["issue_type"], exclude_issue_id=issue_id
         )
+        custom_fields = custom_field_service.list_values_for_issue(issue_id, user["organization_id"])
+        selectable_versions = version_service.list_selectable_versions(
+            issue["project_id"], user["organization_id"]
+        )
         return render_template(
             "issues/edit.html",
             issue=issue,
@@ -311,6 +392,9 @@ def edit_issue(issue_id):
             labels=issue["labels"],
             story_points=issue["story_points"],
             due_date=issue["due_date"].isoformat() if issue["due_date"] else "",
+            custom_fields=custom_fields,
+            selectable_versions=selectable_versions,
+            selected_fix_version_id=issue["fix_version_id"],
         )
 
     form = request.form
@@ -328,7 +412,17 @@ def edit_issue(issue_id):
         labels_raw=form.get("labels", ""),
         story_points_raw=form.get("story_points", ""),
         due_date_raw=form.get("due_date", ""),
+        fix_version_raw=form.get("fix_version_id", ""),
         current_issue_id=issue_id,
+    )
+
+    # Same reasoning as `add_issue`: validate custom field values before
+    # touching the database, so a bad custom field value doesn't leave the
+    # standard fields updated while the custom ones silently didn't save
+    # (or vice versa) -- everything for one edit submission succeeds or
+    # fails together.
+    errors.extend(
+        custom_field_service.validate_values(issue["project_id"], user["organization_id"], form)
     )
 
     remove_screenshot = form.get("remove_screenshot") == "on"
@@ -345,6 +439,10 @@ def edit_issue(issue_id):
             issue_service.delete_screenshot_file(new_screenshot_path)
         parent_options = issue_service.list_valid_parents_for(
             user["organization_id"], issue["project_id"], issue["issue_type"], exclude_issue_id=issue_id
+        )
+        custom_fields = custom_field_service.list_values_for_issue(issue_id, user["organization_id"])
+        selectable_versions = version_service.list_selectable_versions(
+            issue["project_id"], user["organization_id"]
         )
         return (
             render_template(
@@ -363,6 +461,9 @@ def edit_issue(issue_id):
                 labels=form.get("labels", ""),
                 story_points=form.get("story_points", ""),
                 due_date=form.get("due_date", ""),
+                custom_fields=custom_fields,
+                selectable_versions=selectable_versions,
+                selected_fix_version_id=form.get("fix_version_id", ""),
             ),
             400,
         )
@@ -382,7 +483,65 @@ def edit_issue(issue_id):
     if old_path_to_delete:
         issue_service.delete_screenshot_file(old_path_to_delete)
 
+    _errors_ignored, field_changes = custom_field_service.save_values(
+        issue_id, user["organization_id"], issue["project_id"], form
+    )
+
+    if field_changes:
+        updated_issue = issue_service.get_issue(issue_id, user["organization_id"])
+        for change in field_changes:
+            automation_service.execute_automation_rules(
+                organization_id=user["organization_id"],
+                project_id=issue["project_id"],
+                trigger_event="field_updated",
+                context={
+                    "issue": updated_issue,
+                    "field_name": change["field_name"],
+                    "old_value": change["old_value"],
+                    "new_value": change["new_value"],
+                },
+                actor_user_id=user["id"],
+            )
+
     flash(f'Issue "{issue["issue_key"]}" updated.', "success")
+    return redirect(url_for("issues.issue_detail", issue_id=issue_id))
+
+
+@issue_bp.post("/issues/<int:issue_id>/time")
+@login_required
+def log_time(issue_id):
+    user = current_user()
+    issue = issue_service.get_issue(issue_id, user["organization_id"])
+    if issue is None:
+        abort(404)
+
+    ok, error = time_tracking_service.log_time(
+        issue_id, user["id"], request.form.get("hours_spent", ""), request.form.get("description", "")
+    )
+    flash("Time logged." if ok else (error or "Could not log time."), "success" if ok else "error")
+    return redirect(url_for("issues.issue_detail", issue_id=issue_id))
+
+
+@issue_bp.post("/issues/<int:issue_id>/estimate")
+@login_required
+def update_estimate(issue_id):
+    user = current_user()
+    issue = issue_service.get_issue(issue_id, user["organization_id"])
+    if issue is None:
+        abort(404)
+
+    editor = issue_service.get_editor_permission(user["id"], issue)
+    if editor is None:
+        flash("You do not have permission to update this issue's estimate.", "error")
+        return redirect(url_for("issues.issue_detail", issue_id=issue_id))
+
+    ok, error = time_tracking_service.update_estimate(
+        issue_id,
+        user["organization_id"],
+        request.form.get("time_estimate", ""),
+        request.form.get("time_remaining", ""),
+    )
+    flash("Estimate updated." if ok else (error or "Could not update estimate."), "success" if ok else "error")
     return redirect(url_for("issues.issue_detail", issue_id=issue_id))
 
 

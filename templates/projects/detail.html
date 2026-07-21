@@ -13,6 +13,9 @@
     </h1>
     <div class="page-head-actions">
       <a class="btn btn-primary" href="{{ url_for('issues.add_issue', project_id=project.id) }}">+ Create Issue</a>
+      {% if current_user.role in ('admin', 'project_manager') %}
+        <a class="btn btn-secondary" href="{{ url_for('fields.manage_fields', project_id=project.id) }}">Custom Fields</a>
+      {% endif %}
       <a class="btn btn-secondary" href="{{ url_for('projects.list_projects') }}">Back to Projects</a>
     </div>
   </div>

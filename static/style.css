@@ -1224,3 +1224,103 @@ h1, h2, h3 { margin: 0; font-weight: 600; color: var(--text); }
 
 .add-link-type-select { width: auto; }
 .add-link-target-input { flex: 1 1 120px; min-width: 0; }
+
+/* --------------------------------------------------- extensibility (Stage 9) */
+
+/* Custom fields (project fields page + issue form/detail) */
+
+.custom-fields-section .field:last-child { margin-bottom: 0; }
+
+/* Time tracking (issue detail sidebar) */
+
+.time-tracking-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.time-stat {
+  flex: 1 1 0;
+  text-align: center;
+  padding: 10px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.time-stat-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.time-stat-value { display: block; font-size: 18px; font-weight: 600; }
+
+.estimate-form, .log-time-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.time-entry-list { list-style: none; margin: 12px 0 0; padding: 0; }
+
+.time-entry-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.time-entry-row:last-child { border-bottom: 0; }
+
+.time-entry-hours { font-weight: 700; color: var(--accent); flex-shrink: 0; }
+.time-entry-user { font-weight: 600; flex-shrink: 0; }
+.time-entry-desc { flex: 1 1 auto; color: var(--text-muted); }
+.time-entry-timestamp { color: var(--text-muted); font-size: 12px; flex-shrink: 0; margin-left: auto; }
+
+/* Automation rules page */
+
+.condition-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.condition-row .input { flex: 1 1 160px; min-width: 0; }
+
+.rule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.rule-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.rule-card-name { font-size: 15px; margin: 0; }
+
+.rule-enabled  { background: var(--success-soft); color: var(--success); }
+.rule-disabled { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+
+.rule-card-line { margin: 4px 0; font-size: 13px; color: var(--text); }
+.rule-card-line strong { color: var(--text-muted); font-weight: 600; }
+
+.rule-card-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+/* Versions page */
+
+.version-status-unreleased { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+.version-status-released   { background: var(--success-soft); color: var(--success); }
+.version-status-archived   { background: var(--warning-soft); color: var(--warning); }
+
+.version-row-actions { display: flex; gap: 8px; }

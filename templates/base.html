@@ -63,6 +63,12 @@
              href="{{ url_for('backlog.backlog') }}">Backlog</a>
           <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'issues.list_issues' else '' }}"
              href="{{ url_for('issues.list_issues') }}">Issues</a>
+          <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'versions.list_versions' else '' }}"
+             href="{{ url_for('versions.list_versions') }}">Versions</a>
+          {% if current_user.role in ('admin', 'project_manager') %}
+            <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'automation.list_rules' else '' }}"
+               href="{{ url_for('automation.list_rules') }}">Automation</a>
+          {% endif %}
           {% if current_user.role == 'admin' %}
             <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'admin.users_page' else '' }}"
                href="{{ url_for('admin.users_page') }}">Users</a>

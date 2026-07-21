@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Automation · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page page-wide">
+
+  {% include "partials/flashes.html" %}
+
+  <div class="page-head">
+    <h1 class="page-title">Automation Rules</h1>
+    <button type="button" class="btn btn-primary" data-new-rule-toggle>+ New Rule</button>
+  </div>
+
+  <div class="card new-rule-form" data-new-rule-form {{ '' if form_open else 'hidden' }}>
+    <h2 class="section-title">New Rule</h2>
+    <form method="post" action="{{ url_for('automation.list_rules') }}" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="field">
+        <label class="label" for="rule-name">Name</label>
+        <input class="input" type="text" id="rule-name" name="name" value="{{ form.get('name', '') }}" maxlength="150" required autofocus>
+      </div>
+
+      <div class="field">
+        <label class="label" for="rule-scope">Scope</label>
+        <select class="input" id="rule-scope" name="project_id">
+          <option value="">Organization-wide (every project)</option>
+          {% for p in projects %}
+            <option value="{{ p.id }}" {{ "selected" if form.get('project_id') == (p.id | string) else "" }}>{{ p.project_key }} — {{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="rule-trigger">Trigger</label>
+        <select class="input" id="rule-trigger" name="trigger_event" required>
+          {% for t in triggers %}
+            <option value="{{ t }}" {{ "selected" if form.get('trigger_event') == t else "" }}>{{ t | replace('_', ' ') | capitalize }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label">Conditions (optional)</label>
+        <p class="hint">Field is compared against the issue's own data (e.g. <code>status</code>, <code>priority</code>) or the event's own keys (e.g. <code>new_status</code> for Status Changed, <code>field_name</code> for Field Updated).</p>
+        <div data-condition-rows>
+          <div class="condition-row" data-condition-row>
+            <input class="input" type="text" name="condition_field" placeholder="Field (e.g. new_status)">
+            <select class="input" name="condition_operator">
+              {% for op in condition_operators %}
+                <option value="{{ op }}">{{ op | replace('_', ' ') | capitalize }}</option>
+              {% endfor %}
+            </select>
+            <input class="input" type="text" name="condition_value" placeholder="Value (e.g. Testing)">
+            <button type="button" class="btn btn-secondary btn-sm" data-remove-condition-row>Remove</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" data-add-condition-row>+ Add Condition</button>
+      </div>
+
+      <div class="field">
+        <label class="label" for="rule-action-type">Action</label>
+        <select class="input" id="rule-action-type" name="action_type" required data-action-type-select>
+          <option value="">Select an action…</option>
+          {% for a in action_types %}
+            <option value="{{ a }}" {{ "selected" if form.get('action_type') == a else "" }}>{{ a | replace('_', ' ') | capitalize }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field" data-action-field="transition_status" hidden>
+        <label class="label" for="action-status">Target Status</label>
+        <select class="input" id="action-status" name="action_status">
+          {% for s in statuses %}
+            <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field" data-action-field="assign_to" hidden>
+        <label class="label" for="action-user">Assign To</label>
+        <select class="input" id="action-user" name="action_user_id">
+          <option value="">Select a developer…</option>
+          {% for developer in developers %}
+            <option value="{{ developer.id }}">{{ developer.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field" data-action-field="assign_to_role" hidden>
+        <label class="label" for="action-role">Assign To Role</label>
+        <select class="input" id="action-role" name="action_role">
+          {% for role in roles %}
+            <option value="{{ role }}">{{ role_labels.get(role, role) }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint">A random user with this role in the organization is picked when the rule fires.</p>
+      </div>
+
+      <div class="field" data-action-field="add_comment" hidden>
+        <label class="label" for="action-comment">Comment Text</label>
+        <textarea class="input" id="action-comment" name="action_comment_text" rows="3"
+                  placeholder="e.g. {issue_key} moved to {status}">{{ form.get('action_comment_text', '') }}</textarea>
+        <p class="hint">Placeholders: <code>{issue_key}</code>, <code>{title}</code>, <code>{status}</code>, <code>{priority}</code>.</p>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Create Rule</button>
+    </form>
+  </div>
+
+  <div class="rule-grid">
+    {% for rule in rules %}
+      <div class="card rule-card">
+        <div class="rule-card-head">
+          <h2 class="rule-card-name">{{ rule.name }}</h2>
+          <span class="badge {{ 'rule-enabled' if rule.enabled else 'rule-disabled' }}">{{ 'Enabled' if rule.enabled else 'Disabled' }}</span>
+        </div>
+        <p class="rule-card-line"><strong>Scope:</strong> {{ (projects | selectattr('id', 'equalto', rule.project_id) | map(attribute='project_key') | first) if rule.project_id else 'Organization-wide' }}</p>
+        <p class="rule-card-line"><strong>Trigger:</strong> {{ rule.trigger_event | replace('_', ' ') | capitalize }}</p>
+        <p class="rule-card-line"><strong>Condition:</strong> {{ condition_summary(rule) }}</p>
+        <p class="rule-card-line"><strong>Action:</strong> {{ action_summary(rule) }}</p>
+        <div class="rule-card-actions">
+          <form method="post" action="{{ url_for('automation.toggle_rule', rule_id=rule.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-secondary btn-sm">{{ 'Disable' if rule.enabled else 'Enable' }}</button>
+          </form>
+          <form method="post" action="{{ url_for('automation.delete_rule', rule_id=rule.id) }}"
+                onsubmit="return confirm('Delete this automation rule?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <p class="empty-state">No automation rules yet.</p>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

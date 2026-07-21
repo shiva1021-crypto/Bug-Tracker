@@ -102,12 +102,26 @@
         </div>
 
         <div class="field">
+          <label class="label" for="fix_version_id">Fix Version</label>
+          <select class="input" id="fix_version_id" name="fix_version_id" data-fix-version-select
+                  data-selected="{{ selected_fix_version_id or '' }}">
+            <option value="">No fix version</option>
+          </select>
+          <p class="hint">Populated once a Project is selected.</p>
+        </div>
+
+        <div class="field">
           <label class="label" for="screenshot">Screenshot</label>
           <input class="input" type="file" id="screenshot" name="screenshot"
                  accept=".png,.jpg,.jpeg,.gif,.webp" data-screenshot-input>
           <img class="screenshot-preview" data-screenshot-preview hidden alt="Screenshot preview">
         </div>
       </div>
+    </div>
+
+    <div class="card custom-fields-section" data-custom-fields-container hidden>
+      <h2 class="section-title">Custom Fields</h2>
+      <div data-custom-fields-list></div>
     </div>
 
     <button type="submit" class="btn btn-primary">Create Issue</button>

@@ -186,6 +186,10 @@
               {% endif %}
             </dd>
           </div>
+          <div class="detail-row">
+            <dt>Fix Version</dt>
+            <dd>{{ fix_version.name if fix_version else '—' }}</dd>
+          </div>
         </dl>
 
         {% if issue.labels %}
@@ -195,6 +199,89 @@
           {% endfor %}
         </div>
         {% endif %}
+      </div>
+
+      {% if custom_field_values %}
+      <div class="card">
+        <h2 class="section-title">Custom Fields</h2>
+        <dl class="detail-list">
+          {% for field in custom_field_values %}
+            <div class="detail-row">
+              <dt>{{ field.name }}</dt>
+              <dd>
+                {% if field.field_type == 'checkbox' %}
+                  {{ '✓' if field.value == '1' else '✗' }}
+                {% elif field.value is none %}
+                  —
+                {% else %}
+                  {{ field.value }}
+                {% endif %}
+              </dd>
+            </div>
+          {% endfor %}
+        </dl>
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <h2 class="section-title">Time Tracking</h2>
+        <div class="time-tracking-stats">
+          <div class="time-stat">
+            <span class="time-stat-label">Estimate</span>
+            <span class="time-stat-value">{{ issue.time_estimate if issue.time_estimate is not none else '—' }}</span>
+          </div>
+          <div class="time-stat">
+            <span class="time-stat-label">Spent</span>
+            <span class="time-stat-value">{{ time_spent }}</span>
+          </div>
+          <div class="time-stat">
+            <span class="time-stat-label">Remaining</span>
+            <span class="time-stat-value">{{ issue.time_remaining if issue.time_remaining is not none else '—' }}</span>
+          </div>
+        </div>
+
+        {% if can_edit %}
+        <form method="post" action="{{ url_for('issues.update_estimate', issue_id=issue.id) }}" class="estimate-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field">
+            <label class="label" for="time_estimate">Original Estimate (hours)</label>
+            <input class="input" type="number" id="time_estimate" name="time_estimate" min="0" step="0.25"
+                   value="{{ issue.time_estimate if issue.time_estimate is not none else '' }}">
+          </div>
+          <div class="field">
+            <label class="label" for="time_remaining">Remaining (hours)</label>
+            <input class="input" type="number" id="time_remaining" name="time_remaining" min="0" step="0.25"
+                   value="{{ issue.time_remaining if issue.time_remaining is not none else '' }}">
+          </div>
+          <button type="submit" class="btn btn-secondary btn-sm">Update Estimate</button>
+        </form>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('issues.log_time', issue_id=issue.id) }}" class="log-time-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field">
+            <label class="label" for="hours_spent">Log Time (hours)</label>
+            <input class="input" type="number" id="hours_spent" name="hours_spent" min="0.01" step="0.25" required>
+          </div>
+          <div class="field">
+            <label class="label" for="time_entry_description">Description</label>
+            <input class="input" type="text" id="time_entry_description" name="description" placeholder="What did you work on?">
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Log Time</button>
+        </form>
+
+        <ul class="time-entry-list">
+          {% for entry in time_entries %}
+            <li class="time-entry-row">
+              <span class="time-entry-hours">{{ entry.hours_spent }}h</span>
+              <span class="time-entry-user">{{ entry.user_name }}</span>
+              {% if entry.description %}<span class="time-entry-desc">{{ entry.description }}</span>{% endif %}
+              <span class="time-entry-timestamp">{{ entry.logged_at.strftime('%d %b %Y %H:%M') }}</span>
+            </li>
+          {% else %}
+            <li class="empty-state">No time logged yet.</li>
+          {% endfor %}
+        </ul>
       </div>
 
       <div class="card">

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Custom Fields · {{ project.name }} · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page page-wide">
+
+  {% include "partials/flashes.html" %}
+
+  <div class="page-head">
+    <h1 class="page-title">
+      <span class="project-key-badge">{{ project.project_key }}</span>
+      Custom Fields
+    </h1>
+    <div class="page-head-actions">
+      <button type="button" class="btn btn-primary" data-new-field-toggle>+ Add Field</button>
+      <a class="btn btn-secondary" href="{{ url_for('projects.project_detail', project_id=project.id) }}">Back to {{ project.project_key }}</a>
+    </div>
+  </div>
+
+  <div class="card new-field-form" data-new-field-form {{ '' if form_open else 'hidden' }}>
+    <h2 class="section-title">New Field</h2>
+    <form method="post" action="{{ url_for('fields.manage_fields', project_id=project.id) }}" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="field">
+        <label class="label" for="field-name">Name</label>
+        <input class="input" type="text" id="field-name" name="name" value="{{ name or '' }}" maxlength="120" required autofocus>
+      </div>
+
+      <div class="field">
+        <label class="label" for="field-type">Type</label>
+        <select class="input" id="field-type" name="field_type" required data-field-type-select>
+          <option value="">Select a type…</option>
+          {% for ft in field_types %}
+            <option value="{{ ft }}" {{ "selected" if selected_field_type == ft else "" }}>{{ ft | capitalize }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field" data-field-options-wrap {{ '' if selected_field_type == 'dropdown' else 'hidden' }}>
+        <label class="label" for="field-options">Options</label>
+        <textarea class="input" id="field-options" name="options" rows="4" placeholder="One option per line">{{ options or '' }}</textarea>
+        <p class="hint">Dropdown fields need at least 2 options, one per line.</p>
+      </div>
+
+      <label class="checkbox-line">
+        <input type="checkbox" name="required">
+        Required
+      </label>
+
+      <button type="submit" class="btn btn-primary">Add Field</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Existing Fields</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Required</th>
+          <th>Options</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for field in fields %}
+        <tr>
+          <td>{{ field.name }}</td>
+          <td><span class="badge">{{ field.field_type | capitalize }}</span></td>
+          <td>{{ 'Yes' if field.required else 'No' }}</td>
+          <td>{{ (field.options | join(', ')) if field.options else '—' }}</td>
+          <td>
+            <form method="post" action="{{ url_for('fields.delete_field', project_id=project.id, field_id=field.id) }}"
+                  onsubmit="return confirm('Delete this field? Its stored values on every issue will be removed.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="empty-row">No custom fields yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

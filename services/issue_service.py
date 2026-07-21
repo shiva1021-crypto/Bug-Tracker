@@ -22,6 +22,7 @@ from repositories import (
     issue_repository,
     project_repository,
     user_repository,
+    version_repository,
 )
 
 ISSUE_TYPES = ["Epic", "Story", "Task", "Bug", "Subtask"]
@@ -205,6 +206,7 @@ def validate_issue(
     labels_raw: str,
     story_points_raw: str,
     due_date_raw: str,
+    fix_version_raw: str = "",
     current_issue_id: int | None = None,
 ) -> tuple[list[str], dict]:
     """Server-side validation for creating or editing an issue.
@@ -306,6 +308,23 @@ def validate_issue(
         except ValueError:
             errors.append("Enter a valid due date.")
 
+    # --- fix version (Stage 9) -----------------------------------------
+    fix_version_id: int | None = None
+    fix_version_raw = (fix_version_raw or "").strip()
+    if fix_version_raw:
+        try:
+            fix_version_id = int(fix_version_raw)
+        except ValueError:
+            errors.append("Invalid fix version selection.")
+            fix_version_id = None
+
+        if fix_version_id is not None:
+            version = version_repository.get_by_id_and_org(fix_version_id, organization_id)
+            if version is None:
+                errors.append("Selected fix version was not found in your organization.")
+            elif project is not None and version["project_id"] != project["id"]:
+                errors.append("Fix version must belong to the same project as the issue.")
+
     cleaned = {
         "project_id": project["id"] if project else None,
         "issue_type": issue_type,
@@ -319,6 +338,7 @@ def validate_issue(
         "labels": labels,
         "story_points": story_points,
         "due_date": due_date,
+        "fix_version_id": fix_version_id,
     }
     return errors, cleaned
 
@@ -421,6 +441,7 @@ def create_issue(
         labels=cleaned["labels"],
         story_points=cleaned["story_points"],
         due_date=cleaned["due_date"],
+        fix_version_id=cleaned["fix_version_id"],
     )
     if result is not None:
         issue_id, issue_key = result
@@ -459,6 +480,7 @@ def update_issue(
         labels=cleaned["labels"],
         story_points=cleaned["story_points"],
         due_date=cleaned["due_date"],
+        fix_version_id=cleaned["fix_version_id"],
     )
     if updated:
         bug_history_repository.record(

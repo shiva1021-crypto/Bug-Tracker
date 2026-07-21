@@ -45,11 +45,13 @@ def get_detail_by_id_and_org(issue_id: int, organization_id: int) -> dict | None
                        p.project_key   AS project_key,
                        p.name          AS project_name,
                        u.full_name     AS reporter_name,
+                       assignee.full_name AS assigned_to_name,
                        parent.issue_key AS parent_issue_key,
                        parent.title     AS parent_title
                 FROM bugs b
                 JOIN projects p ON p.id = b.project_id
                 JOIN users u ON u.id = b.reporter_id
+                LEFT JOIN users assignee ON assignee.id = b.assigned_to
                 LEFT JOIN bugs parent ON parent.id = b.parent_id
                 WHERE b.id = %s AND b.organization_id = %s
                 """,
@@ -216,6 +218,41 @@ def update(
                     priority, severity, screenshot_path, labels, story_points,
                     due_date, issue_id, organization_id,
                 ),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            cursor.close()
+
+
+def update_status(issue_id: int, organization_id: int, new_status: str) -> bool:
+    """Update only the status column. `updated_at` refreshes automatically."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE bugs SET status = %s WHERE id = %s AND organization_id = %s",
+                (new_status, issue_id, organization_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            cursor.close()
+
+
+def update_assignment(
+    issue_id: int, organization_id: int, assigned_to: int | None, status: str
+) -> bool:
+    """Update assignment, and (per the auto-transition rule) status in the
+    same statement -- caller decides the new status; this just persists both
+    atomically in one UPDATE so they can never be out of sync."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE bugs SET assigned_to = %s, status = %s "
+                "WHERE id = %s AND organization_id = %s",
+                (assigned_to, status, issue_id, organization_id),
             )
             conn.commit()
             return cursor.rowcount > 0

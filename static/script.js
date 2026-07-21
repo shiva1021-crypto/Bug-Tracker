@@ -151,6 +151,18 @@
     });
   }
 
+  /* -------------------------------------------------------- history panel */
+
+  function initHistoryToggle() {
+    var toggle = document.querySelector("[data-history-toggle]");
+    var list = document.querySelector("[data-history-list]");
+    if (!toggle || !list) return;
+
+    toggle.addEventListener("click", function () {
+      list.hidden = !list.hidden;
+    });
+  }
+
   /* ------------------------------------------ register password matching */
   /* Convenience only - services/auth_service.py re-validates on the server. */
 
@@ -192,6 +204,7 @@
     initNewProjectToggle();
     initParentFilter();
     initScreenshotPreview();
+    initHistoryToggle();
     initRegisterForm();
   });
 })();

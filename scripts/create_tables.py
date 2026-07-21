@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS bugs (
     category            VARCHAR(80) NOT NULL DEFAULT 'General',
     priority            ENUM('Low','Medium','High','Critical') NOT NULL DEFAULT 'Medium',
     severity            ENUM('Minor','Major','Critical','Blocker') NOT NULL DEFAULT 'Minor',
-    status              VARCHAR(50) NOT NULL DEFAULT 'To Do',
+    status              VARCHAR(50) NOT NULL DEFAULT 'Idea',
     reporter_id         INT NOT NULL,
     assigned_to         INT NULL,
     screenshot_path     VARCHAR(255),
@@ -111,9 +111,50 @@ CREATE TABLE IF NOT EXISTS bugs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 """
 
+COMMENTS_TABLE = """
+CREATE TABLE IF NOT EXISTS comments (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    bug_id     INT NOT NULL,
+    user_id    INT NOT NULL,
+    comment    TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_comments_bug FOREIGN KEY (bug_id) REFERENCES bugs(id) ON DELETE CASCADE,
+    CONSTRAINT fk_comments_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+BUG_HISTORY_TABLE = """
+CREATE TABLE IF NOT EXISTS bug_history (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    bug_id           INT NOT NULL,
+    changed_by       INT NOT NULL,
+    old_status       VARCHAR(50),
+    new_status       VARCHAR(50),
+    old_assigned_to  INT,
+    new_assigned_to  INT,
+    change_note      VARCHAR(255),
+    changed_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_bug_history_bug FOREIGN KEY (bug_id) REFERENCES bugs(id) ON DELETE CASCADE,
+    CONSTRAINT fk_bug_history_changed_by FOREIGN KEY (changed_by) REFERENCES users(id),
+    CONSTRAINT fk_bug_history_old_assigned FOREIGN KEY (old_assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT fk_bug_history_new_assigned FOREIGN KEY (new_assigned_to) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+ISSUE_WATCHERS_TABLE = """
+CREATE TABLE IF NOT EXISTS issue_watchers (
+    bug_id  INT NOT NULL,
+    user_id INT NOT NULL,
+    PRIMARY KEY (bug_id, user_id),
+    CONSTRAINT fk_issue_watchers_bug FOREIGN KEY (bug_id) REFERENCES bugs(id) ON DELETE CASCADE,
+    CONSTRAINT fk_issue_watchers_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
 # Order matters: organizations before users/projects/registration_requests,
 # and projects + users before bugs (bugs FKs to both, plus to itself for
-# parent_id). users is created here only for a brand-new database; on an
+# parent_id); bugs before comments/bug_history/issue_watchers (all three FK
+# to it). users is created here only for a brand-new database; on an
 # existing Stage-2 database this is a no-op and _migrate_users_table()
 # below handles adding the new columns.
 STATEMENTS = [
@@ -122,6 +163,9 @@ STATEMENTS = [
     ("registration_requests", REGISTRATION_REQUESTS_TABLE),
     ("projects", PROJECTS_TABLE),
     ("bugs", BUGS_TABLE),
+    ("comments", COMMENTS_TABLE),
+    ("bug_history", BUG_HISTORY_TABLE),
+    ("issue_watchers", ISSUE_WATCHERS_TABLE),
 ]
 
 
@@ -199,6 +243,21 @@ def _migrate_users_table(cursor) -> None:
         print("  Added FK users.organization_id -> organizations.id.")
 
 
+def _ensure_bugs_status_default(cursor) -> None:
+    """Change bugs.status's column default from Stage 5's 'To Do' to 'Idea'.
+
+    Stage 5 left the exact default ambiguous ("'Idea' or 'To Do'") and chose
+    'To Do'. Stage 6 defines the canonical five-status order starting at
+    'Idea', which supersedes that choice -- see STAGE-06-REPORT.md. Safe to
+    re-run: setting a column default to the same value twice is a no-op.
+    New issues get their status from `issue_service.DEFAULT_STATUS` at
+    insert time regardless, so this ALTER is really just keeping the
+    schema's own documentation (and any manual/direct SQL insert) honest.
+    """
+    cursor.execute("ALTER TABLE bugs ALTER COLUMN status SET DEFAULT 'Idea'")
+    print("  bugs.status default is now 'Idea' (was 'To Do' in Stage 5).")
+
+
 def main() -> int:
     print(f"Creating tables in '{config.DB_NAME}' on "
           f"{config.DB_HOST}:{config.DB_PORT} ...")
@@ -218,6 +277,7 @@ def main() -> int:
             cursor.execute(ddl)
             print(f"  Table '{name}' is ready.")
         _migrate_users_table(cursor)
+        _ensure_bugs_status_default(cursor)
         conn.commit()
         cursor.close()
     except mysql.connector.Error as exc:

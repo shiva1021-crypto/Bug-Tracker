@@ -23,8 +23,32 @@
   <div class="issue-detail-badges">
     <span class="badge priority-{{ issue.priority | lower }}">Priority: {{ issue.priority }}</span>
     <span class="badge severity-{{ issue.severity | lower }}">Severity: {{ issue.severity }}</span>
-    <span class="badge status-badge">{{ issue.status }}</span>
+    <span class="badge status-badge status-{{ issue.status | lower | replace(' ', '-') }}">{{ issue.status }}</span>
+
+    <form method="post" action="{{ url_for('issues.toggle_watch', issue_id=issue.id) }}" class="watch-toggle-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="watch-toggle {{ 'watch-toggle-active' if watching else '' }}" title="{{ 'Stop watching' if watching else 'Watch this issue' }}">
+        <span class="watch-toggle-icon" aria-hidden="true">{{ '●' if watching else '○' }}</span>
+        <span class="watch-toggle-label">{{ 'Watching' if watching else 'Watch' }}</span>
+        <span class="watch-toggle-count">{{ watcher_count }}</span>
+      </button>
+    </form>
   </div>
+
+  {% if can_change_status %}
+  <div class="card status-control-card">
+    <h2 class="section-title">Change Status</h2>
+    <form method="post" action="{{ url_for('issues.change_status', issue_id=issue.id) }}" class="status-control-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <select name="status" class="input status-select">
+        {% for status_option in statuses %}
+          <option value="{{ status_option }}" {{ 'selected' if status_option == issue.status else '' }}>{{ status_option }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm">Update Status</button>
+    </form>
+  </div>
+  {% endif %}
 
   <div class="issue-detail-grid">
     <div class="issue-detail-main">
@@ -46,11 +70,96 @@
         <img class="issue-screenshot" src="{{ url_for('issues.issue_screenshot', issue_id=issue.id) }}" alt="Issue screenshot">
       </div>
       {% endif %}
+
+      <div class="card">
+        <h2 class="section-title">Comments</h2>
+        <form method="post" action="{{ url_for('issues.add_comment', issue_id=issue.id) }}" class="comment-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field">
+            <textarea class="input" name="comment" rows="3" placeholder="Add a comment…" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Comment</button>
+        </form>
+
+        <ul class="comment-list">
+          {% for comment in comments %}
+            <li class="comment-item">
+              <span class="avatar" aria-hidden="true">{{ comment.author_name[0] | upper }}</span>
+              <div class="comment-body">
+                <div class="comment-meta">
+                  <span class="comment-author">{{ comment.author_name }}</span>
+                  <span class="comment-timestamp">{{ comment.created_at.strftime('%d %b %Y %H:%M') }}</span>
+                </div>
+                <p class="comment-text">{{ comment.comment }}</p>
+              </div>
+            </li>
+          {% else %}
+            <li class="empty-state">No comments yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="card">
+        <button type="button" class="history-toggle" data-history-toggle>
+          <h2 class="section-title history-toggle-title">History</h2>
+        </button>
+        <ul class="history-list" data-history-list hidden>
+          {% for entry in history %}
+            <li class="history-item">
+              <span class="history-text">
+                <strong>{{ entry.changed_by_name }}</strong>
+                {% if entry.change_note %}
+                  {{ entry.change_note }}
+                {% elif entry.old_status and entry.new_status %}
+                  changed status from {{ entry.old_status }} to {{ entry.new_status }}
+                {% elif entry.new_assigned_to_name %}
+                  assigned to {{ entry.new_assigned_to_name }}
+                {% elif entry.old_assigned_to_name %}
+                  unassigned {{ entry.old_assigned_to_name }}
+                {% endif %}
+              </span>
+              <span class="history-timestamp">{{ entry.changed_at.strftime('%d %b %Y %H:%M') }}</span>
+            </li>
+          {% else %}
+            <li class="empty-state">No history yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
     </div>
 
     <div class="issue-detail-side">
       <div class="card">
         <dl class="detail-list">
+          <div class="detail-row">
+            <dt>Assignee</dt>
+            <dd>
+              <span class="assignee-display">
+                {% if issue.assigned_to_name %}
+                  <span class="avatar" aria-hidden="true">{{ issue.assigned_to_name[0] | upper }}</span>
+                  {{ issue.assigned_to_name }}
+                {% else %}
+                  <span class="text-muted">Unassigned</span>
+                {% endif %}
+              </span>
+            </dd>
+          </div>
+          {% if can_assign %}
+          <div class="detail-row">
+            <dt>Reassign</dt>
+            <dd>
+              <form method="post" action="{{ url_for('issues.assign_issue', issue_id=issue.id) }}" class="assign-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="assigned_to" class="input assign-select">
+                  <option value="">Unassigned</option>
+                  {% for developer in assignable_developers %}
+                    <option value="{{ developer.id }}" {{ 'selected' if developer.id == issue.assigned_to else '' }}>{{ developer.full_name }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-secondary btn-sm">Assign</button>
+              </form>
+            </dd>
+          </div>
+          {% endif %}
           <div class="detail-row">
             <dt>Reporter</dt>
             <dd>{{ issue.reporter_name }}</dd>

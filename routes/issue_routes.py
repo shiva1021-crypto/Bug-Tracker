@@ -14,7 +14,7 @@ existed) is distinguishable from the response.
 from flask import Blueprint, abort, flash, redirect, render_template, request, send_from_directory, url_for
 
 from config import config
-from services import issue_service, project_service
+from services import issue_service, project_service, workflow_service
 from utils.auth import current_user, login_required
 
 issue_bp = Blueprint("issues", __name__)
@@ -114,9 +114,100 @@ def issue_detail(issue_id):
 
     editor = issue_service.get_editor_permission(user["id"], issue)
     children = issue_service.list_children(issue_id, user["organization_id"])
-    return render_template(
-        "issues/detail.html", issue=issue, children=children, can_edit=editor is not None
+
+    can_change_status = workflow_service.can_update_status(user["id"], issue) is not None
+    can_assign = workflow_service.can_assign(user["id"]) is not None
+    assignable_developers = (
+        workflow_service.list_assignable_developers(user["organization_id"]) if can_assign else []
     )
+    comments = workflow_service.list_comments(issue_id, user["organization_id"])
+    history = workflow_service.list_history(issue_id, user["organization_id"])
+    watching = workflow_service.is_watching(issue_id, user["id"])
+    watcher_count = workflow_service.watcher_count(issue_id)
+
+    return render_template(
+        "issues/detail.html",
+        issue=issue,
+        children=children,
+        can_edit=editor is not None,
+        statuses=workflow_service.STATUSES,
+        can_change_status=can_change_status,
+        can_assign=can_assign,
+        assignable_developers=assignable_developers,
+        comments=comments,
+        history=history,
+        watching=watching,
+        watcher_count=watcher_count,
+    )
+
+
+@issue_bp.post("/issues/<int:issue_id>/status")
+@login_required
+def change_status(issue_id):
+    user = current_user()
+    issue = issue_service.get_issue(issue_id, user["organization_id"])
+    if issue is None:
+        abort(404)
+
+    permitted_user = workflow_service.can_update_status(user["id"], issue)
+    if permitted_user is None:
+        flash("You do not have permission to change this issue's status.", "error")
+        return redirect(url_for("issues.issue_detail", issue_id=issue_id))
+
+    new_status = request.form.get("status", "")
+    ok, error = workflow_service.change_status(issue, new_status, permitted_user)
+    flash("Status updated." if ok else (error or "Could not update status."),
+          "success" if ok else "error")
+    return redirect(url_for("issues.issue_detail", issue_id=issue_id))
+
+
+@issue_bp.post("/issues/<int:issue_id>/assign")
+@login_required
+def assign_issue(issue_id):
+    user = current_user()
+    issue = issue_service.get_issue(issue_id, user["organization_id"])
+    if issue is None:
+        abort(404)
+
+    permitted_user = workflow_service.can_assign(user["id"])
+    if permitted_user is None:
+        flash("You do not have permission to assign this issue.", "error")
+        return redirect(url_for("issues.issue_detail", issue_id=issue_id))
+
+    assigned_to_raw = request.form.get("assigned_to", "")
+    ok, error = workflow_service.assign_issue(
+        issue, assigned_to_raw, permitted_user, user["organization_id"]
+    )
+    flash("Assignment updated." if ok else (error or "Could not update assignment."),
+          "success" if ok else "error")
+    return redirect(url_for("issues.issue_detail", issue_id=issue_id))
+
+
+@issue_bp.post("/issues/<int:issue_id>/comment")
+@login_required
+def add_comment(issue_id):
+    user = current_user()
+    issue = issue_service.get_issue(issue_id, user["organization_id"])
+    if issue is None:
+        abort(404)
+
+    text = request.form.get("comment", "")
+    ok, error = workflow_service.add_comment(issue_id, user["id"], text)
+    if not ok:
+        flash(error or "Could not add comment.", "error")
+    return redirect(url_for("issues.issue_detail", issue_id=issue_id))
+
+
+@issue_bp.post("/issues/<int:issue_id>/watch")
+@login_required
+def toggle_watch(issue_id):
+    user = current_user()
+    issue = issue_service.get_issue(issue_id, user["organization_id"])
+    if issue is None:
+        abort(404)
+
+    workflow_service.toggle_watch(issue_id, user["id"])
+    return redirect(url_for("issues.issue_detail", issue_id=issue_id))
 
 
 @issue_bp.route("/issues/<int:issue_id>/edit", methods=["GET", "POST"])
@@ -217,7 +308,9 @@ def edit_issue(issue_id):
         old_path_to_delete = issue["screenshot_path"]
         final_screenshot_path = None
 
-    issue_service.update_issue(issue_id, user["organization_id"], cleaned, final_screenshot_path)
+    issue_service.update_issue(
+        issue_id, user["organization_id"], cleaned, final_screenshot_path, user["id"]
+    )
     if old_path_to_delete:
         issue_service.delete_screenshot_file(old_path_to_delete)
 

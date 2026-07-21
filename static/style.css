@@ -692,3 +692,121 @@ h1, h2, h3 { margin: 0; font-weight: 600; color: var(--text); }
 @media (max-width: 860px) {
   .issue-form-grid, .issue-detail-grid { grid-template-columns: 1fr; }
 }
+
+/* ------------------------------------------------------- workflow (Stage 6) */
+
+.text-muted { color: var(--text-muted); }
+
+/* Per-status badge colors, per the spec's suggested palette. Slugified via
+   `status | lower | replace(' ', '-')` in the template, so this must stay
+   in sync with workflow_service.STATUSES. */
+.status-idea         { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+.status-to-do         { background: var(--accent-soft); color: var(--accent); }
+.status-in-progress   { background: var(--warning-soft); color: var(--warning); }
+.status-testing       { background: var(--purple-soft); color: var(--purple); }
+.status-done          { background: var(--success-soft); color: var(--success); }
+
+.status-control-card { margin-bottom: 20px; }
+
+.status-control-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-select, .assign-select { width: auto; flex: 0 0 auto; }
+
+.watch-toggle-form { display: inline-block; margin-left: auto; }
+
+.watch-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.watch-toggle:hover { background: var(--bg); }
+.watch-toggle-active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+.watch-toggle-icon { font-size: 13px; line-height: 1; }
+
+.watch-toggle-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.watch-toggle-active .watch-toggle-count { background: var(--accent-soft); color: var(--accent); }
+
+.assign-form { display: flex; align-items: center; gap: 8px; }
+
+.assignee-display { display: inline-flex; align-items: center; gap: 8px; }
+
+/* --------------------------------------------------------------- comments -- */
+
+.comment-form { margin-bottom: 16px; }
+
+.comment-list { list-style: none; margin: 0; padding: 0; }
+
+.comment-item {
+  display: flex;
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.comment-item:last-child { border-bottom: 0; }
+
+.comment-body { flex: 1 1 auto; min-width: 0; }
+
+.comment-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.comment-author { font-weight: 600; font-size: 13px; }
+.comment-timestamp { font-size: 12px; color: var(--text-muted); }
+.comment-text { margin: 0; white-space: pre-wrap; }
+
+/* ---------------------------------------------------------------- history -- */
+
+.history-toggle {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-toggle-title { margin-bottom: 0; }
+
+.history-list { list-style: none; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--border); }
+.history-list[hidden] { display: none; }
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.history-item:last-child { border-bottom: 0; }
+
+.history-timestamp { color: var(--text-muted); font-size: 12px; white-space: nowrap; }

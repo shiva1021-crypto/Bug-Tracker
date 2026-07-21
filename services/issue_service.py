@@ -17,7 +17,12 @@ from datetime import date, datetime
 from PIL import Image, UnidentifiedImageError
 
 from config import config
-from repositories import issue_repository, project_repository, user_repository
+from repositories import (
+    bug_history_repository,
+    issue_repository,
+    project_repository,
+    user_repository,
+)
 
 ISSUE_TYPES = ["Epic", "Story", "Task", "Bug", "Subtask"]
 
@@ -52,7 +57,7 @@ SEVERITIES = ["Minor", "Major", "Critical", "Blocker"]
 DEFAULT_SEVERITY = "Minor"
 
 DEFAULT_CATEGORY = "General"
-DEFAULT_STATUS = "To Do"
+DEFAULT_STATUS = "Idea"
 
 MAX_TITLE_LENGTH = 255
 MAX_CATEGORY_LENGTH = 80
@@ -389,7 +394,7 @@ def create_issue(
     """Create an issue. Assumes `validate_issue` has already passed and
     `project` is the same organization-scoped project row it validated
     against."""
-    return issue_repository.create(
+    result = issue_repository.create(
         organization_id=organization_id,
         project_id=project["id"],
         project_key=project["project_key"],
@@ -408,13 +413,30 @@ def create_issue(
         story_points=cleaned["story_points"],
         due_date=cleaned["due_date"],
     )
+    if result is not None:
+        issue_id, issue_key = result
+        # Stage 6: "every ... significant field edit is recorded in a
+        # history/audit table" -- creation is the first such entry. Modeled
+        # as a change_note-only row (no old/new status or assignment) so the
+        # history panel renders it as a plain sentence, matching the spec's
+        # own example note text ("Bug WEB-3 created").
+        bug_history_repository.record(
+            bug_id=issue_id,
+            changed_by=reporter_id,
+            change_note=f"created the issue ({issue_key})",
+        )
+    return result
 
 
 def update_issue(
-    issue_id: int, organization_id: int, cleaned: dict, screenshot_path: str | None
+    issue_id: int,
+    organization_id: int,
+    cleaned: dict,
+    screenshot_path: str | None,
+    changed_by_user_id: int,
 ) -> bool:
     """Update an issue. Assumes `validate_issue` has already passed."""
-    return issue_repository.update(
+    updated = issue_repository.update(
         issue_id=issue_id,
         organization_id=organization_id,
         parent_id=cleaned["parent_id"],
@@ -429,3 +451,10 @@ def update_issue(
         story_points=cleaned["story_points"],
         due_date=cleaned["due_date"],
     )
+    if updated:
+        bug_history_repository.record(
+            bug_id=issue_id,
+            changed_by=changed_by_user_id,
+            change_note="edited the issue",
+        )
+    return updated

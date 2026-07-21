@@ -14,7 +14,7 @@ _COLUMNS = (
     "id, organization_id, project_id, issue_key, issue_type, parent_id, "
     "title, description, reproduction_steps, category, priority, severity, "
     "status, reporter_id, assigned_to, screenshot_path, labels, "
-    "story_points, due_date, created_at, updated_at"
+    "story_points, due_date, sprint_id, created_at, updated_at"
 )
 
 
@@ -289,5 +289,133 @@ def update_assignment(
             )
             conn.commit()
             return cursor.rowcount > 0
+        finally:
+            cursor.close()
+
+
+def get_by_key_and_org(issue_key: str, organization_id: int) -> dict | None:
+    """Look up an issue by its human-facing key (e.g. "WEB-12"), scoped to
+    one organization. Used by Stage 8's issue-linking form, which lets a
+    user type a target issue's key rather than pick from a list."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                f"SELECT {_COLUMNS} FROM bugs WHERE issue_key = %s AND organization_id = %s",
+                (issue_key, organization_id),
+            )
+            return cursor.fetchone()
+        finally:
+            cursor.close()
+
+
+def list_backlog_issues(organization_id: int, project_id: int) -> list[dict]:
+    """Every issue in one project not yet assigned to a sprint -- the
+    Stage 8 backlog. Unlike the Stage 7 board, this is not restricted to
+    any particular status: backlog grooming happens before an issue is
+    anywhere near "Done", so every status (including "Idea") belongs
+    here."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                """
+                SELECT id, issue_key, issue_type, title, status, priority, story_points
+                FROM bugs
+                WHERE organization_id = %s AND project_id = %s AND sprint_id IS NULL
+                ORDER BY created_at ASC
+                """,
+                (organization_id, project_id),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
+def list_by_sprint(sprint_id: int, organization_id: int) -> list[dict]:
+    """Every issue currently assigned to one sprint -- used to render a
+    sprint's section on the backlog page and to compute its burndown."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                """
+                SELECT id, issue_key, issue_type, title, status, priority, story_points
+                FROM bugs
+                WHERE organization_id = %s AND sprint_id = %s
+                ORDER BY created_at ASC
+                """,
+                (organization_id, sprint_id),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
+def update_sprint(issue_id: int, organization_id: int, sprint_id: int | None) -> bool:
+    """Move an issue into a sprint, or back to the backlog (`sprint_id=None`)."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE bugs SET sprint_id = %s WHERE id = %s AND organization_id = %s",
+                (sprint_id, issue_id, organization_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            cursor.close()
+
+
+def search_issues(organization_id: int, filters: dict) -> list[dict]:
+    """The Stage 8 issue list/search page's query.
+
+    `filters` may contain any of `project_id`, `status`, `priority`,
+    `assigned_to`, `issue_type` -- each present key adds one `AND column =
+    %s` clause; an absent key means "don't filter on this dimension at
+    all". `assigned_to` also accepts the literal string `"unassigned"`,
+    translated to `IS NULL` rather than an equality comparison. Built this
+    way (conditions/params assembled in Python, still fully parameterized)
+    rather than as several near-duplicate queries, since the whole point
+    of a filter page is that any subset of these can be combined.
+    """
+    conditions = ["b.organization_id = %s"]
+    params: list = [organization_id]
+
+    if filters.get("project_id"):
+        conditions.append("b.project_id = %s")
+        params.append(filters["project_id"])
+    if filters.get("status"):
+        conditions.append("b.status = %s")
+        params.append(filters["status"])
+    if filters.get("priority"):
+        conditions.append("b.priority = %s")
+        params.append(filters["priority"])
+    if filters.get("issue_type"):
+        conditions.append("b.issue_type = %s")
+        params.append(filters["issue_type"])
+    if filters.get("assigned_to"):
+        if filters["assigned_to"] == "unassigned":
+            conditions.append("b.assigned_to IS NULL")
+        else:
+            conditions.append("b.assigned_to = %s")
+            params.append(filters["assigned_to"])
+
+    query = (
+        "SELECT b.id, b.issue_key, b.issue_type, b.title, b.status, b.priority, "
+        "       b.story_points, p.project_key AS project_key, "
+        "       assignee.full_name AS assigned_to_name "
+        "FROM bugs b "
+        "JOIN projects p ON p.id = b.project_id "
+        "LEFT JOIN users assignee ON assignee.id = b.assigned_to "
+        "WHERE " + " AND ".join(conditions) + " "
+        "ORDER BY b.created_at DESC"
+    )
+
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(query, tuple(params))
+            return cursor.fetchall()
         finally:
             cursor.close()

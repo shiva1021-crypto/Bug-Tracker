@@ -197,6 +197,36 @@
         {% endif %}
       </div>
 
+      <div class="card">
+        <h2 class="section-title">Linked Issues</h2>
+        <ul class="linked-issue-list">
+          {% for link in links %}
+            <li class="linked-issue-row">
+              <span class="linked-issue-label">{{ link.label }}</span>
+              <a href="{{ url_for('issues.issue_detail', issue_id=link.other_issue_id) }}" class="linked-issue-key">{{ link.other_issue_key }}</a>
+              <span class="linked-issue-title">{{ link.other_issue_title }}</span>
+              <form method="post" action="{{ url_for('issues.remove_link', issue_id=issue.id, link_id=link.id) }}" class="linked-issue-remove-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="linked-issue-remove-btn" title="Remove link">&times;</button>
+              </form>
+            </li>
+          {% else %}
+            <li class="empty-state">No linked issues yet.</li>
+          {% endfor %}
+        </ul>
+
+        <form method="post" action="{{ url_for('issues.add_link', issue_id=issue.id) }}" class="add-link-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="link_type" class="input add-link-type-select">
+            {% for value, label, a_is_current, link_type in link_form_options %}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+          <input type="text" name="target_key" class="input add-link-target-input" placeholder="Issue key (e.g. WEB-12)" required>
+          <button type="submit" class="btn btn-secondary btn-sm">Add Link</button>
+        </form>
+      </div>
+
       {% if children %}
       <div class="card">
         <h2 class="section-title">Child Issues</h2>

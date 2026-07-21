@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Backlog · Bug Tracker{% endblock %}
+{% block main_class %}app-main-board{% endblock %}
+
+{% block content %}
+<div class="board-page">
+
+  {% include "partials/flashes.html" %}
+
+  <div class="board-topbar">
+    <form method="get" action="{{ url_for('backlog.backlog') }}" class="board-filter-form">
+      <div class="board-filter-field">
+        <label class="label" for="backlog-project">Project</label>
+        <select id="backlog-project" name="project" class="input board-select" onchange="this.form.submit()">
+          {% for p in projects %}
+            <option value="{{ p.id }}" {{ 'selected' if selected_project and p.id == selected_project.id else '' }}>{{ p.project_key }} — {{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+
+    {% if can_manage and selected_project %}
+      <button type="button" class="btn btn-secondary btn-sm" data-new-sprint-toggle>+ New Sprint</button>
+    {% endif %}
+  </div>
+
+  {% if not projects %}
+    <p class="empty-state">Create a project first to use the backlog.</p>
+  {% elif not selected_project %}
+    <p class="empty-state">Select a project to see its backlog.</p>
+  {% else %}
+
+    {% if can_manage %}
+      <div class="card new-sprint-form" data-new-sprint-form hidden>
+        <h2 class="section-title">New Sprint</h2>
+        <form method="post" action="{{ url_for('backlog.create_sprint') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="project_id" value="{{ selected_project.id }}">
+          <div class="field">
+            <label class="label" for="new-sprint-name">Name</label>
+            <input class="input" id="new-sprint-name" name="name" required>
+          </div>
+          <div class="field">
+            <label class="label" for="new-sprint-goal">Goal (optional)</label>
+            <textarea class="input" id="new-sprint-goal" name="goal" rows="2"></textarea>
+          </div>
+          <div class="sprint-date-row">
+            <div class="field">
+              <label class="label" for="new-sprint-start">Start Date</label>
+              <input class="input" type="date" id="new-sprint-start" name="start_date">
+            </div>
+            <div class="field">
+              <label class="label" for="new-sprint-end">End Date</label>
+              <input class="input" type="date" id="new-sprint-end" name="end_date">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Create Sprint</button>
+        </form>
+      </div>
+    {% endif %}
+
+    <div class="card backlog-card">
+      <h2 class="section-title">Backlog</h2>
+      <ul class="backlog-list">
+        {% for issue in backlog_issues %}
+          <li class="backlog-row">
+            <span class="board-card-key">{{ issue.issue_key }}</span>
+            <span class="type-badge type-{{ issue.issue_type | lower }}">{{ issue.issue_type }}</span>
+            <span class="backlog-row-title">{{ issue.title }}</span>
+            <span class="badge priority-{{ issue.priority | lower }}">{{ issue.priority }}</span>
+            {% if issue.story_points is not none %}
+              <span class="board-points-badge">{{ issue.story_points }}</span>
+            {% endif %}
+            {% if can_manage %}
+              <form method="post" action="{{ url_for('backlog.assign_sprint', issue_id=issue.id) }}" class="backlog-move-form" data-backlog-move-form>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="sprint_id" class="input backlog-sprint-select" data-backlog-sprint-select>
+                  <option value="">Move to sprint…</option>
+                  {% for section in sprint_sections %}
+                    {% if section.sprint.status != 'closed' %}
+                      <option value="{{ section.sprint.id }}">{{ section.sprint.name }}</option>
+                    {% endif %}
+                  {% endfor %}
+                  <option value="__new__">+ New Sprint</option>
+                </select>
+                <button type="submit" class="btn btn-secondary btn-sm">Move</button>
+              </form>
+            {% endif %}
+          </li>
+        {% else %}
+          <li class="empty-state">No unsprinted issues in this project.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="sprint-sections">
+      {% for section in sprint_sections %}
+        <details class="card sprint-section" {{ 'open' if section.sprint.status == 'active' else '' }}>
+          <summary class="sprint-section-summary">
+            <span class="sprint-section-name">{{ section.sprint.name }}</span>
+            <span class="badge sprint-status-badge sprint-status-{{ section.sprint.status }}">{{ section.sprint.status | capitalize }}</span>
+            <span class="sprint-section-points">{{ section.points_total }} pts</span>
+            <span class="sprint-section-count">{{ section.issues | length }} issue{{ '' if section.issues | length == 1 else 's' }}</span>
+          </summary>
+
+          <div class="sprint-section-body">
+            {% if section.sprint.goal %}
+              <p class="sprint-goal">{{ section.sprint.goal }}</p>
+            {% endif %}
+            {% if section.sprint.start_date and section.sprint.end_date %}
+              <p class="sprint-dates">{{ section.sprint.start_date.strftime('%d %b %Y') }} &ndash; {{ section.sprint.end_date.strftime('%d %b %Y') }}</p>
+            {% endif %}
+
+            {% if can_manage %}
+              <div class="sprint-actions">
+                {% if section.sprint.status == 'future' %}
+                  <form method="post" action="{{ url_for('backlog.start_sprint', sprint_id=section.sprint.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-primary btn-sm">Start Sprint</button>
+                  </form>
+                {% elif section.sprint.status == 'active' %}
+                  <form method="post" action="{{ url_for('backlog.close_sprint', sprint_id=section.sprint.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-secondary btn-sm">Close Sprint</button>
+                  </form>
+                {% endif %}
+              </div>
+            {% endif %}
+
+            {% if section.sprint.status == 'active' %}
+              {% if section.burndown %}
+                <div class="burndown-container">
+                  <canvas
+                    class="burndown-chart"
+                    data-burndown-chart
+                    data-burndown-labels='{{ section.burndown.labels | tojson }}'
+                    data-burndown-ideal='{{ section.burndown.ideal | tojson }}'
+                    data-burndown-actual='{{ section.burndown.actual | tojson }}'
+                    data-burndown-metric="{{ section.burndown.metric }}"
+                    height="220"></canvas>
+                </div>
+              {% else %}
+                <p class="empty-state">Set both a start and end date on this sprint to see its burndown chart.</p>
+              {% endif %}
+            {% endif %}
+
+            <ul class="sprint-issue-list">
+              {% for issue in section.issues %}
+                <li class="sprint-issue-row">
+                  <span class="board-card-key">{{ issue.issue_key }}</span>
+                  <span class="type-badge type-{{ issue.issue_type | lower }}">{{ issue.issue_type }}</span>
+                  <a href="{{ url_for('issues.issue_detail', issue_id=issue.id) }}" class="sprint-issue-title">{{ issue.title }}</a>
+                  <span class="badge status-badge status-{{ issue.status | lower | replace(' ', '-') }}">{{ issue.status }}</span>
+                  {% if can_manage and section.sprint.status != 'closed' %}
+                    <form method="post" action="{{ url_for('backlog.assign_sprint', issue_id=issue.id) }}" class="sprint-issue-remove-form">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="sprint_id" value="">
+                      <button type="submit" class="btn btn-secondary btn-sm">Move to Backlog</button>
+                    </form>
+                  {% endif %}
+                </li>
+              {% else %}
+                <li class="empty-state">No issues in this sprint yet.</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </details>
+      {% else %}
+        <p class="empty-state">No sprints yet for this project.</p>
+      {% endfor %}
+    </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {% if sprint_sections and (sprint_sections | selectattr('burndown') | list) %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script>
+      document.querySelectorAll("[data-burndown-chart]").forEach(function (canvas) {
+        var labels = JSON.parse(canvas.getAttribute("data-burndown-labels"));
+        var ideal = JSON.parse(canvas.getAttribute("data-burndown-ideal"));
+        var actual = JSON.parse(canvas.getAttribute("data-burndown-actual"));
+        var metric = canvas.getAttribute("data-burndown-metric");
+
+        new Chart(canvas, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              { label: "Ideal", data: ideal, borderColor: "#6b778c", borderDash: [6, 4], pointRadius: 0, tension: 0 },
+              { label: "Actual (" + metric + ")", data: actual, borderColor: "#0052cc", backgroundColor: "rgba(0, 82, 204, 0.08)", fill: true, spanGaps: false, tension: 0.15 }
+            ]
+          },
+          options: {
+            responsive: true,
+            scales: { y: { beginAtZero: true, title: { display: true, text: metric } } },
+            plugins: { legend: { position: "bottom" } }
+          }
+        });
+      });
+    </script>
+  {% endif %}
+{% endblock %}

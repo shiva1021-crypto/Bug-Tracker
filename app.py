@@ -12,7 +12,9 @@ from flask import Flask, render_template, request
 from config import config
 from routes.admin_routes import admin_bp
 from routes.auth_routes import auth_bp
+from routes.backlog_routes import backlog_bp
 from routes.board_routes import board_bp
+from routes.filter_routes import filter_bp
 from routes.health_routes import health_bp
 from routes.issue_routes import issue_bp
 from routes.project_routes import project_bp
@@ -39,6 +41,8 @@ def create_app() -> Flask:
     app.register_blueprint(project_bp)
     app.register_blueprint(issue_bp)
     app.register_blueprint(board_bp)
+    app.register_blueprint(backlog_bp)
+    app.register_blueprint(filter_bp)
 
     @app.errorhandler(404)
     def not_found(_error):

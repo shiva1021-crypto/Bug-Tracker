@@ -59,6 +59,10 @@
              href="{{ url_for('projects.list_projects') }}">Projects</a>
           <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'board.board' else '' }}"
              href="{{ url_for('board.board') }}">Board</a>
+          <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'backlog.backlog' else '' }}"
+             href="{{ url_for('backlog.backlog') }}">Backlog</a>
+          <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'issues.list_issues' else '' }}"
+             href="{{ url_for('issues.list_issues') }}">Issues</a>
           {% if current_user.role == 'admin' %}
             <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'admin.users_page' else '' }}"
                href="{{ url_for('admin.users_page') }}">Users</a>
@@ -72,5 +76,6 @@
   </div>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

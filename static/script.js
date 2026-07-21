@@ -323,6 +323,64 @@
     });
   }
 
+  /* ------------------------------------------------- backlog (Stage 8) */
+
+  function initNewSprintToggle() {
+    var toggle = document.querySelector("[data-new-sprint-toggle]");
+    var form = document.querySelector("[data-new-sprint-form]");
+    if (!toggle || !form) return;
+
+    toggle.addEventListener("click", function () {
+      form.hidden = !form.hidden;
+      if (!form.hidden) {
+        var firstField = form.querySelector("input, textarea");
+        if (firstField) firstField.focus();
+        form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    });
+  }
+
+  /* A backlog row's "move to sprint" dropdown includes a "+ New Sprint"
+     option (per the spec: "a dropdown to assign it into an existing
+     sprint (or '+ New Sprint')"). Picking it should not submit the move
+     form -- there is no sprint to move into yet -- it should instead
+     reveal the same new-sprint form the top-of-page button does. */
+  function initBacklogSprintSelects() {
+    var selects = document.querySelectorAll("[data-backlog-sprint-select]");
+    if (!selects.length) return;
+
+    var newSprintForm = document.querySelector("[data-new-sprint-form]");
+
+    selects.forEach(function (select) {
+      select.addEventListener("change", function () {
+        if (select.value !== "__new__") return;
+        select.value = "";
+        if (newSprintForm) {
+          newSprintForm.hidden = false;
+          newSprintForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          var firstField = newSprintForm.querySelector("input, textarea");
+          if (firstField) firstField.focus();
+        }
+      });
+    });
+  }
+
+  /* --------------------------------------------------- saved filters (Stage 8) */
+
+  function initSaveFilterForm() {
+    var form = document.querySelector("[data-save-filter-form]");
+    var trigger = document.querySelector("[data-save-filter-trigger]");
+    var nameField = document.querySelector("[data-save-filter-name]");
+    if (!form || !trigger || !nameField) return;
+
+    trigger.addEventListener("click", function () {
+      var name = window.prompt("Name this filter:");
+      if (!name) return;
+      nameField.value = name;
+      form.submit();
+    });
+  }
+
   /* ------------------------------------------ register password matching */
   /* Convenience only - services/auth_service.py re-validates on the server. */
 
@@ -368,6 +426,9 @@
     initBoardDragAndDrop();
     initBoardLoadMore();
     initBoardAssigneeFilter();
+    initNewSprintToggle();
+    initBacklogSprintSelects();
+    initSaveFilterForm();
     initRegisterForm();
   });
 })();

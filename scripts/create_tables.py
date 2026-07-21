@@ -70,6 +70,22 @@ CREATE TABLE IF NOT EXISTS projects (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 """
 
+SPRINTS_TABLE = """
+CREATE TABLE IF NOT EXISTS sprints (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    organization_id  INT NOT NULL,
+    project_id       INT NOT NULL,
+    name             VARCHAR(120) NOT NULL,
+    goal             TEXT,
+    start_date       DATE,
+    end_date         DATE,
+    status           ENUM('future','active','closed') NOT NULL DEFAULT 'future',
+    created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sprints_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_sprints_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
 BUGS_TABLE = """
 CREATE TABLE IF NOT EXISTS bugs (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
@@ -91,6 +107,7 @@ CREATE TABLE IF NOT EXISTS bugs (
     labels              VARCHAR(255),
     story_points        INT,
     due_date            DATE,
+    sprint_id           INT NULL,
     created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_bugs_organization
@@ -106,6 +123,9 @@ CREATE TABLE IF NOT EXISTS bugs (
         FOREIGN KEY (reporter_id) REFERENCES users(id),
     CONSTRAINT fk_bugs_assigned_to
         FOREIGN KEY (assigned_to) REFERENCES users(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_bugs_sprint
+        FOREIGN KEY (sprint_id) REFERENCES sprints(id)
         ON DELETE SET NULL,
     CONSTRAINT uq_bugs_org_key UNIQUE (organization_id, issue_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -151,21 +171,52 @@ CREATE TABLE IF NOT EXISTS issue_watchers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 """
 
-# Order matters: organizations before users/projects/registration_requests,
-# and projects + users before bugs (bugs FKs to both, plus to itself for
-# parent_id); bugs before comments/bug_history/issue_watchers (all three FK
-# to it). users is created here only for a brand-new database; on an
-# existing Stage-2 database this is a no-op and _migrate_users_table()
-# below handles adding the new columns.
+ISSUE_LINKS_TABLE = """
+CREATE TABLE IF NOT EXISTS issue_links (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    bug_id_a   INT NOT NULL,
+    bug_id_b   INT NOT NULL,
+    link_type  ENUM('blocks','relates_to','duplicates','clones') NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_issue_links_bug_a FOREIGN KEY (bug_id_a) REFERENCES bugs(id) ON DELETE CASCADE,
+    CONSTRAINT fk_issue_links_bug_b FOREIGN KEY (bug_id_b) REFERENCES bugs(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+SAVED_FILTERS_TABLE = """
+CREATE TABLE IF NOT EXISTS saved_filters (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    user_id         INT NOT NULL,
+    organization_id INT NOT NULL,
+    name            VARCHAR(120) NOT NULL,
+    filter_data     JSON NOT NULL,
+    is_shared       TINYINT(1) NOT NULL DEFAULT 0,
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_saved_filters_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_saved_filters_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+# Order matters: organizations before users/projects/registration_requests;
+# projects before sprints (sprints FKs to it) and before bugs; sprints
+# before bugs (bugs.sprint_id FKs to it, new this stage); bugs before
+# comments/bug_history/issue_watchers/issue_links (all FK to it) and before
+# nothing else. saved_filters only needs users/organizations, so it can go
+# anywhere after those. users is created here only for a brand-new
+# database; on an existing Stage-2 database this is a no-op and
+# _migrate_users_table() below handles adding the new columns.
 STATEMENTS = [
     ("organizations", ORGANIZATIONS_TABLE),
     ("users", USERS_TABLE),
     ("registration_requests", REGISTRATION_REQUESTS_TABLE),
     ("projects", PROJECTS_TABLE),
+    ("sprints", SPRINTS_TABLE),
     ("bugs", BUGS_TABLE),
     ("comments", COMMENTS_TABLE),
     ("bug_history", BUG_HISTORY_TABLE),
     ("issue_watchers", ISSUE_WATCHERS_TABLE),
+    ("issue_links", ISSUE_LINKS_TABLE),
+    ("saved_filters", SAVED_FILTERS_TABLE),
 ]
 
 
@@ -258,6 +309,28 @@ def _ensure_bugs_status_default(cursor) -> None:
     print("  bugs.status default is now 'Idea' (was 'To Do' in Stage 5).")
 
 
+def _ensure_bugs_sprint_column(cursor) -> None:
+    """Add `bugs.sprint_id` (+ its FK to `sprints`) to a database that ran
+    an earlier stage's version of this script before Stage 8 existed.
+
+    A brand-new database gets this column directly from `BUGS_TABLE`'s own
+    DDL above (which already lists `sprint_id` and its FK) -- this function
+    only matters for a database that already has a `bugs` table without it.
+    Checks `information_schema` first, exactly like `_migrate_users_table`,
+    so re-running this script is always safe.
+    """
+    if not _column_exists(cursor, "bugs", "sprint_id"):
+        cursor.execute("ALTER TABLE bugs ADD COLUMN sprint_id INT NULL")
+        print("  Added bugs.sprint_id (nullable).")
+
+    if not _constraint_exists(cursor, "bugs", "fk_bugs_sprint"):
+        cursor.execute(
+            "ALTER TABLE bugs ADD CONSTRAINT fk_bugs_sprint "
+            "FOREIGN KEY (sprint_id) REFERENCES sprints(id) ON DELETE SET NULL"
+        )
+        print("  Added FK bugs.sprint_id -> sprints.id.")
+
+
 def main() -> int:
     print(f"Creating tables in '{config.DB_NAME}' on "
           f"{config.DB_HOST}:{config.DB_PORT} ...")
@@ -278,6 +351,7 @@ def main() -> int:
             print(f"  Table '{name}' is ready.")
         _migrate_users_table(cursor)
         _ensure_bugs_status_default(cursor)
+        _ensure_bugs_sprint_column(cursor)
         conn.commit()
         cursor.close()
     except mysql.connector.Error as exc:

@@ -106,6 +106,15 @@ def list_by_project(project_id: int, organization_id: int) -> list[dict]:
     return issue_repository.list_by_project(project_id, organization_id)
 
 
+def list_org_users(organization_id: int) -> list[dict]:
+    """Every member of one organization -- used by the Stage 8 issue list
+    page to populate its "Assignee" filter dropdown with real org members,
+    not just the developers Stage 6's assignment control restricts to
+    (a filter should be able to find issues currently assigned to anyone,
+    including a user whose role has since changed)."""
+    return user_repository.list_by_organization(organization_id)
+
+
 def list_potential_parents(organization_id: int, exclude_issue_id: int | None = None) -> list[dict]:
     """Light-weight issue list for the Add-issue page's client-side filter.
 

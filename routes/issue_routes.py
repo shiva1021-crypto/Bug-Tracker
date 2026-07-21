@@ -14,10 +14,42 @@ existed) is distinguishable from the response.
 from flask import Blueprint, abort, flash, redirect, render_template, request, send_from_directory, url_for
 
 from config import config
-from services import issue_service, project_service, workflow_service
+from services import filter_service, issue_service, link_service, project_service, workflow_service
 from utils.auth import current_user, login_required
 
 issue_bp = Blueprint("issues", __name__)
+
+
+@issue_bp.get("/issues")
+@login_required
+def list_issues():
+    """The Stage 8 issue list/search page.
+
+    Not one of Stage 5-7's routes -- it did not exist before this stage,
+    but Stage 8's own spec assumes an "Issue List page" to extend with
+    filter chips and a save button. Added here as the minimal
+    infrastructure that assumption requires, the same reasoning Stage 5
+    used to add the project detail page's issue table (see
+    STAGE-05-REPORT.md §5.7) and Stage 7 used to add the screenshot route
+    (STAGE-05-REPORT.md §5.6): the feature this stage actually asks for
+    (saved filters) has nothing to attach to without it.
+    """
+    user = current_user()
+    filters = filter_service.parse_filters(request.args)
+    results = filter_service.search(user["organization_id"], filters)
+    saved_filters = filter_service.list_saved_filters(user["id"], user["organization_id"])
+
+    return render_template(
+        "issues/list.html",
+        results=results,
+        filters=filters,
+        saved_filters=saved_filters,
+        projects=project_service.list_projects(user["organization_id"]),
+        statuses=workflow_service.STATUSES,
+        priorities=issue_service.PRIORITIES,
+        issue_types=issue_service.ISSUE_TYPES,
+        org_users=issue_service.list_org_users(user["organization_id"]),
+    )
 
 
 @issue_bp.route("/issues/add", methods=["GET", "POST"])
@@ -124,6 +156,7 @@ def issue_detail(issue_id):
     history = workflow_service.list_history(issue_id, user["organization_id"])
     watching = workflow_service.is_watching(issue_id, user["id"])
     watcher_count = workflow_service.watcher_count(issue_id)
+    links = link_service.list_links(issue_id, user["organization_id"])
 
     return render_template(
         "issues/detail.html",
@@ -138,6 +171,8 @@ def issue_detail(issue_id):
         history=history,
         watching=watching,
         watcher_count=watcher_count,
+        links=links,
+        link_form_options=link_service.LINK_FORM_OPTIONS,
     )
 
 
@@ -207,6 +242,39 @@ def toggle_watch(issue_id):
         abort(404)
 
     workflow_service.toggle_watch(issue_id, user["id"])
+    return redirect(url_for("issues.issue_detail", issue_id=issue_id))
+
+
+@issue_bp.post("/issues/<int:issue_id>/link")
+@login_required
+def add_link(issue_id):
+    user = current_user()
+    issue = issue_service.get_issue(issue_id, user["organization_id"])
+    if issue is None:
+        abort(404)
+
+    ok, error = link_service.create_link(
+        user["organization_id"],
+        issue,
+        request.form.get("link_type", ""),
+        request.form.get("target_key", ""),
+    )
+    flash("Link added." if ok else (error or "Could not add link."),
+          "success" if ok else "error")
+    return redirect(url_for("issues.issue_detail", issue_id=issue_id))
+
+
+@issue_bp.post("/issues/<int:issue_id>/link/<int:link_id>/remove")
+@login_required
+def remove_link(issue_id, link_id):
+    user = current_user()
+    issue = issue_service.get_issue(issue_id, user["organization_id"])
+    if issue is None:
+        abort(404)
+
+    ok, error = link_service.remove_link(link_id, issue_id, user["organization_id"])
+    flash("Link removed." if ok else (error or "Could not remove link."),
+          "success" if ok else "error")
     return redirect(url_for("issues.issue_detail", issue_id=issue_id))
 
 

@@ -38,7 +38,7 @@
           <select class="input" id="project_id" name="project_id" required data-project-select>
             <option value="">Select a project…</option>
             {% for p in projects %}
-              <option value="{{ p.id }}" {{ "selected" if preselect_project_id == p.id else "" }}>{{ p.project_key }} — {{ p.name }}</option>
+              <option value="{{ p.id }}" {{ "selected" if preselect_project_id == p.id else "" }}>{{ p.project_key }} - {{ p.name }}</option>
             {% endfor %}
           </select>
         </div>

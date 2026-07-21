@@ -276,6 +276,46 @@ CREATE TABLE IF NOT EXISTS time_entries (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 """
 
+DASHBOARD_WIDGETS_TABLE = """
+CREATE TABLE IF NOT EXISTS dashboard_widgets (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    organization_id  INT NOT NULL,
+    user_id          INT NULL,
+    widget_type      ENUM('stats_summary','recent_issues','issues_by_status',
+                          'issues_by_priority','issues_by_severity','issues_by_type')
+                     NOT NULL,
+    title            VARCHAR(120) NOT NULL,
+    config           JSON,
+    position         INT NOT NULL DEFAULT 0,
+    width            ENUM('full','half','third') NOT NULL DEFAULT 'half',
+    created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_dashboard_widgets_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_dashboard_widgets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+EMAIL_OUTBOX_TABLE = """
+CREATE TABLE IF NOT EXISTS email_outbox (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    to_email   VARCHAR(150) NOT NULL,
+    subject    VARCHAR(255) NOT NULL,
+    body       TEXT NOT NULL,
+    status     ENUM('pending','sent','failed') NOT NULL DEFAULT 'pending',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    sent_at    DATETIME NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+AUTH_RATE_LIMITS_TABLE = """
+CREATE TABLE IF NOT EXISTS auth_rate_limits (
+    id                 INT AUTO_INCREMENT PRIMARY KEY,
+    identifier         VARCHAR(150) NOT NULL,
+    attempt_count      INT NOT NULL DEFAULT 0,
+    window_started_at  DATETIME NOT NULL,
+    CONSTRAINT uq_auth_rate_limits_identifier UNIQUE (identifier)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
 # Order matters: organizations before users/projects/registration_requests;
 # projects before sprints/versions (both FK to it) and before bugs; sprints
 # and versions before bugs (bugs.sprint_id and bugs.fix_version_id FK to
@@ -306,6 +346,14 @@ STATEMENTS = [
     ("custom_field_values", CUSTOM_FIELD_VALUES_TABLE),
     ("automation_rules", AUTOMATION_RULES_TABLE),
     ("time_entries", TIME_ENTRIES_TABLE),
+    # Stage 10: dashboard_widgets needs organizations/users to exist first;
+    # email_outbox and auth_rate_limits have no foreign keys at all (an
+    # outbox row and a rate-limit counter are both identified by a plain
+    # string -- an email address or an IP -- never a tenant id), so their
+    # position in this list is arbitrary.
+    ("dashboard_widgets", DASHBOARD_WIDGETS_TABLE),
+    ("email_outbox", EMAIL_OUTBOX_TABLE),
+    ("auth_rate_limits", AUTH_RATE_LIMITS_TABLE),
 ]
 
 

@@ -21,7 +21,7 @@ import re
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from repositories import organization_repository, registration_request_repository, user_repository
-from services import project_service
+from services import dashboard_service, project_service
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -134,6 +134,12 @@ def register(
             role="admin",
         )
         project_service.create_default_project(organization_id)
+        # Stage 10: seed this brand-new organization's default dashboard
+        # layout now, the same moment its default project is created --
+        # so "a new user's dashboard shows the default widget set with no
+        # manual setup" holds for the very first user too, not just
+        # members who join later.
+        dashboard_service.ensure_org_defaults(organization_id)
         return {
             "outcome": "created",
             "user": {

@@ -1324,3 +1324,146 @@ h1, h2, h3 { margin: 0; font-weight: 600; color: var(--text); }
 .version-status-archived   { background: var(--warning-soft); color: var(--warning); }
 
 .version-row-actions { display: flex; gap: 8px; }
+
+/* ------------------------------------------------- reporting/dashboards/ops (Stage 10) */
+
+/* Dashboard grid */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.dashboard-widget-full  { grid-column: span 6; }
+.dashboard-widget-half  { grid-column: span 3; }
+.dashboard-widget-third { grid-column: span 2; }
+
+@media (max-width: 900px) {
+  .dashboard-widget-full,
+  .dashboard-widget-half,
+  .dashboard-widget-third { grid-column: span 6; }
+}
+
+.dashboard-widget-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dashboard-widget-title { font-size: 15px; margin: 0; }
+
+.dashboard-widget-remove {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: var(--radius);
+}
+.dashboard-widget-remove:hover { background: var(--danger-soft); color: var(--danger); }
+
+.stats-summary-grid { display: flex; gap: 12px; }
+
+.stats-summary-stat {
+  flex: 1 1 0;
+  text-align: center;
+  padding: 16px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stats-summary-value { display: block; font-size: 28px; font-weight: 700; color: var(--accent); }
+.stats-summary-label {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.dashboard-recent-list { list-style: none; margin: 0; padding: 0; }
+
+.dashboard-recent-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.dashboard-recent-row:last-child { border-bottom: 0; }
+
+.dashboard-recent-key { font-family: var(--font-mono); font-weight: 600; flex-shrink: 0; }
+
+.dashboard-recent-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.dashboard-chart-container { max-width: 320px; margin: 0 auto; }
+
+/* Add Widget modal */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 30, 66, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-overlay[hidden] { display: none; }
+
+.modal-card { width: 100%; max-width: 420px; }
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Reports page */
+
+.report-filter-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.report-filter-bar .field { margin-bottom: 0; }
+
+.report-summary-line { color: var(--text-muted); font-size: 13px; margin: 16px 0; }
+
+.report-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.report-category-card { grid-column: 1 / -1; }
+
+/* Printer-friendly view: hide navigation chrome and filter controls,
+   leaving just the charts/data -- per the spec's explicit `@media print`
+   requirement. `.no-print` is applied directly to the elements that
+   shouldn't appear on paper (page actions, the filter form); the
+   header/sidebar are always irrelevant on paper regardless of which page
+   is being printed. */
+@media print {
+  .app-header, .sidebar, .no-print { display: none !important; }
+  .app-shell { display: block !important; }
+  .app-main { padding: 0 !important; }
+}

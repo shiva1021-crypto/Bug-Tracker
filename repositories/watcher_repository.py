@@ -54,3 +54,20 @@ def count(bug_id: int) -> int:
             return row[0] if row else 0
         finally:
             cursor.close()
+
+
+def list_watcher_users(bug_id: int) -> list[dict]:
+    """Every watcher's user row (id, full_name, email) for one issue --
+    Stage 10's `services/notification_service.py` uses this to build the
+    recipient list for a status-change email."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT u.id, u.full_name, u.email FROM issue_watchers w "
+                "JOIN users u ON u.id = w.user_id WHERE w.bug_id = %s",
+                (bug_id,),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()

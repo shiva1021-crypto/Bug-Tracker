@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Reports · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page page-wide reports-page">
+
+  {% include "partials/flashes.html" %}
+
+  <div class="page-head no-print">
+    <h1 class="page-title">Reports</h1>
+    <div class="page-head-actions">
+      <a class="btn btn-secondary" href="{{ url_for('reports.export_csv', **filters) }}">Export CSV</a>
+      <button type="button" class="btn btn-secondary" data-print-report>Print</button>
+    </div>
+  </div>
+
+  <form method="get" action="{{ url_for('reports.reports') }}" class="card report-filter-bar no-print">
+    <div class="field">
+      <label class="label" for="report-project">Project</label>
+      <select class="input" id="report-project" name="project_id">
+        <option value="">All projects</option>
+        {% for p in projects %}
+          <option value="{{ p.id }}" {{ "selected" if filters.get('project_id') == (p.id | string) else "" }}>{{ p.project_key }} — {{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="label" for="report-status">Status</label>
+      <select class="input" id="report-status" name="status">
+        <option value="">All statuses</option>
+        {% for s in statuses %}
+          <option value="{{ s }}" {{ "selected" if filters.get('status') == s else "" }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="label" for="report-priority">Priority</label>
+      <select class="input" id="report-priority" name="priority">
+        <option value="">All priorities</option>
+        {% for p in priorities %}
+          <option value="{{ p }}" {{ "selected" if filters.get('priority') == p else "" }}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="label" for="report-date-from">From</label>
+      <input class="input" type="date" id="report-date-from" name="date_from" value="{{ filters.get('date_from', '') }}">
+    </div>
+
+    <div class="field">
+      <label class="label" for="report-date-to">To</label>
+      <input class="input" type="date" id="report-date-to" name="date_to" value="{{ filters.get('date_to', '') }}">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Apply</button>
+  </form>
+
+  <p class="report-summary-line">{{ issue_count }} issue{{ '' if issue_count == 1 else 's' }} match{{ 'es' if issue_count == 1 else '' }} this filter.</p>
+
+  <div class="report-charts-grid">
+    <div class="card">
+      <h2 class="section-title">Status Breakdown</h2>
+      {% if result.status_counts %}
+        <canvas class="report-bar-chart" data-report-chart="bar"
+                data-chart-labels='{{ (result.status_counts | map(attribute="label") | list) | tojson }}'
+                data-chart-counts='{{ (result.status_counts | map(attribute="count") | list) | tojson }}'
+                height="200"></canvas>
+      {% else %}
+        <p class="empty-state">No matching issues.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Priority Distribution</h2>
+      {% if result.priority_counts %}
+        <canvas class="report-bar-chart" data-report-chart="bar"
+                data-chart-labels='{{ (result.priority_counts | map(attribute="label") | list) | tojson }}'
+                data-chart-counts='{{ (result.priority_counts | map(attribute="count") | list) | tojson }}'
+                height="200"></canvas>
+      {% else %}
+        <p class="empty-state">No matching issues.</p>
+      {% endif %}
+    </div>
+
+    <div class="card report-category-card">
+      <h2 class="section-title">Issues by Category</h2>
+      {% if result.category_counts %}
+        <canvas class="report-bar-chart" data-report-chart="horizontalBar"
+                data-chart-labels='{{ (result.category_counts | map(attribute="label") | list) | tojson }}'
+                data-chart-counts='{{ (result.category_counts | map(attribute="count") | list) | tojson }}'
+                height="220"></canvas>
+      {% else %}
+        <p class="empty-state">No matching issues.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script>
+    document.querySelectorAll("[data-report-chart]").forEach(function (canvas) {
+      var labels = JSON.parse(canvas.getAttribute("data-chart-labels"));
+      var counts = JSON.parse(canvas.getAttribute("data-chart-counts"));
+      var kind = canvas.getAttribute("data-report-chart");
+      var horizontal = kind === "horizontalBar";
+
+      new Chart(canvas, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Issues",
+            data: counts,
+            backgroundColor: "#0052cc"
+          }]
+        },
+        options: {
+          indexAxis: horizontal ? "y" : "x",
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: horizontal ? { x: { beginAtZero: true } } : { y: { beginAtZero: true } }
+        }
+      });
+    });
+
+    var printButton = document.querySelector("[data-print-report]");
+    if (printButton) {
+      printButton.addEventListener("click", function () { window.print(); });
+    }
+  </script>
+{% endblock %}

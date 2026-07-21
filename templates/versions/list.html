@@ -24,7 +24,7 @@
         <select class="input" id="version-project" name="project_id" required>
           <option value="">Select a project…</option>
           {% for p in projects %}
-            <option value="{{ p.id }}">{{ p.project_key }} — {{ p.name }}</option>
+            <option value="{{ p.id }}">{{ p.project_key }} - {{ p.name }}</option>
           {% endfor %}
         </select>
       </div>
@@ -66,7 +66,7 @@
           {% for row in entry.versions %}
           <tr>
             <td>{{ row.version.name }}</td>
-            <td>{{ row.version.release_date.strftime('%d %b %Y') if row.version.release_date else '—' }}</td>
+            <td>{{ row.version.release_date.strftime('%d %b %Y') if row.version.release_date else '-' }}</td>
             <td><span class="badge version-status-{{ row.version.status }}">{{ row.version.status | capitalize }}</span></td>
             <td>{{ row.counts.open }}</td>
             <td>{{ row.counts.resolved }}</td>

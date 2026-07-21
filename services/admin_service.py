@@ -7,7 +7,8 @@ client-supplied organization id in isolation -- it always comes from a
 freshly-fetched admin user row.
 """
 
-from repositories import registration_request_repository, user_repository
+from repositories import organization_repository, registration_request_repository, user_repository
+from services import notification_service
 
 ROLES = ["admin", "project_manager", "developer", "tester"]
 
@@ -89,6 +90,11 @@ def approve_request(admin_user: dict, request_id: int) -> tuple[bool, str | None
     registration_request_repository.update_status(
         request_id, admin_user["organization_id"], "approved"
     )
+
+    org = organization_repository.get_by_id(admin_user["organization_id"])
+    notification_service.notify_registration_approved(
+        req["email"], req["full_name"], org["name"] if org else ""
+    )
     return True, None
 
 
@@ -102,5 +108,10 @@ def reject_request(admin_user: dict, request_id: int) -> tuple[bool, str | None]
 
     registration_request_repository.update_status(
         request_id, admin_user["organization_id"], "rejected"
+    )
+
+    org = organization_repository.get_by_id(admin_user["organization_id"])
+    notification_service.notify_registration_rejected(
+        req["email"], req["full_name"], org["name"] if org else ""
     )
     return True, None

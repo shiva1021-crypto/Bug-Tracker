@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page page-wide">
+
+  {% include "partials/flashes.html" %}
+
+  <div class="page-head">
+    <h1 class="page-title">Dashboard</h1>
+    <button type="button" class="btn btn-primary" data-add-widget-toggle>+ Add Widget</button>
+  </div>
+
+  <div class="dashboard-grid">
+    {% for widget in widgets %}
+      <div class="card dashboard-widget dashboard-widget-{{ widget.width }}">
+        <div class="dashboard-widget-head">
+          <h2 class="dashboard-widget-title">{{ widget.title }}</h2>
+          <form method="post" action="{{ url_for('dashboard.remove_widget', widget_id=widget.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="dashboard-widget-remove" title="Remove widget" aria-label="Remove widget">&times;</button>
+          </form>
+        </div>
+
+        <div class="dashboard-widget-body">
+          {% if widget.widget_type == 'stats_summary' %}
+            <div class="stats-summary-grid">
+              <div class="stats-summary-stat">
+                <span class="stats-summary-value">{{ widget.data.total }}</span>
+                <span class="stats-summary-label">Total</span>
+              </div>
+              <div class="stats-summary-stat">
+                <span class="stats-summary-value">{{ widget.data.open }}</span>
+                <span class="stats-summary-label">Open</span>
+              </div>
+              <div class="stats-summary-stat">
+                <span class="stats-summary-value">{{ widget.data.resolved }}</span>
+                <span class="stats-summary-label">Resolved</span>
+              </div>
+            </div>
+
+          {% elif widget.widget_type == 'recent_issues' %}
+            <ul class="dashboard-recent-list">
+              {% for issue in widget.data.issues %}
+                <li class="dashboard-recent-row">
+                  <span class="type-badge type-{{ issue.issue_type | lower }}">{{ issue.issue_type }}</span>
+                  <a href="{{ url_for('issues.issue_detail', issue_id=issue.id) }}" class="dashboard-recent-key">{{ issue.issue_key }}</a>
+                  <span class="dashboard-recent-title">{{ issue.title }}</span>
+                  <span class="badge status-badge status-{{ issue.status | lower | replace(' ', '-') }}">{{ issue.status }}</span>
+                </li>
+              {% else %}
+                <li class="empty-state">No issues yet.</li>
+              {% endfor %}
+            </ul>
+
+          {% else %}
+            {% if widget.data.labels %}
+              <div class="dashboard-chart-container">
+                <canvas
+                  class="dashboard-chart"
+                  data-dashboard-chart
+                  data-chart-labels='{{ widget.data.labels | tojson }}'
+                  data-chart-counts='{{ widget.data.counts | tojson }}'
+                  height="220"></canvas>
+              </div>
+            {% else %}
+              <p class="empty-state">No issues yet.</p>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <p class="empty-state">No widgets on your dashboard yet. Add one to get started.</p>
+    {% endfor %}
+  </div>
+
+</div>
+
+<div class="modal-overlay" data-add-widget-modal hidden>
+  <div class="modal-card card">
+    <h2 class="section-title">Add Widget</h2>
+    <form method="post" action="{{ url_for('dashboard.add_widget') }}" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="field">
+        <label class="label" for="widget-type">Widget Type</label>
+        <select class="input" id="widget-type" name="widget_type" required>
+          {% for wt in widget_types %}
+            <option value="{{ wt }}">{{ widget_labels.get(wt, wt) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="widget-title">Title</label>
+        <input class="input" type="text" id="widget-title" name="title" maxlength="120" placeholder="Leave blank to use the default title">
+      </div>
+
+      <div class="field">
+        <label class="label" for="widget-width">Width</label>
+        <select class="input" id="widget-width" name="width" required>
+          {% for w in widths %}
+            <option value="{{ w }}" {{ "selected" if w == "half" else "" }}>{{ w | capitalize }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-add-widget-cancel>Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Widget</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script>
+    document.querySelectorAll("[data-dashboard-chart]").forEach(function (canvas) {
+      var labels = JSON.parse(canvas.getAttribute("data-chart-labels"));
+      var counts = JSON.parse(canvas.getAttribute("data-chart-counts"));
+
+      new Chart(canvas, {
+        type: "doughnut",
+        data: {
+          labels: labels,
+          datasets: [{
+            data: counts,
+            backgroundColor: ["#0052cc", "#00875a", "#ff8b00", "#de350b", "#5243aa", "#6b778c", "#00b8d9"]
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: "bottom" } }
+        }
+      });
+    });
+  </script>
+{% endblock %}

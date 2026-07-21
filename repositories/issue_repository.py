@@ -409,6 +409,162 @@ def update_sprint(issue_id: int, organization_id: int, sprint_id: int | None) ->
             cursor.close()
 
 
+def count_by_status(organization_id: int) -> list[dict]:
+    """Org-wide status breakdown -- feeds the dashboard's "Issues by
+    Status" widget. A single `GROUP BY` query rather than fetching every
+    row, since the dashboard has no filters to apply first (unlike the
+    Reports page's `search_for_report`, below)."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT status, COUNT(*) AS count FROM bugs "
+                "WHERE organization_id = %s GROUP BY status",
+                (organization_id,),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
+def count_by_priority(organization_id: int) -> list[dict]:
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT priority, COUNT(*) AS count FROM bugs "
+                "WHERE organization_id = %s GROUP BY priority",
+                (organization_id,),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
+def count_by_severity(organization_id: int) -> list[dict]:
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT severity, COUNT(*) AS count FROM bugs "
+                "WHERE organization_id = %s GROUP BY severity",
+                (organization_id,),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
+def count_by_type(organization_id: int) -> list[dict]:
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT issue_type, COUNT(*) AS count FROM bugs "
+                "WHERE organization_id = %s GROUP BY issue_type",
+                (organization_id,),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
+def stats_summary(organization_id: int) -> dict:
+    """Total / open / resolved counts for the dashboard's "Statistics
+    Summary" widget. "Resolved" mirrors the same `status = 'Done'`
+    convention `count_by_fix_version` (Stage 9) already uses; everything
+    else counts as "open"."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT COUNT(*) AS total, "
+                "       SUM(CASE WHEN status = 'Done' THEN 1 ELSE 0 END) AS resolved "
+                "FROM bugs WHERE organization_id = %s",
+                (organization_id,),
+            )
+            row = cursor.fetchone()
+            total = row["total"] or 0
+            resolved = int(row["resolved"] or 0)
+            return {"total": total, "resolved": resolved, "open": total - resolved}
+        finally:
+            cursor.close()
+
+
+def list_recent(organization_id: int, limit: int = 5) -> list[dict]:
+    """Newest issues org-wide, for the dashboard's "Recent Issues" widget."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT b.id, b.issue_key, b.title, b.issue_type, b.status, b.priority, "
+                "       b.created_at, p.project_key AS project_key "
+                "FROM bugs b JOIN projects p ON p.id = b.project_id "
+                "WHERE b.organization_id = %s "
+                "ORDER BY b.created_at DESC LIMIT %s",
+                (organization_id, limit),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
+def search_for_report(organization_id: int, filters: dict) -> list[dict]:
+    """The Reports page's one query: every issue matching the filter bar
+    (date range / status / priority / project), each row carrying every
+    column the CSV export and every chart need. Fetched once and grouped
+    in Python by `services/report_service.py` -- same "fetch once, group
+    in application code" design the Stage 7 board query already
+    established -- so the charts and the CSV export can never disagree
+    about which rows matched.
+
+    `filters` may contain `project_id`, `status`, `priority`,
+    `date_from`, `date_to` (dates, inclusive on both ends) -- each present
+    key adds one `AND` clause; an absent key applies no filter on that
+    dimension.
+    """
+    conditions = ["b.organization_id = %s"]
+    params: list = [organization_id]
+
+    if filters.get("project_id"):
+        conditions.append("b.project_id = %s")
+        params.append(filters["project_id"])
+    if filters.get("status"):
+        conditions.append("b.status = %s")
+        params.append(filters["status"])
+    if filters.get("priority"):
+        conditions.append("b.priority = %s")
+        params.append(filters["priority"])
+    if filters.get("date_from"):
+        conditions.append("DATE(b.created_at) >= %s")
+        params.append(filters["date_from"])
+    if filters.get("date_to"):
+        conditions.append("DATE(b.created_at) <= %s")
+        params.append(filters["date_to"])
+
+    query = (
+        "SELECT b.id, b.issue_key, b.title, b.issue_type, b.status, b.priority, "
+        "       b.severity, b.category, b.created_at, "
+        "       p.project_key AS project_key, "
+        "       assignee.full_name AS assigned_to_name, "
+        "       reporter.full_name AS reporter_name "
+        "FROM bugs b "
+        "JOIN projects p ON p.id = b.project_id "
+        "JOIN users reporter ON reporter.id = b.reporter_id "
+        "LEFT JOIN users assignee ON assignee.id = b.assigned_to "
+        "WHERE " + " AND ".join(conditions) + " "
+        "ORDER BY b.created_at DESC"
+    )
+
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(query, tuple(params))
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
 def search_issues(organization_id: int, filters: dict) -> list[dict]:
     """The Stage 8 issue list/search page's query.
 

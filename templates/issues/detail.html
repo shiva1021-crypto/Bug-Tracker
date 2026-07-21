@@ -170,25 +170,25 @@
           </div>
           <div class="detail-row">
             <dt>Story Points</dt>
-            <dd>{{ issue.story_points if issue.story_points is not none else '—' }}</dd>
+            <dd>{{ issue.story_points if issue.story_points is not none else '-' }}</dd>
           </div>
           <div class="detail-row">
             <dt>Due Date</dt>
-            <dd>{{ issue.due_date.strftime('%d %b %Y') if issue.due_date else '—' }}</dd>
+            <dd>{{ issue.due_date.strftime('%d %b %Y') if issue.due_date else '-' }}</dd>
           </div>
           <div class="detail-row">
             <dt>Parent</dt>
             <dd>
               {% if issue.parent_id %}
-                <a href="{{ url_for('issues.issue_detail', issue_id=issue.parent_id) }}">{{ issue.parent_issue_key }} — {{ issue.parent_title }}</a>
+                <a href="{{ url_for('issues.issue_detail', issue_id=issue.parent_id) }}">{{ issue.parent_issue_key }} - {{ issue.parent_title }}</a>
               {% else %}
-                —
+                -
               {% endif %}
             </dd>
           </div>
           <div class="detail-row">
             <dt>Fix Version</dt>
-            <dd>{{ fix_version.name if fix_version else '—' }}</dd>
+            <dd>{{ fix_version.name if fix_version else '-' }}</dd>
           </div>
         </dl>
 
@@ -212,7 +212,7 @@
                 {% if field.field_type == 'checkbox' %}
                   {{ '✓' if field.value == '1' else '✗' }}
                 {% elif field.value is none %}
-                  —
+                  -
                 {% else %}
                   {{ field.value }}
                 {% endif %}
@@ -228,7 +228,7 @@
         <div class="time-tracking-stats">
           <div class="time-stat">
             <span class="time-stat-label">Estimate</span>
-            <span class="time-stat-value">{{ issue.time_estimate if issue.time_estimate is not none else '—' }}</span>
+            <span class="time-stat-value">{{ issue.time_estimate if issue.time_estimate is not none else '-' }}</span>
           </div>
           <div class="time-stat">
             <span class="time-stat-label">Spent</span>
@@ -236,7 +236,7 @@
           </div>
           <div class="time-stat">
             <span class="time-stat-label">Remaining</span>
-            <span class="time-stat-value">{{ issue.time_remaining if issue.time_remaining is not none else '—' }}</span>
+            <span class="time-stat-value">{{ issue.time_remaining if issue.time_remaining is not none else '-' }}</span>
           </div>
         </div>
 

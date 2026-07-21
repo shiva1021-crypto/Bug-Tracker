@@ -1,10 +1,10 @@
-# Stage 8 — Agile Planning · Completion Report
+# Stage 8 - Agile Planning · Completion Report
 
 **Project:** Bug Tracker (Jira-style bug tracking & agile project management)
-**Stage:** 8 of 10 — Agile Planning
+**Stage:** 8 of 10 - Agile Planning
 **Spec:** `project-spec/08-agile-planning.md`
 **Builds on:** Stages 1-7 (Foundation, Authentication, Multi-Tenancy & Roles, Projects & Issue Keys, Core Issue CRUD & Hierarchy, Workflow & Status, Kanban Board)
-**Status:** Complete and verified (routes/services/repositories/templates); DDL not yet run against a live MySQL server — see §6.
+**Status:** Complete and verified (routes/services/repositories/templates); DDL not yet run against a live MySQL server - see §6.
 **Date:** 22 July 2026
 
 ---
@@ -18,14 +18,14 @@ issue search page.
 
 Deliberately **not** built (belongs to a later stage or out of scope):
 
-- No sprint reporting/velocity history across closed sprints — closed
+- No sprint reporting/velocity history across closed sprints - closed
   sprints simply stop appearing on the backlog page (see §5.1); nothing
   archives or charts them.
-- No autocomplete/typeahead search for the link-target picker — the spec
+- No autocomplete/typeahead search for the link-target picker - the spec
   says "target issue by key/search," read here as typing the issue's
   exact key (see §5.5), not a live search dropdown, since that would need
   an AJAX endpoint the spec's route table doesn't list.
-- No sharing of saved filters between users — `saved_filters.is_shared`
+- No sharing of saved filters between users - `saved_filters.is_shared`
   exists on the table exactly as the spec defines it, defaulting to 0, but
   nothing reads it; the spec calls sharing out explicitly as "(future:
   share with team)."
@@ -37,7 +37,7 @@ Stages 1-7 were left intact. The only pre-existing files touched are
 `scripts/create_tables.py` (new tables + one altered column), `app.py`
 (new blueprints + a filter registration, no route logic), `templates/base.html`
 (two new sidebar links), `repositories/issue_repository.py` (new query
-functions only — nothing existing changed except `_COLUMNS` gaining
+functions only - nothing existing changed except `_COLUMNS` gaining
 `sprint_id`), `services/issue_service.py` (one new read-only helper,
 `list_org_users`), and `templates/issues/detail.html` (a new sidebar
 panel, inserted without touching the existing markup around it).
@@ -94,7 +94,7 @@ repositories/issue_repository.py (extended)
 utils/db.py                     pooled connection (Stage 1, unchanged)
 ```
 
-`burndown_service` does not write anything — it calls
+`burndown_service` does not write anything - it calls
 `bug_history_repository.list_by_bug()` (Stage 6, unchanged) once per issue
 and turns the existing audit trail into a chart-ready shape. No new
 history-writing code was needed for this stage.
@@ -103,26 +103,26 @@ history-writing code was needed for this stage.
 
 ## 3. Data model
 
-**Table: `sprints`** — new, matches the spec exactly (`id`,
+**Table: `sprints`** - new, matches the spec exactly (`id`,
 `organization_id`, `project_id`, `name`, `goal`, `start_date`, `end_date`,
 `status ENUM('future','active','closed') DEFAULT 'future'`), plus a
 `created_at` for ordering (not in the spec's table, following the same
 convention every other table in this codebase already uses).
 
 **Altered `bugs`:** adds `sprint_id INT NULL`, FK → `sprints(id)`
-`ON DELETE SET NULL` — matching the `ON DELETE SET NULL` convention
+`ON DELETE SET NULL` - matching the `ON DELETE SET NULL` convention
 already used for `parent_id` and `assigned_to`, so deleting a sprint
 (not a feature this stage builds, but the FK still needs a policy) can
 never cascade-delete issues.
 
-**Table: `issue_links`** — new, matches the spec exactly. Stored once,
+**Table: `issue_links`** - new, matches the spec exactly. Stored once,
 `bug_id_a → bug_id_b` with a `link_type`; no reverse row, no
 `organization_id` column (every read joins back through `bugs` on both
 sides to establish organization membership, the same pattern
 `comments`/`bug_history`/`issue_watchers` already use since Stage 6).
 
-**Table: `saved_filters`** — new, matches the spec exactly, including
-`is_shared TINYINT(1) DEFAULT 0` (present in the schema, unused — see §1).
+**Table: `saved_filters`** - new, matches the spec exactly, including
+`is_shared TINYINT(1) DEFAULT 0` (present in the schema, unused - see §1).
 
 ---
 
@@ -135,7 +135,7 @@ sides to establish organization membership, the same pattern
 | POST | `/sprints/<id>/start` | Admin/PM | `future` → `active`; rejected if another sprint in the same project is already active. |
 | POST | `/sprints/<id>/close` | Admin/PM | `active` → `closed`. |
 | POST | `/issues/<id>/sprint` | Admin/PM | Moves an issue into a sprint, or back to the backlog if `sprint_id` is blank. |
-| GET | `/issues` | required | **New** issue list/search page (see §5.2) — filters via `project_id`/`status`/`priority`/`issue_type`/`assigned_to` query params, renders saved-filter chips. |
+| GET | `/issues` | required | **New** issue list/search page (see §5.2) - filters via `project_id`/`status`/`priority`/`issue_type`/`assigned_to` query params, renders saved-filter chips. |
 | POST | `/issues/<id>/link` | any org member who can view the issue | Creates a typed, directional link to another issue (by key). |
 | POST | `/issues/<id>/link/<link_id>/remove` | any org member who can view the issue | Removes a link; works from either linked issue's page. |
 | POST | `/filters/save` | required | Saves the current filter combination under a name. |
@@ -145,7 +145,7 @@ sides to establish organization membership, the same pattern
 
 ## 5. Key design decisions
 
-### 5.1 A new `GET /issues` page had to be built — the spec assumes one exists
+### 5.1 A new `GET /issues` page had to be built - the spec assumes one exists
 
 The spec's frontend section says "Issue List page (extend)," but no such
 page exists: Stage 5 deliberately kept the project detail page's issue
@@ -153,10 +153,10 @@ table minimal and explicitly did *not* build a real list/search page
 (STAGE-05-REPORT.md §5.7), and no stage since has added one. Saved
 filters are meaningless without somewhere to apply status/priority/
 project/assignee filters and see results, so `GET /issues` was added as
-the minimal necessary infrastructure — the same reasoning already used
+the minimal necessary infrastructure - the same reasoning already used
 twice before (Stage 5's project-issue table, Stage 5's screenshot route).
 It supports exactly the five filter dimensions the spec names or implies
-("status, priority, project, assignee, etc." — `issue_type` was added as
+("status, priority, project, assignee, etc." - `issue_type` was added as
 the one reasonable "etc." given it's already a first-class column with
 no schema cost), nothing more: no pagination, no free-text search, no
 sorting controls.
@@ -167,8 +167,8 @@ The spec doesn't explicitly state a role for `POST /issues/<id>/sprint`
 specifically, but `services/project_service.py`'s own docstring (written
 in Stage 4) already names a Stage 3 permission called "Manage sprints,"
 granted to Admin/PM. Since Stage 8 is the first stage sprints actually
-exist, all sprint-related actions — including backlog grooming, not just
-lifecycle transitions — were treated as falling under that one
+exist, all sprint-related actions - including backlog grooming, not just
+lifecycle transitions - were treated as falling under that one
 permission. `sprint_service.verify_sprint_manager()` gates all four
 sprint routes and the sprint-assignment route identically. Flagged since
 the spec text alone doesn't spell this out for the assignment route
@@ -181,7 +181,7 @@ Unlike Stage 4's issue-number allocation (`SELECT ... FOR UPDATE` inside
 one transaction, because concurrent issue creation is a realistic hot
 path), starting a sprint is a rare, deliberate, human-triggered action.
 `sprint_service.start_sprint()` reads `get_active_for_project()` and then
-writes, as two separate steps — a narrow race window exists if two people
+writes, as two separate steps - a narrow race window exists if two people
 click "Start" on two different sprints in the same project in the same
 instant, in theory. The Definition of Done only requires the rule be
 enforced in the normal case ("attempting to start a second sprint while
@@ -197,13 +197,13 @@ story points/issues as of each day, not a static mock"), each day's
 remaining-work figure is computed by replaying every issue's Stage 6
 status-change history up to that day (`burndown_service._status_as_of()`)
 rather than just plotting today's snapshot repeated across the whole
-range — verified directly in §7 with a controlled history entry at a
+range - verified directly in §7 with a controlled history entry at a
 known timestamp, confirming the line actually drops on the right day
 rather than being flat. Two simplifications were made deliberately: (1)
 the chart uses whichever issues are *currently* in the sprint, so an
 issue added or removed from the sprint mid-sprint is treated as if it had
 always been there (or never was), and (2) the same is true for point
-values — a story-point re-estimate changes the whole chart's shape
+values - a story-point re-estimate changes the whole chart's shape
 retroactively rather than only affecting days after the re-estimate.
 Both are standard simplifications for a burndown built without a
 separate scope-history table, but are real gaps worth flagging. The
@@ -224,13 +224,13 @@ before comparison) match and returns a clear "not found" error otherwise.
 ### 5.6 The link-creation form offers seven options, not four, from the current issue's point of view
 
 The spec lists four relationship families (`blocks`/`blocked by`,
-`relates to`, `duplicates`/`duplicated by`, `clones`/`cloned by`) — seven
+`relates to`, `duplicates`/`duplicated by`, `clones`/`cloned by`) - seven
 labeled choices once every directional pair is counted individually. The
 add-link `<select>` on the detail page offers exactly those seven
 (`services/link_service.py::LINK_FORM_OPTIONS`), each mapping to which
 side of the single stored row (`bug_id_a`/`bug_id_b`) the *current* issue
 ends up on. Choosing "Blocked by" on WEB-5 targeting WEB-9 stores
-`(bug_id_a=WEB-9, bug_id_b=WEB-5, link_type='blocks')` — so WEB-9's own
+`(bug_id_a=WEB-9, bug_id_b=WEB-5, link_type='blocks')` - so WEB-9's own
 page then correctly reads "Blocks WEB-5," derived, with no second row.
 `templates/base.html` gained a `{% block scripts %}` hook (empty on every
 page except `backlog.html`) purely so the Chart.js CDN tag and its inline
@@ -242,7 +242,7 @@ loading on every page in the app.
 `sprint_service.list_open_sprints()` only ever returns `future`/`active`
 sprints (`OPEN_STATUSES`); a closed sprint's section simply stops
 rendering on `/backlog`. The spec's own frontend description only calls
-for "one collapsible section per sprint (future/active)" — closed
+for "one collapsible section per sprint (future/active)" - closed
 sprints were never asked to appear there, and there is no other page yet
 for browsing sprint history. This is a real, flagged gap (once a sprint
 closes, there is currently no UI to see it again at all, though its data
@@ -309,44 +309,44 @@ and `static/script.js` parses cleanly (`node -c`).
 ## 8. Interpretations and open items
 
 **A new `GET /issues` page (§5.1)** and the reasoning behind it is the
-single biggest interpretation this stage rests on — flagged clearly, same
+single biggest interpretation this stage rests on - flagged clearly, same
 as the two prior instances of this pattern in Stage 5.
 
 **Sprint/backlog management is Admin/PM-only, including issue↔sprint
-assignment (§5.2)** — extends a permission the spec named in Stage 3 but
+assignment (§5.2)** - extends a permission the spec named in Stage 3 but
 never previously exercised; worth confirming this matches intent, since a
 Developer currently cannot even move their own issue into the sprint
 they're working from.
 
-**No transactional locking on the single-active-sprint rule (§5.3)** — a
+**No transactional locking on the single-active-sprint rule (§5.3)** - a
 theoretical race exists between two simultaneous "Start" clicks in the
 same project; not stress-tested the way Stage 4's issue-key allocation
 was, since starting a sprint is a low-frequency, human-paced action.
 
-**Burndown scope is always "current," never historical (§5.4)** — both
+**Burndown scope is always "current," never historical (§5.4)** - both
 which issues count and how many points each is worth are taken from the
 sprint's present-day membership, applied uniformly across the whole
 chart. A sprint whose scope changed mid-flight will show a chart that
 doesn't perfectly match what a team would have seen in real time on an
 earlier day.
 
-**No live search for link targets (§5.5)** — exact-key lookup only;
+**No live search for link targets (§5.5)** - exact-key lookup only;
 flagged in case a fuzzy/typeahead search was actually wanted (would need
 a new AJAX endpoint beyond what this stage's route table lists).
 
-**Closed sprints have no page at all (§5.7)** — once closed, a sprint's
+**Closed sprints have no page at all (§5.7)** - once closed, a sprint's
 data still exists (its issues keep their history), but there is currently
 no UI anywhere to view it again. Acceptable for this stage; likely
 belongs with whatever later stage adds cross-sprint reporting.
 
 **The DDL has not been run against a live MySQL.** `scripts/create_tables.py`
 was syntax-checked (`py_compile`) and reasoned through, but as in every
-prior stage, the sandbox has no MySQL server to execute it against — in
+prior stage, the sandbox has no MySQL server to execute it against - in
 particular, the `sprints`→`bugs` foreign key ordering (sprints must be
 created before bugs on a fresh database), the `issue_links` table's two
 FKs to `bugs`, and the `saved_filters.filter_data` JSON column have not
 been confirmed against a real server. Please run
-`python -m scripts.create_tables` and check its output — it should print
+`python -m scripts.create_tables` and check its output - it should print
 a line for `sprints`, `issue_links`, and `saved_filters`, plus a line
 confirming `bugs.sprint_id` was added (only relevant if your database
 predates this stage).
@@ -356,17 +356,17 @@ predates this stage).
 ## 9. Notes for Stage 9
 
 - `services/sprint_service.OPEN_STATUSES` (`["active", "future"]`) is the
-  reference list for "sprints still relevant to planning" — anything that
+  reference list for "sprints still relevant to planning" - anything that
   needs to reason about closed sprints will need a new query, since
   today's repository functions were never asked to return them together
   with open ones.
 - `services/link_service.LINK_FORM_OPTIONS` and its `FORWARD_LABELS`/
   `REVERSE_LABELS` dicts are the canonical place link-type display text
-  lives — reuse rather than re-deriving if another page ever needs to
+  lives - reuse rather than re-deriving if another page ever needs to
   show a link's label.
 - `services/burndown_service._status_as_of()` is a generically useful
   "what was this issue's status on day X" reconstruction built on top of
-  `bug_history` — worth reusing directly rather than rewriting if a later
+  `bug_history` - worth reusing directly rather than rewriting if a later
   stage needs historical status data for any other reason (e.g. a
   cumulative flow diagram).
 - `templates/base.html`'s new `{% block scripts %}` hook is available to

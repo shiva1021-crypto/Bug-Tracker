@@ -13,7 +13,7 @@ from flask import (
     url_for,
 )
 
-from services import auth_service
+from services import auth_service, rate_limit_service
 from utils.auth import current_user, end_session, login_required, start_session
 
 auth_bp = Blueprint("auth", __name__)
@@ -23,6 +23,20 @@ auth_bp = Blueprint("auth", __name__)
 def register():
     if request.method == "GET":
         return render_template("auth/register.html")
+
+    # Stage 10: rate limit registration attempts per IP -- keyed by IP only
+    # (not the submitted email), since at this point the email may not
+    # correspond to any real account yet, and IP is what actually identifies
+    # "one script hammering this endpoint."
+    client_ip = request.remote_addr or "unknown"
+    if rate_limit_service.is_blocked(client_ip):
+        wait_seconds = rate_limit_service.seconds_until_reset(client_ip)
+        flash(
+            f"Too many registration attempts. Try again in about "
+            f"{max(1, wait_seconds // 60)} minute(s).",
+            "error",
+        )
+        return render_template("auth/register.html"), 429
 
     full_name = request.form.get("full_name", "")
     email = request.form.get("email", "")
@@ -34,6 +48,7 @@ def register():
         full_name, email, password, confirm_password, organization_name
     )
     if errors:
+        rate_limit_service.record_failure(client_ip)
         for error in errors:
             flash(error, "error")
         # Re-render with the non-secret fields preserved; never echo passwords.
@@ -46,6 +61,8 @@ def register():
             ),
             400,
         )
+
+    rate_limit_service.record_success(client_ip)
 
     result = auth_service.register(
         full_name,
@@ -62,7 +79,7 @@ def register():
             "You're its admin.",
             "success",
         )
-        return redirect(url_for("auth.profile"))
+        return redirect(url_for("dashboard.dashboard"))
 
     # Existing organization: a registration_requests row was filed, no
     # account exists yet. Redirect (rather than render directly) so a page
@@ -92,15 +109,37 @@ def login():
     email = request.form.get("email", "")
     password = request.form.get("password", "")
 
+    # Stage 10: rate limit both the IP and the account being targeted --
+    # "per IP/account" per the spec -- so brute-forcing either one login
+    # from many IPs, or many logins from one IP -- gets slowed down.
+    # Blocked here means "don't even check the password," so a blocked
+    # attacker can't use response timing to keep guessing.
+    client_ip = request.remote_addr or "unknown"
+    normalized_email = auth_service.normalize_email(email)
+    if rate_limit_service.is_blocked(client_ip) or rate_limit_service.is_blocked(normalized_email):
+        identifier = client_ip if rate_limit_service.is_blocked(client_ip) else normalized_email
+        wait_seconds = rate_limit_service.seconds_until_reset(identifier)
+        flash(
+            f"Too many login attempts. Try again in about "
+            f"{max(1, wait_seconds // 60)} minute(s).",
+            "error",
+        )
+        return render_template("auth/login.html", email=email), 429
+
     user = auth_service.authenticate(email, password)
     if user is None:
         # Identical response for unknown email, wrong password, and an email
         # that only exists as a still-pending registration request.
+        rate_limit_service.record_failure(client_ip)
+        if normalized_email:
+            rate_limit_service.record_failure(normalized_email)
         flash(auth_service.GENERIC_LOGIN_ERROR, "error")
         return render_template("auth/login.html", email=email), 401
 
+    rate_limit_service.record_success(client_ip)
+    rate_limit_service.record_success(normalized_email)
     start_session(user)
-    return redirect(url_for("auth.profile"))
+    return redirect(url_for("dashboard.dashboard"))
 
 
 @auth_bp.post("/logout")

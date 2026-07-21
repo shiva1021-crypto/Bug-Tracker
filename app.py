@@ -5,6 +5,7 @@ Wires configuration, session settings, and route blueprints together. Importing
 weak/missing SECRET_KEY makes this raise before the app can serve traffic).
 """
 
+import os
 from datetime import timedelta
 
 from flask import Flask, render_template, request
@@ -15,12 +16,15 @@ from routes.auth_routes import auth_bp
 from routes.automation_routes import automation_bp
 from routes.backlog_routes import backlog_bp
 from routes.board_routes import board_bp
+from routes.dashboard_routes import dashboard_bp
 from routes.field_routes import field_bp
 from routes.filter_routes import filter_bp
 from routes.health_routes import health_bp
 from routes.issue_routes import issue_bp
 from routes.project_routes import project_bp
+from routes.report_routes import report_bp
 from routes.version_routes import version_bp
+from services import notification_worker
 from utils.auth import current_user
 from utils.security import CSRF_FORM_FIELD, generate_csrf_token, validate_csrf_token
 
@@ -49,6 +53,20 @@ def create_app() -> Flask:
     app.register_blueprint(field_bp)
     app.register_blueprint(automation_bp)
     app.register_blueprint(version_bp)
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(report_bp)
+
+    # Stage 10: start the email-outbox background worker, once.
+    #
+    # Under the Flask dev server's reloader (`python run.py`, debug=True),
+    # this module is imported twice: once by the watcher parent process
+    # (which never serves traffic) and once by the actual child process
+    # that does (marked by WERKZEUG_RUN_MAIN=true). Starting the thread in
+    # the parent too would leave an orphaned worker running against a
+    # process that never accepts a request. In production there is no
+    # reloader at all, so the guard just falls through to "always start."
+    if config.IS_PRODUCTION or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        notification_worker.start()
 
     @app.errorhandler(404)
     def not_found(_error):

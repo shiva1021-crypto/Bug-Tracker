@@ -15,6 +15,7 @@ from repositories import (
     user_repository,
     watcher_repository,
 )
+from services import notification_service
 
 # Canonical order from the spec. Kept as an ordered list (not a set) since
 # the frontend needs to render them in order; nothing in this module
@@ -97,6 +98,10 @@ def change_status(issue: dict, new_status: str, changed_by_user: dict) -> tuple[
         old_status=old_status,
         new_status=new_status,
     )
+    # Stage 10: "Sent for: ... status changes (to reporter + watchers)" --
+    # queued to the outbox, never sent inline here (see
+    # services/notification_service.py's own docstring for why).
+    notification_service.notify_status_changed(issue, old_status, new_status)
     return True, None
 
 
@@ -155,6 +160,16 @@ def assign_issue(
             old_status=old_status,
             new_status=new_status,
         )
+
+    # Stage 10: "Sent for: issue assignment, status changes..." -- both,
+    # if applicable. `assignee` was already fetched above during
+    # validation, so this is not a second query. Never sent for an
+    # *un*-assignment (new_assigned_to is None): there is no one to notify.
+    if new_assigned_to is not None:
+        notification_service.notify_issue_assigned(issue, assignee)
+    if new_status != old_status:
+        notification_service.notify_status_changed(issue, old_status, new_status)
+
     return True, None
 
 

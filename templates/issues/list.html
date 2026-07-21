@@ -25,7 +25,7 @@
         <select id="filter-project" name="project_id" class="input board-select">
           <option value="">All Projects</option>
           {% for p in projects %}
-            <option value="{{ p.id }}" {{ 'selected' if filters.project_id == p.id else '' }}>{{ p.project_key }} — {{ p.name }}</option>
+            <option value="{{ p.id }}" {{ 'selected' if filters.project_id == p.id else '' }}>{{ p.project_key }} - {{ p.name }}</option>
           {% endfor %}
         </select>
       </div>
@@ -108,7 +108,7 @@
             <td><span class="badge status-badge status-{{ row.status | lower | replace(' ', '-') }}">{{ row.status }}</span></td>
             <td><span class="badge priority-{{ row.priority | lower }}">{{ row.priority }}</span></td>
             <td>{{ row.assigned_to_name or 'Unassigned' }}</td>
-            <td>{{ row.story_points if row.story_points is not none else '—' }}</td>
+            <td>{{ row.story_points if row.story_points is not none else '-' }}</td>
           </tr>
         {% else %}
           <tr><td colspan="7" class="empty-row">No issues match this filter.</td></tr>

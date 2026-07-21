@@ -13,7 +13,7 @@
         <label class="label" for="board-project">Project</label>
         <select id="board-project" name="project" class="input board-select" onchange="this.form.submit()">
           {% for p in projects %}
-            <option value="{{ p.id }}" {{ 'selected' if selected_project and p.id == selected_project.id else '' }}>{{ p.project_key }} — {{ p.name }}</option>
+            <option value="{{ p.id }}" {{ 'selected' if selected_project and p.id == selected_project.id else '' }}>{{ p.project_key }} - {{ p.name }}</option>
           {% endfor %}
         </select>
       </div>

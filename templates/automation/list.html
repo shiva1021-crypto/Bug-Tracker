@@ -26,7 +26,7 @@
         <select class="input" id="rule-scope" name="project_id">
           <option value="">Organization-wide (every project)</option>
           {% for p in projects %}
-            <option value="{{ p.id }}" {{ "selected" if form.get('project_id') == (p.id | string) else "" }}>{{ p.project_key }} — {{ p.name }}</option>
+            <option value="{{ p.id }}" {{ "selected" if form.get('project_id') == (p.id | string) else "" }}>{{ p.project_key }} - {{ p.name }}</option>
           {% endfor %}
         </select>
       </div>

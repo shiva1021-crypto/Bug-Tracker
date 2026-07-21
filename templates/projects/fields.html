@@ -70,7 +70,7 @@
           <td>{{ field.name }}</td>
           <td><span class="badge">{{ field.field_type | capitalize }}</span></td>
           <td>{{ 'Yes' if field.required else 'No' }}</td>
-          <td>{{ (field.options | join(', ')) if field.options else '—' }}</td>
+          <td>{{ (field.options | join(', ')) if field.options else '-' }}</td>
           <td>
             <form method="post" action="{{ url_for('fields.delete_field', project_id=project.id, field_id=field.id) }}"
                   onsubmit="return confirm('Delete this field? Its stored values on every issue will be removed.');">

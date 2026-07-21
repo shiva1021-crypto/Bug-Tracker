@@ -121,7 +121,7 @@
         .forEach(function (c) {
           var option = document.createElement("option");
           option.value = c.id;
-          option.textContent = c.issue_key + " — " + c.title;
+          option.textContent = c.issue_key + " - " + c.title;
           if (String(c.id) === String(preselected)) option.selected = true;
           parentSelect.appendChild(option);
         });
@@ -623,6 +623,37 @@
     });
   }
 
+  /* ------------------------------------------------------ dashboard (Stage 10) */
+
+  function initAddWidgetModal() {
+    var toggle = document.querySelector("[data-add-widget-toggle]");
+    var modal = document.querySelector("[data-add-widget-modal]");
+    var cancel = document.querySelector("[data-add-widget-cancel]");
+    if (!toggle || !modal) return;
+
+    function open() {
+      modal.hidden = false;
+      var firstField = modal.querySelector("select, input");
+      if (firstField) firstField.focus();
+    }
+
+    function close() {
+      modal.hidden = true;
+    }
+
+    toggle.addEventListener("click", open);
+    if (cancel) cancel.addEventListener("click", close);
+
+    // Clicking the dimmed backdrop (not the card itself) also dismisses it.
+    modal.addEventListener("click", function (event) {
+      if (event.target === modal) close();
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && !modal.hidden) close();
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     initUserMenu();
     initSidebarToggle();
@@ -644,5 +675,6 @@
     initConditionRows();
     initActionTypeFields();
     initDynamicFieldsAndVersions();
+    initAddWidgetModal();
   });
 })();

@@ -18,7 +18,7 @@
           <span class="sidebar-toggle-bar"></span>
         </button>
       {% endif %}
-      <a class="brand" href="{{ url_for('auth.profile') if current_user else url_for('auth.login') }}">
+      <a class="brand" href="{{ url_for('dashboard.dashboard') if current_user else url_for('auth.login') }}">
         <span class="brand-mark" aria-hidden="true">BT</span>
         <span class="brand-name">Bug Tracker</span>
       </a>
@@ -55,6 +55,8 @@
     {% if current_user %}
       <aside class="sidebar" data-sidebar>
         <nav class="sidebar-nav">
+          <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'dashboard.dashboard' else '' }}"
+             href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
           <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint in ('projects.list_projects', 'projects.project_detail') else '' }}"
              href="{{ url_for('projects.list_projects') }}">Projects</a>
           <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'board.board' else '' }}"
@@ -68,6 +70,8 @@
           {% if current_user.role in ('admin', 'project_manager') %}
             <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'automation.list_rules' else '' }}"
                href="{{ url_for('automation.list_rules') }}">Automation</a>
+            <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'reports.reports' else '' }}"
+               href="{{ url_for('reports.reports') }}">Reports</a>
           {% endif %}
           {% if current_user.role == 'admin' %}
             <a class="sidebar-link {{ 'sidebar-link-active' if request.endpoint == 'admin.users_page' else '' }}"

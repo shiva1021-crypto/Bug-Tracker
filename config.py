@@ -113,6 +113,40 @@ class Config:
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     SCREENSHOT_UPLOAD_DIR: Path = BASE_DIR / "uploads" / "screenshots"
 
+    # Stage 10: absolute base URL used to build links inside notification
+    # emails (e.g. "http://localhost:5000/issues/42"). A request's own Host
+    # header isn't available from the background worker thread, which has
+    # no request context at all, so this must be configured explicitly
+    # rather than derived from `request`.
+    APP_BASE_URL: str = os.getenv("APP_BASE_URL", "http://127.0.0.1:5000").rstrip("/")
+
+    # Stage 10: email notifications. SMTP_HOST left blank means "not
+    # configured" -- the background worker (services/notification_worker.py)
+    # treats that as "nothing to do this cycle" rather than an error, so
+    # the app runs fine with no mail server at all; rows just queue up in
+    # `email_outbox` until SMTP is configured.
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "").strip()
+    SMTP_PORT: int = _int_env("SMTP_PORT", 587)
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "").strip()
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_USE_TLS: bool = _bool_env("SMTP_USE_TLS", True)
+    SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "bugtracker@example.com").strip()
+
+    # Per the spec: "Make it configurable to disable entirely... for
+    # environments without SMTP configured, so the app still runs without
+    # crashing." Defaults on; set to false to skip starting the background
+    # thread altogether (outbox rows still get written, just never sent).
+    NOTIFICATION_WORKER_ENABLED: bool = _bool_env("NOTIFICATION_WORKER_ENABLED", True)
+    NOTIFICATION_WORKER_INTERVAL_SECONDS: int = _int_env("NOTIFICATION_WORKER_INTERVAL_SECONDS", 10)
+
+    # Stage 10: rate limiting. "memory" (default) needs nothing extra and
+    # works for a single process; "database" persists counters in
+    # `auth_rate_limits` so the limit is shared across multiple app
+    # instances behind a load balancer.
+    RATELIMIT_STORAGE: str = os.getenv("RATELIMIT_STORAGE", "memory").strip().lower()
+    RATELIMIT_MAX_ATTEMPTS: int = _int_env("RATELIMIT_MAX_ATTEMPTS", 5)
+    RATELIMIT_WINDOW_SECONDS: int = _int_env("RATELIMIT_WINDOW_SECONDS", 900)
+
     @classmethod
     def db_connection_kwargs(cls, include_database: bool = True) -> dict:
         """Keyword args for a MySQL connection.

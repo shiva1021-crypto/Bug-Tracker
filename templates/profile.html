@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Profile · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page">
+
+  {% include "partials/flashes.html" %}
+
+  <h1 class="page-title">Profile</h1>
+
+  <div class="card profile-card">
+    <div class="profile-head">
+      <span class="avatar avatar-lg" aria-hidden="true">{{ user.full_name[:1] | upper }}</span>
+      <div>
+        <h2 class="profile-name">{{ user.full_name }}</h2>
+        <p class="profile-email">{{ user.email }}</p>
+      </div>
+    </div>
+
+    <dl class="detail-list">
+      <div class="detail-row">
+        <dt>Full name</dt>
+        <dd>{{ user.full_name }}</dd>
+      </div>
+      <div class="detail-row">
+        <dt>Email</dt>
+        <dd>{{ user.email }}</dd>
+      </div>
+      <div class="detail-row">
+        <dt>Member since</dt>
+        <dd>{{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}</dd>
+      </div>
+    </dl>
+  </div>
+
+</div>
+{% endblock %}

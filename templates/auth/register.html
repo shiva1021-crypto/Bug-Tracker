@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Register · Bug Tracker{% endblock %}
+{% block main_class %}auth-shell{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+
+  <div class="auth-logo">
+    <span class="brand-mark brand-mark-lg" aria-hidden="true">BT</span>
+    <h1 class="auth-logo-name">Bug Tracker</h1>
+  </div>
+
+  {% include "partials/flashes.html" %}
+
+  <div class="card auth-card">
+    <h2 class="auth-title">Create your account</h2>
+
+    <!-- data-register-form drives the client-side password-match check in
+         script.js. The server re-validates everything regardless. -->
+    <form method="post" action="{{ url_for('auth.register') }}" novalidate
+          data-register-form>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="field">
+        <label class="label" for="full_name">Full Name</label>
+        <input class="input" type="text" id="full_name" name="full_name"
+               value="{{ full_name or '' }}" maxlength="150"
+               autocomplete="name" required autofocus>
+      </div>
+
+      <div class="field">
+        <label class="label" for="email">Email</label>
+        <input class="input" type="email" id="email" name="email"
+               value="{{ email or '' }}" maxlength="150"
+               autocomplete="email" required>
+      </div>
+
+      <div class="field">
+        <label class="label" for="password">Password</label>
+        <input class="input" type="password" id="password" name="password"
+               minlength="8" autocomplete="new-password" required
+               data-password>
+        <p class="hint">At least 8 characters.</p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="confirm_password">Confirm Password</label>
+        <input class="input" type="password" id="confirm_password"
+               name="confirm_password" autocomplete="new-password" required
+               data-confirm-password>
+        <p class="field-error" data-password-error hidden>Passwords do not match.</p>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+    </form>
+  </div>
+
+  <p class="auth-alt">
+    Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a>.
+  </p>
+
+</div>
+{% endblock %}

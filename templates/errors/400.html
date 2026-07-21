@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Request blocked · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page">
+  <h1 class="page-title">Request blocked</h1>
+  <div class="card">
+    <p>
+      This form could not be submitted because its security token was missing or
+      out of date. This usually means the page sat open for a long time.
+    </p>
+    <p>Please reload the page and try again.</p>
+  </div>
+</div>
+{% endblock %}

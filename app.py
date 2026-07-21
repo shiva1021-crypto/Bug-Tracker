@@ -7,10 +7,13 @@ weak/missing SECRET_KEY makes this raise before the app can serve traffic).
 
 from datetime import timedelta
 
-from flask import Flask
+from flask import Flask, render_template, request
 
 from config import config
+from routes.auth_routes import auth_bp
 from routes.health_routes import health_bp
+from utils.auth import current_user
+from utils.security import CSRF_FORM_FIELD, generate_csrf_token, validate_csrf_token
 
 
 def create_app() -> Flask:
@@ -27,6 +30,41 @@ def create_app() -> Flask:
 
     # Blueprints (route layer).
     app.register_blueprint(health_bp)
+    app.register_blueprint(auth_bp)
+
+    @app.before_request
+    def enforce_csrf():
+        """Validate the CSRF token on every state-changing request.
+
+        Applied centrally so a new POST route cannot forget it.
+        """
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            if not validate_csrf_token(request.form.get(CSRF_FORM_FIELD)):
+                return render_template("errors/400.html"), 400
+        return None
+
+    @app.after_request
+    def no_store(response):
+        """Stop the browser caching authenticated pages.
+
+        Without this, pressing Back after logout can redisplay a protected page
+        straight from the browser's cache.
+        """
+        if request.endpoint != "static":
+            response.headers["Cache-Control"] = (
+                "no-store, no-cache, must-revalidate, max-age=0"
+            )
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
+    @app.context_processor
+    def inject_globals():
+        """Make `current_user` and `csrf_token()` available in every template."""
+        return {
+            "current_user": current_user(),
+            "csrf_token": generate_csrf_token,
+        }
 
     return app
 

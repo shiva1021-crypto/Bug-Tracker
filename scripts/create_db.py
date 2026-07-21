@@ -3,7 +3,7 @@
 Run from the project root:
     python -m scripts.create_db
 
-Idempotent: safe to run repeatedly. No tables are created here — the schema
+Idempotent: safe to run repeatedly. No tables are created here - the schema
 starts arriving in a later stage. Exit code 0 on success, 1 on failure.
 """
 

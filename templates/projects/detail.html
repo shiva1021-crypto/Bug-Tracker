@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }} · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page">
+
+  {% include "partials/flashes.html" %}
+
+  <div class="page-head">
+    <h1 class="page-title">
+      <span class="project-key-badge">{{ project.project_key }}</span>
+      {{ project.name }}
+    </h1>
+    <a class="btn btn-secondary" href="{{ url_for('projects.list_projects') }}">Back to Projects</a>
+  </div>
+
+  <div class="card">
+    <p>{{ project.description or 'No description.' }}</p>
+    <p class="hint">The board for this project isn't built yet - that arrives in a later stage.</p>
+  </div>
+
+</div>
+{% endblock %}

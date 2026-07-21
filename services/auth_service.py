@@ -9,6 +9,11 @@ a brand-new organization name makes the registrant that org's first user,
 automatically Admin; an existing organization name creates a pending
 `registration_requests` row instead of a `users` row, and an admin of that
 org must approve or reject it later (see `services/admin_service.py`).
+
+Stage 4 adds one more step to the new-organization path: a "General"
+project is auto-created immediately, per that stage's Definition of Done
+("A brand-new organization has exactly one project ('General') immediately
+after registration.") -- see `services/project_service.py`.
 """
 
 import re
@@ -16,6 +21,7 @@ import re
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from repositories import organization_repository, registration_request_repository, user_repository
+from services import project_service
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -127,6 +133,7 @@ def register(
             organization_id=organization_id,
             role="admin",
         )
+        project_service.create_default_project(organization_id)
         return {
             "outcome": "created",
             "user": {

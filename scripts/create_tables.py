@@ -54,14 +54,31 @@ CREATE TABLE IF NOT EXISTS registration_requests (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 """
 
-# Order matters: organizations before users (FK target) and before
-# registration_requests (FK target). users is created here only for a
-# brand-new database; on an existing Stage-2 database this is a no-op and
+PROJECTS_TABLE = """
+CREATE TABLE IF NOT EXISTS projects (
+    id                 INT AUTO_INCREMENT PRIMARY KEY,
+    organization_id    INT NOT NULL,
+    name               VARCHAR(150) NOT NULL,
+    project_key        VARCHAR(10) NOT NULL,
+    description        TEXT,
+    next_issue_number  INT NOT NULL DEFAULT 1,
+    created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_projects_organization
+        FOREIGN KEY (organization_id) REFERENCES organizations(id)
+        ON DELETE CASCADE,
+    CONSTRAINT uq_projects_org_key UNIQUE (organization_id, project_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+"""
+
+# Order matters: organizations before users/projects/registration_requests
+# (all three FK to it). users is created here only for a brand-new
+# database; on an existing Stage-2 database this is a no-op and
 # _migrate_users_table() below handles adding the new columns.
 STATEMENTS = [
     ("organizations", ORGANIZATIONS_TABLE),
     ("users", USERS_TABLE),
     ("registration_requests", REGISTRATION_REQUESTS_TABLE),
+    ("projects", PROJECTS_TABLE),
 ]
 
 

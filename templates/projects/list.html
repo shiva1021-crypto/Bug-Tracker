@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Projects · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page page-wide">
+
+  {% include "partials/flashes.html" %}
+
+  <div class="page-head">
+    <h1 class="page-title">Projects</h1>
+    {% if current_user.role in ('admin', 'project_manager') %}
+      <button type="button" class="btn btn-primary" data-new-project-toggle>+ New Project</button>
+    {% endif %}
+  </div>
+
+  {% if current_user.role in ('admin', 'project_manager') %}
+  <div class="card new-project-form" data-new-project-form {{ '' if form_open else 'hidden' }}>
+    <h2 class="section-title">New Project</h2>
+    <form method="post" action="{{ url_for('projects.create_project') }}" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="field">
+        <label class="label" for="name">Name</label>
+        <input class="input" type="text" id="name" name="name"
+               value="{{ name or '' }}" maxlength="150" required autofocus>
+      </div>
+
+      <div class="field">
+        <label class="label" for="project_key">Key</label>
+        <input class="input input-uppercase" type="text" id="project_key" name="project_key"
+               value="{{ project_key or '' }}" maxlength="6" required>
+        <p class="hint">2–6 letters, e.g. WEB. Always stored uppercase.</p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="description">Description</label>
+        <textarea class="input" id="description" name="description" rows="2">{{ description or '' }}</textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Create Project</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="project-grid">
+    {% for project in projects %}
+      <a class="card project-card" href="{{ url_for('projects.project_detail', project_id=project.id) }}">
+        <div class="project-card-head">
+          <span class="project-key-badge">{{ project.project_key }}</span>
+          <h2 class="project-card-name">{{ project.name }}</h2>
+        </div>
+        <p class="project-card-desc">{{ project.description or 'No description.' }}</p>
+      </a>
+    {% else %}
+      <p class="empty-state">No projects yet.</p>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Bug Tracker — shared script
+   Bug Tracker - shared script
    Plain JavaScript, no framework. Added to in later stages.
    ========================================================================== */
 
@@ -54,8 +54,24 @@
     });
   }
 
+  /* -------------------------------------------------- new project toggle */
+
+  function initNewProjectToggle() {
+    var toggle = document.querySelector("[data-new-project-toggle]");
+    var form = document.querySelector("[data-new-project-form]");
+    if (!toggle || !form) return;
+
+    toggle.addEventListener("click", function () {
+      form.hidden = !form.hidden;
+      if (!form.hidden) {
+        var firstField = form.querySelector("input, textarea");
+        if (firstField) firstField.focus();
+      }
+    });
+  }
+
   /* ------------------------------------------ register password matching */
-  /* Convenience only — services/auth_service.py re-validates on the server. */
+  /* Convenience only - services/auth_service.py re-validates on the server. */
 
   function initRegisterForm() {
     var form = document.querySelector("[data-register-form]");
@@ -92,6 +108,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     initUserMenu();
     initSidebarToggle();
+    initNewProjectToggle();
     initRegisterForm();
   });
 })();

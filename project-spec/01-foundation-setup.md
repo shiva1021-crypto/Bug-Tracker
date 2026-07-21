@@ -1,9 +1,9 @@
-# Stage 1 — Foundation & Setup
+# Stage 1 - Foundation & Setup
 
 ## Goal
 Stand up a runnable, empty skeleton: a Flask app that boots, connects to
 MySQL through a pooled connection, and reports its own health. No features
-yet — this is pure plumbing everything else builds on.
+yet - this is pure plumbing everything else builds on.
 
 ## Prerequisites
 None. This is the first stage.
@@ -15,12 +15,12 @@ None. This is the first stage.
 - Environment-based configuration (dev vs production), loaded from a `.env` file, never hardcoded.
 - A secret key for session signing that is auto-generated and persisted for local dev, but **must** be explicitly and strongly set in production (refuse to boot in production with a weak/default key).
 
-## Frontend — Design & Layout
-None yet. If you want a visible placeholder, a single JSON status response is enough — no HTML pages until Stage 2.
+## Frontend - Design & Layout
+None yet. If you want a visible placeholder, a single JSON status response is enough - no HTML pages until Stage 2.
 
-## Backend — Data Model & API
+## Backend - Data Model & API
 
-**Database:** create one empty database (name it whatever you like, e.g. `bug_tracker_db`). No tables in this stage — the schema starts arriving in Stage 3.
+**Database:** create one empty database (name it whatever you like, e.g. `bug_tracker_db`). No tables in this stage - the schema starts arriving in Stage 3.
 
 **Routes:**
 | Method | Path | Purpose |

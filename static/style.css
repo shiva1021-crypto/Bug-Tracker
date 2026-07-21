@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Bug Tracker — shared stylesheet
+   Bug Tracker - shared stylesheet
    Established in Stage 2; this is the visual foundation every later stage
    builds on. Jira-inspired: blue accent, neutral grays, clean sans-serif.
    All colors go through CSS variables so dark mode is a variable swap.
@@ -384,6 +384,9 @@ h1, h2, h3 { margin: 0; font-weight: 600; color: var(--text); }
 .btn-primary { background: var(--accent); color: var(--accent-contrast); }
 .btn-primary:hover { background: var(--accent-hover); }
 
+.btn-secondary { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
+.btn-secondary:hover { background: var(--border); }
+
 .btn-success { background: var(--success); color: var(--accent-contrast); }
 .btn-success:hover { filter: brightness(1.1); }
 
@@ -502,3 +505,66 @@ h1, h2, h3 { margin: 0; font-weight: 600; color: var(--text); }
   line-height: 1.6;
   text-align: center;
 }
+
+/* -------------------------------------------------------------- projects -- */
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.page-head .page-title { margin-bottom: 0; }
+
+.new-project-form { margin-bottom: 20px; }
+.new-project-form[hidden] { display: none; }
+
+.input-uppercase { text-transform: uppercase; }
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.project-card {
+  display: block;
+  color: var(--text);
+}
+.project-card:hover { text-decoration: none; border-color: var(--border-strong); }
+
+.project-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.project-key-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.project-card-name { font-size: 15px; display: inline; }
+
+.project-card-desc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.empty-state { color: var(--text-muted); padding: 20px 0; }

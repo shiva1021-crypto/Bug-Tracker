@@ -1,9 +1,9 @@
-# Stage 2 — Authentication · Completion Report
+# Stage 2 - Authentication · Completion Report
 
 **Project:** Bug Tracker (Jira-style bug tracking & agile project management)
-**Stage:** 2 of 10 — Authentication
+**Stage:** 2 of 10 - Authentication
 **Spec:** `project-spec/02-authentication.md`
-**Builds on:** Stage 1 (Foundation & Setup) — see `STAGE-01-REPORT.md`
+**Builds on:** Stage 1 (Foundation & Setup) - see `STAGE-01-REPORT.md`
 **Status:** Complete and verified
 **Date:** 21 July 2026
 
@@ -12,16 +12,16 @@
 ## 1. Goal of this stage
 
 Let a person create an account and log in and out securely. No roles or
-organizations yet — the question this stage answers is only *"does this login
+organizations yet - the question this stage answers is only *"does this login
 work, and is the session safe."*
 
 Deliberately **not** built (each belongs to a later stage or was never asked for):
 
-- No roles, permissions, or organizations — those arrive in Stage 3, along with
+- No roles, permissions, or organizations - those arrive in Stage 3, along with
   `organization_id` and `role` in the session.
 - No projects, issues, boards or dashboards.
 - No password reset, email verification, "remember me", account lockout, or
-  rate limiting — the spec does not list them, so they were not added.
+  rate limiting - the spec does not list them, so they were not added.
 - No user-editable profile. The profile page is read-only, exactly as specified
   ("Basic profile page showing the logged-in user's name and email").
 
@@ -53,12 +53,12 @@ and `/` and `/health/db` behave exactly as before.
 
 ### 2.2 Modified files
 
-**`app.py`** — the only Stage 1 file touched. Four additions:
+**`app.py`** - the only Stage 1 file touched. Four additions:
 
 1. Registers `auth_bp` alongside the existing `health_bp`.
-2. `before_request` — validates the CSRF token on every state-changing request.
-3. `after_request` — sets `Cache-Control: no-store` on non-static responses.
-4. `context_processor` — injects `current_user` and `csrf_token()` into every
+2. `before_request` - validates the CSRF token on every state-changing request.
+3. `after_request` - sets `Cache-Control: no-store` on non-static responses.
+4. `context_processor` - injects `current_user` and `csrf_token()` into every
    template.
 
 ### 2.3 Layering
@@ -76,14 +76,14 @@ utils/db.py                 pooled connection from Stage 1 (unchanged)
 ```
 
 `utils/auth.py` and `utils/security.py` sit beside `utils/db.py` as
-cross-cutting helpers — they are imported by routes and by `app.py`, but they
+cross-cutting helpers - they are imported by routes and by `app.py`, but they
 never touch the database.
 
 ---
 
 ## 3. Data model
 
-**Table: `users`** — created by `python -m scripts.create_tables`.
+**Table: `users`** - created by `python -m scripts.create_tables`.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -99,7 +99,7 @@ safe to re-run.
 
 The `UNIQUE` constraint on `email` is the real guarantee against duplicate
 accounts. The service layer also checks with `email_exists()` to produce a
-friendly message, but the constraint is what actually enforces it — the check
+friendly message, but the constraint is what actually enforces it - the check
 alone would be racy under concurrent signups.
 
 ---
@@ -112,7 +112,7 @@ alone would be racy under concurrent signups.
 | POST | `/register` | none | Validates; on success creates the user and redirects to `/login`. On failure re-renders with flashes, HTTP 400. |
 | GET | `/login` | none | Renders the login card. |
 | POST | `/login` | none | On success starts the session and redirects to `/profile`. On failure re-renders with the generic error, HTTP 401. |
-| POST | `/logout` | none | Clears the session, redirects to `/login`. **POST only** — `GET /logout` returns 405. |
+| POST | `/logout` | none | Clears the session, redirects to `/login`. **POST only** - `GET /logout` returns 405. |
 | GET | `/profile` | **required** | Shows the logged-in user's name, email and join date. |
 
 Stage 1's `GET /` and `GET /health/db` are unchanged.
@@ -148,7 +148,7 @@ Every failure flashes the same constant, `GENERIC_LOGIN_ERROR`:
 
 This was verified by diffing the two response bodies (see §7). They are
 byte-identical apart from the per-session CSRF token and the email the user
-typed back into the form — neither of which reveals whether the account exists.
+typed back into the form - neither of which reveals whether the account exists.
 
 `user_repository.get_by_id()` deliberately does not select `password_hash`; only
 `get_by_email()` does, because only the login path needs it.
@@ -178,7 +178,7 @@ item.
 
 `start_session()` calls `session.clear()` *before* writing `user_id`, so nothing
 from the anonymous session survives the privilege change, and rotates the CSRF
-token — the standard defence against session-fixation. `end_session()` clears
+token - the standard defence against session-fixation. `end_session()` clears
 and re-issues in the same way.
 
 `session.permanent = True` opts the session into Stage 1's
@@ -213,7 +213,7 @@ Emails are normalised (trimmed, lowercased) on both registration and login, so
 ### 5.8 Visual foundation
 
 Per the spec, this stage establishes the design system every later stage
-inherits — all of it in `static/style.css` as CSS variables:
+inherits - all of it in `static/style.css` as CSS variables:
 
 | Token | Light | Purpose |
 |---|---|---|
@@ -247,7 +247,7 @@ python -m scripts.create_tables     # creates the users table
 python run.py                       # → http://127.0.0.1:5000
 ```
 
-`requirements.txt` did not change — no new packages are needed for this stage.
+`requirements.txt` did not change - no new packages are needed for this stage.
 
 ---
 
@@ -256,7 +256,7 @@ python run.py                       # → http://127.0.0.1:5000
 Because the sandbox used for development has no MySQL server, the full
 request flow was exercised against an in-memory stand-in for
 `repositories.user_repository`. That covers routes, services, CSRF, sessions,
-headers and template rendering — everything except the DDL itself.
+headers and template rendering - everything except the DDL itself.
 
 **19 checks, all passing.**
 
@@ -284,7 +284,7 @@ headers and template rendering — everything except the DDL itself.
 
 ¹ This check initially reported a failure. Investigation showed the two
 responses differed only by (a) the per-session CSRF token and (b) the email
-echoed back into the form field — the assertion was comparing raw bytes and was
+echoed back into the form field - the assertion was comparing raw bytes and was
 too strict. After normalising those two values the bodies are identical, with an
 empty diff. The finding was a faulty test, not an enumeration leak; the
 assertion was the thing at fault, and the behaviour is correct.
@@ -329,7 +329,7 @@ on the development machine.
   place that writes session state, so that is where they go.
 - `login_required` is in `utils/auth.py` and is the natural place for a
   role-aware variant to sit alongside.
-- CSRF is already global — new POST routes are protected automatically and need
+- CSRF is already global - new POST routes are protected automatically and need
   only the hidden field in their form.
 - The `users` table has no `organization_id` yet. Stage 3 introduces
   multi-tenancy, at which point every tenant-scoped query must filter by it.

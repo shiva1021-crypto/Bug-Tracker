@@ -3,7 +3,7 @@
     python run.py
 
 Boots Flask's built-in server with debug/reload enabled. For production use
-`wsgi.py` with Waitress or Gunicorn instead — never this.
+`wsgi.py` with Waitress or Gunicorn instead - never this.
 """
 
 from app import app

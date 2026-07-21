@@ -1,22 +1,22 @@
-# Stage 2 — Authentication
+# Stage 2 - Authentication
 
 ## Goal
 Let a person create an account and log in/out securely. No roles or
-organizations yet — just "does this login work and is the session safe."
+organizations yet - just "does this login work and is the session safe."
 
 ## Prerequisites
 Stage 1 (running app + DB connection) must be complete.
 
 ## Features to build
 - Registration form: full name, email, password (+ confirm password).
-- Passwords are hashed before storage — never stored in plain text.
-- Login form: email + password, with a generic error message on failure (never reveal whether the email exists or the password was wrong — say "Invalid email or password" either way).
+- Passwords are hashed before storage - never stored in plain text.
+- Login form: email + password, with a generic error message on failure (never reveal whether the email exists or the password was wrong - say "Invalid email or password" either way).
 - Logout (must be a POST request, not a plain link, to avoid CSRF logout tricks).
 - Session-based auth: once logged in, the user stays logged in across pages until logout or session expiry.
 - Basic profile page showing the logged-in user's name and email.
 - A `login_required` mechanism: any page that needs a logged-in user redirects to the login page if there isn't one.
 
-## Frontend — Design & Layout
+## Frontend - Design & Layout
 
 **Login page** (`/login`):
 - Centered card on a plain background, app logo/name above it.
@@ -31,11 +31,11 @@ Stage 1 (running app + DB connection) must be complete.
 - Link below the form: "Already have an account? Log in."
 
 **Base layout** (used by every page from here on):
-- Top header bar: app name/logo on the left, and on the right — when logged in — the user's name/avatar with a dropdown containing "Profile" and "Log Out".
+- Top header bar: app name/logo on the left, and on the right - when logged in - the user's name/avatar with a dropdown containing "Profile" and "Log Out".
 - When logged out, the header just shows Login/Register links.
 - Establish the shared color palette and typography now (this becomes the visual foundation for every later stage): pick a primary accent color, neutral grays for backgrounds/borders, and a monospace or clean sans-serif for the UI font.
 
-## Backend — Data Model & API
+## Backend - Data Model & API
 
 **Table: `users`**
 | Column | Type | Notes |
@@ -54,7 +54,7 @@ Stage 1 (running app + DB connection) must be complete.
 | POST | `/logout` | Clear session |
 | GET | `/profile` | Show logged-in user's info (requires login) |
 
-**Session data to store on login:** `user_id`, `full_name` (at minimum — `organization_id` and `role` get added in Stage 3).
+**Session data to store on login:** `user_id`, `full_name` (at minimum - `organization_id` and `role` get added in Stage 3).
 
 ## Definition of Done
 - [ ] Can register a new account and immediately see it hashed (not plaintext) in the `users` table.

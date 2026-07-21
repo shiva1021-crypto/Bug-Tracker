@@ -1,4 +1,4 @@
-# Bug Tracker — Build-From-Scratch Specification
+# Bug Tracker - Build-From-Scratch Specification
 
 This folder contains a complete, stage-by-stage specification for building a
 Jira-style bug tracking and agile project management tool from scratch: Flask
@@ -9,7 +9,7 @@ Jira-style bug tracking and agile project management tool from scratch: Flask
 Hand these documents to a developer (or an AI coding assistant) **one stage at
 a time, in order**. Each document is self-contained: it lists what to build,
 how it should look, and how the backend/data should work, without assuming
-access to any other codebase. Do not skip ahead — later stages assume the
+access to any other codebase. Do not skip ahead - later stages assume the
 data model and routes from earlier stages already exist.
 
 ## Stage order
@@ -34,4 +34,4 @@ data model and routes from earlier stages already exist.
 - **Architecture layering:** `routes/` (HTTP handlers) → `repositories/` (SQL) → `services/` (business rules) → `utils/` (cross-cutting helpers). Keep this separation from Stage 1 onward.
 - **Multi-tenancy:** every table that stores tenant data carries `organization_id`, and every query filters by it. Never trust a client-supplied ID without checking it belongs to the current organization.
 - **Security baseline (apply from Stage 2 onward):** CSRF tokens on every POST form, hashed passwords, HttpOnly + SameSite session cookies, input validation server-side (never trust client-side validation alone).
-- **Visual style:** clean, Jira-inspired UI — light sidebar + header layout, card-based content areas, a defined color system for priority/status badges, dark mode support from Stage 1's base layout onward.
+- **Visual style:** clean, Jira-inspired UI - light sidebar + header layout, card-based content areas, a defined color system for priority/status badges, dark mode support from Stage 1's base layout onward.

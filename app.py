@@ -13,6 +13,7 @@ from config import config
 from routes.admin_routes import admin_bp
 from routes.auth_routes import auth_bp
 from routes.health_routes import health_bp
+from routes.project_routes import project_bp
 from utils.auth import current_user
 from utils.security import CSRF_FORM_FIELD, generate_csrf_token, validate_csrf_token
 
@@ -33,6 +34,7 @@ def create_app() -> Flask:
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(project_bp)
 
     @app.before_request
     def enforce_csrf():

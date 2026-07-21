@@ -1,10 +1,10 @@
-# Stage 10 — Reporting, Dashboards & Ops · Completion Report
+# Stage 10 - Reporting, Dashboards & Ops · Completion Report
 
 **Project:** Bug Tracker (Jira-style bug tracking & agile project management)
-**Stage:** 10 of 10 — Reporting, Dashboards & Ops (final stage)
+**Stage:** 10 of 10 - Reporting, Dashboards & Ops (final stage)
 **Spec:** `project-spec/10-reporting-dashboards-ops.md`
 **Builds on:** Stages 1-9 (Foundation, Authentication, Multi-Tenancy & Roles, Projects & Issue Keys, Core Issue CRUD & Hierarchy, Workflow & Status, Kanban Board, Agile Planning, Extensibility)
-**Status:** Complete and verified (routes/services/repositories/templates); DDL not yet run against a live MySQL server — see §6.
+**Status:** Complete and verified (routes/services/repositories/templates); DDL not yet run against a live MySQL server - see §6.
 **Date:** 22 July 2026
 
 ---
@@ -23,23 +23,23 @@ Deliberately **not** built (belongs outside this stage's scope):
   model defines it and every repository/service function threads it
   through, but nothing in the frontend currently writes anything into it
   (e.g. there's no "which project should this widget's chart cover"
-  option) — the spec's own frontend section only describes picking type,
+  option) - the spec's own frontend section only describes picking type,
   title, and width when adding a widget.
 - No drag-to-reorder or resize-in-place on the dashboard grid. Widgets can
   be added (appended at the end) and removed; `position` exists and is
   respected on read, but nothing in the frontend lets a user drag a widget
   to a new slot. The spec's frontend section doesn't describe that
   interaction either.
-- No email digest/summary batching — every notification event queues its
+- No email digest/summary batching - every notification event queues its
   own individual outbox row (one status change to three watchers is three
   rows), never bundled into one email. The spec's examples ("Sent for:
   issue assignment, status changes...") read as one email per event, not
   a digest.
 - The actor who causes a status change is not excluded from that change's
   own notification recipients (if they are also the reporter or a
-  watcher). Flagged in §8 — this is a genuine judgment call, not an
+  watcher). Flagged in §8 - this is a genuine judgment call, not an
   oversight.
-- No CAPTCHA or account lockout notification email — rate limiting slows
+- No CAPTCHA or account lockout notification email - rate limiting slows
   down repeated attempts (per the spec's own wording, "slow down
   brute-force attempts") but does not lock an account outright or email
   anyone about it.
@@ -68,7 +68,7 @@ redirect target changed from `/profile` to `/dashboard`),
 |---|---|---|
 | `repositories/dashboard_widget_repository.py` | repositories | SQL for `dashboard_widgets`: org-default rows (`user_id IS NULL`) vs. personal rows, create/delete/list, `max_position_for_user` (append-without-disturbing-order). |
 | `repositories/email_outbox_repository.py` | repositories | SQL for `email_outbox`: `create` (fast, called inline from a request), `list_pending`/`mark_sent`/`mark_failed` (called only by the background worker). |
-| `repositories/rate_limit_repository.py` | repositories | SQL for `auth_rate_limits` — the database-backed rate-limit storage option. |
+| `repositories/rate_limit_repository.py` | repositories | SQL for `auth_rate_limits` - the database-backed rate-limit storage option. |
 | `services/dashboard_service.py` | services | Widget types/labels/default layout, the org-default-vs-personal-layout resolution and "fork on first edit" logic, per-widget-type data fetching. |
 | `services/report_service.py` | services | Report filter parsing (date range/status/priority/project), one-fetch aggregation for every chart, CSV rendering via `utils/csv_safety.py`. |
 | `services/notification_service.py` | services | Builds and queues (never sends) every notification email: assignment, status change, registration approval/rejection. |
@@ -78,20 +78,20 @@ redirect target changed from `/profile` to `/dashboard`),
 | `routes/report_routes.py` | routes | `GET /reports`, `GET /reports/export.csv`. |
 | `templates/dashboard.html` | frontend | Widget grid (full/half/third CSS grid spans), per-widget-type content rendering, "+ Add Widget" modal, Chart.js doughnut charts. |
 | `templates/reports.html` | frontend | Filter bar, status/priority bar charts + horizontal category chart, Export CSV/Print buttons, `@media print`-friendly markup. |
-| `utils/csv_safety.py` | utils | `neutralize()` — the CSV formula-injection defense every exported field passes through. |
+| `utils/csv_safety.py` | utils | `neutralize()` - the CSV formula-injection defense every exported field passes through. |
 | `Procfile` | ops | `waitress-serve` entry point for Heroku-style platform-as-a-service hosting. |
 
 ### 2.2 Modified files
 
 | File | Change |
 |---|---|
-| `scripts/create_tables.py` | Adds `dashboard_widgets`, `email_outbox`, `auth_rate_limits` DDL (appended to `STATEMENTS`; no reordering needed since neither `email_outbox` nor `auth_rate_limits` has any foreign key at all, and `dashboard_widgets`' only FKs — to `organizations`/`users` — are already satisfied by every table above it). |
+| `scripts/create_tables.py` | Adds `dashboard_widgets`, `email_outbox`, `auth_rate_limits` DDL (appended to `STATEMENTS`; no reordering needed since neither `email_outbox` nor `auth_rate_limits` has any foreign key at all, and `dashboard_widgets`' only FKs - to `organizations`/`users` - are already satisfied by every table above it). |
 | `config.py` | Adds `APP_BASE_URL`, the `SMTP_*` settings, `NOTIFICATION_WORKER_ENABLED`/`_INTERVAL_SECONDS`, and `RATELIMIT_STORAGE`/`_MAX_ATTEMPTS`/`_WINDOW_SECONDS`. Nothing existing changed. |
 | `.env.example` | Documents every new setting above with the same inline-comment style already used for Stage 1's settings. |
-| `app.py` | Registers `dashboard_bp` and `report_bp`; starts the notification worker once (guarded against the dev-server reloader double-import — see §5.6). |
+| `app.py` | Registers `dashboard_bp` and `report_bp`; starts the notification worker once (guarded against the dev-server reloader double-import - see §5.6). |
 | `repositories/issue_repository.py` | Adds `count_by_status`/`count_by_priority`/`count_by_severity`/`count_by_type`, `stats_summary`, `list_recent` (dashboard aggregates, org-wide, no filters) and `search_for_report` (Reports page's one filtered fetch, reused for every chart and the CSV export). Nothing existing changed. |
 | `repositories/watcher_repository.py` | Adds `list_watcher_users()` (watcher rows joined with `users`, for notification recipients). |
-| `services/auth_service.py` | `register()`'s new-organization branch now also calls `dashboard_service.ensure_org_defaults()`, right after `project_service.create_default_project()` — same moment, same reasoning. |
+| `services/auth_service.py` | `register()`'s new-organization branch now also calls `dashboard_service.ensure_org_defaults()`, right after `project_service.create_default_project()` - same moment, same reasoning. |
 | `services/admin_service.py` | `approve_request()`/`reject_request()` each now also call `notification_service.notify_registration_approved`/`_rejected` after updating the request's status. |
 | `services/workflow_service.py` | `change_status()` now also calls `notification_service.notify_status_changed()`; `assign_issue()` now also calls `notification_service.notify_issue_assigned()` (only for a real assignment, never an unassignment) and `notify_status_changed()` when its auto-transition actually changed status. |
 | `routes/auth_routes.py` | `login()` and `register()` both check `rate_limit_service.is_blocked()` before proceeding and record success/failure afterward; both routes' successful redirect target changed from `auth.profile` to `dashboard.dashboard` (the spec's new "default landing page after login"). |
@@ -130,7 +130,7 @@ different modules that never call each other: `notification_service`
 only ever calls `email_outbox_repository.create()` (one fast INSERT);
 `notification_worker` is the only code that imports `smtplib` at all. A
 request that triggers a notification (assigning an issue, changing its
-status, approving a registration) is never slower because of it — the
+status, approving a registration) is never slower because of it - the
 INSERT is the only thing that happens inline, and it happens on the same
 connection pool every other write already uses.
 
@@ -138,20 +138,20 @@ connection pool every other write already uses.
 
 ## 3. Data model
 
-**Table: `dashboard_widgets`** — matches the spec's data model exactly
+**Table: `dashboard_widgets`** - matches the spec's data model exactly
 (`id`, `organization_id`, `user_id` nullable, `widget_type` enum,
 `title`, `config` JSON, `position`, `width` enum full/half/third), plus
 `created_at`. `user_id IS NULL` rows are an organization's default
-layout; `user_id` set rows are one specific user's personal layout — see
+layout; `user_id` set rows are one specific user's personal layout - see
 §5.1 for how the two interact.
 
-**Table: `email_outbox`** — matches the spec's data model exactly (`id`,
+**Table: `email_outbox`** - matches the spec's data model exactly (`id`,
 `to_email`, `subject`, `body`, `status` enum pending/sent/failed,
-`created_at`, `sent_at`). Deliberately has no `organization_id` — an
+`created_at`, `sent_at`). Deliberately has no `organization_id` - an
 outbox row is a work item for the background worker, not tenant data
 anyone browses.
 
-**Table: `auth_rate_limits`** — matches the spec's data model exactly
+**Table: `auth_rate_limits`** - matches the spec's data model exactly
 (`id`, `identifier`, `attempt_count`, `window_started_at`), plus a
 `UNIQUE(identifier)` constraint so the upsert-on-failure pattern
 (`INSERT ... ON DUPLICATE KEY UPDATE`) has something to key off. Only
@@ -167,7 +167,7 @@ forever (the in-memory backend never touches it).
 | GET | `/dashboard` | required | Renders the caller's widget layout (personal if customized, else the org default), each widget's data freshly fetched. |
 | POST | `/dashboard/widgets/add` | required | Adds a widget to the caller's personal layout (forking from the org default first, if this is their first customization). |
 | POST | `/dashboard/widgets/<id>/remove` | required | Removes one widget; every other widget's position is untouched. |
-| GET | `/reports` | Admin/PM | Filtered charts (status/priority/category breakdowns) — filterable by date range, status, priority, project. |
+| GET | `/reports` | Admin/PM | Filtered charts (status/priority/category breakdowns) - filterable by date range, status, priority, project. |
 | GET | `/reports/export.csv` | Admin/PM | CSV download of the same filtered issue list, formula-injection-safe. |
 
 `POST /login` and `POST /register` (both pre-existing, Stage 2) gained
@@ -181,9 +181,9 @@ rate-limit checks but no new paths.
 
 The spec's data model itself suggests this (`user_id` nullable = org
 default) but doesn't spell out the mechanism, so this was the one
-non-trivial design call this stage rests on. The alternative — copying
+non-trivial design call this stage rests on. The alternative - copying
 the default four widgets into a personal row for every user the moment
-their account is created — would also satisfy "a new user's dashboard
+their account is created - would also satisfy "a new user's dashboard
 shows the default widget set with no manual setup," but would mean every
 future change to what "default" means requires a data migration touching
 every existing user's rows, and would make "did this user customize their
@@ -199,7 +199,7 @@ for them, and only then is their edit applied. One subtlety this
 surfaced during verification (§7): forking assigns each copied row a
 brand-new id, so removing a widget the user is looking at (whose id, on
 screen, is still the org-default row's id) has to translate that id
-through the fork's own return mapping before deleting — implemented as
+through the fork's own return mapping before deleting - implemented as
 `_ensure_personal_layout` returning `{default_id: new_personal_id}`,
 consumed by `remove_widget`.
 
@@ -209,7 +209,7 @@ Unlike Stage 9's automation triggers (fired explicitly by every relevant
 *route*, since the automation engine needs route-supplied event context
 like `trigger_event`/`old_status`/`new_status`), notification queuing was
 added directly inside `workflow_service.change_status()`/`assign_issue()`
-and `admin_service.approve_request()`/`reject_request()` — the same
+and `admin_service.approve_request()`/`reject_request()` - the same
 functions that already call `bug_history_repository.record()` for the
 exact same state changes. A notification is a direct, unconditional
 consequence of "this state actually changed," with no per-route
@@ -223,7 +223,7 @@ call site the way an automation rule's conditional firing has to be.
 name]` (not a list) specifically so a reporter who is also watching their
 own issue receives exactly one email, not two. The user who *made* the
 change is not excluded from this list even if they happen to be the
-reporter or a watcher — the spec doesn't ask for that exclusion, and
+reporter or a watcher - the spec doesn't ask for that exclusion, and
 implementing it would need a notion of "suppress self-notifications" this
 stage doesn't otherwise track anywhere. Flagged in §8.
 
@@ -231,7 +231,7 @@ stage doesn't otherwise track anywhere. Flagged in §8.
 
 `report_service.run_report()` calls `issue_repository.search_for_report()`
 exactly once and derives every chart's counts *and* the CSV export's rows
-from that one in-memory list (`Counter`-based grouping in Python) — the
+from that one in-memory list (`Counter`-based grouping in Python) - the
 same "fetch once, group in application code" shape Stage 7's board query
 established. This is what guarantees the CSV export can never show a
 different issue set than what the charts on the same page displayed,
@@ -244,7 +244,7 @@ necessarily with a third simultaneous request).
 
 `neutralize()` (`utils/csv_safety.py`) is called on all eleven exported
 columns in `report_service.rows_to_csv()`, including ones that are
-normally safe-by-construction (status, priority, project key — all
+normally safe-by-construction (status, priority, project key - all
 drawn from fixed enums/keys, never free text). This costs nothing and
 removes any need to reason about which columns could *theoretically*
 contain attacker-controlled text after some future schema change; every
@@ -259,7 +259,7 @@ thread unconditionally in `create_app()` would leave one orphaned worker
 thread running inside the parent process, which never handles a request
 and therefore never needs it. `app.py` guards the `notification_worker.start()`
 call with `config.IS_PRODUCTION or os.environ.get("WERKZEUG_RUN_MAIN") ==
-"true"` — in production there's no reloader at all, so this is always
+"true"` - in production there's no reloader at all, so this is always
 true; in development, only the actual serving child process (which sets
 `WERKZEUG_RUN_MAIN`) starts the worker.
 
@@ -272,7 +272,7 @@ called only when credentials/validation actually fail;
 `record_success()` (called on any success) deletes that identifier's
 counter outright. This is what makes the Definition of Done's "resets
 after the configured window" true in the *common* case as well as the
-edge case the DoD literally describes — a correct login resets it
+edge case the DoD literally describes - a correct login resets it
 instantly, not just eventually.
 
 ### 5.8 Registration attempts are rate-limited by IP only, not by the submitted email
@@ -282,7 +282,7 @@ spec's "per IP/account"), since a real account already exists to
 brute-force. A registration attempt's email may not correspond to any
 account at all yet (that's the whole point of registering), so keying a
 limit on it would let an attacker trivially reset their own counter by
-typing a different throwaway email each time — the IP is the only
+typing a different throwaway email each time - the IP is the only
 identifier that actually constrains "how many times has *this actor*
 tried," so it's the only one used here.
 
@@ -295,7 +295,7 @@ python -m scripts.create_tables     # adds dashboard_widgets, email_outbox, auth
 python run.py                       # -> http://127.0.0.1:5000/dashboard (after logging in)
 ```
 
-No new Python dependencies — `smtplib`/`email.message` (SMTP) and
+No new Python dependencies - `smtplib`/`email.message` (SMTP) and
 `csv`/`io` (CSV export) are both standard library; `requirements.txt` is
 unchanged from Stage 9.
 
@@ -333,7 +333,7 @@ Stage 9 checks, re-confirmed passing against the final codebase).
 | 1-5 | An issue titled `=cmd|'/c calc'!A1` (and a category of `=SUM(1+1)`) exports to CSV with both fields prefixed by a leading apostrophe, never appearing as a raw formula | Pass |
 | 6 | A Developer is redirected away from `/reports` (Admin/PM only) | Pass |
 | 7-14 | Registering a brand-new organization seeds exactly the spec's example default widget set (Statistics Summary, Issues by Status, Issues by Priority, Recent Issues) with zero manual setup, and the dashboard page renders all four | Pass |
-| 15-17 | Removing a widget for a user who has never customized their layout correctly forks a personal copy and removes the right one — the other three default widgets survive | Pass |
+| 15-17 | Removing a widget for a user who has never customized their layout correctly forks a personal copy and removes the right one - the other three default widgets survive | Pass |
 | 18 | The organization's own default layout is untouched by that one user's edit | Pass |
 | 19-21 | Re-adding a widget afterward preserves the three that remained, plus the new one, with the correct default title | Pass |
 | 22-25 | Repeated failed logins from the same identity are eventually blocked (429); even the *correct* password is rejected while blocked; a fresh window (simulated) lets a correct login through again | Pass |
@@ -358,18 +358,18 @@ template's Jinja `{% %}` block tags balance (checked programmatically).
       setup (confirmed by registering a brand-new organization and
       loading `/dashboard` immediately afterward)
 - [x] Removing and re-adding a widget preserves the rest of the layout
-      (confirmed for the hardest case — a user's *very first* edit, which
+      (confirmed for the hardest case - a user's *very first* edit, which
       requires forking the org default correctly)
 - [x] Repeated failed logins from the same IP eventually get
       blocked/delayed, and this resets after the configured window
       (confirmed for both the memory and database backends)
 - [x] The app starts and serves traffic via the production WSGI entry
-      point — `wsgi.py`/`waitress-serve` predate this stage (Stage 1) and
+      point - `wsgi.py`/`waitress-serve` predate this stage (Stage 1) and
       remain unchanged; this stage adds the `Procfile` and confirms the
       app still imports and runs cleanly with the new blueprints/worker
       wired in
 - [x] Disabling the notification worker via config does not break issue
-      creation/assignment/status changes — confirmed directly: all three
+      creation/assignment/status changes - confirmed directly: all three
       still return 200 with the worker off, and no worker thread starts
 
 ---
@@ -377,14 +377,14 @@ template's Jinja `{% %}` block tags balance (checked programmatically).
 ## 8. Interpretations and open items
 
 **Notification recipients are not deduplicated against the actor (§5.3)**
-— the person who changes an issue's status can end up emailing
+- the person who changes an issue's status can end up emailing
 themselves if they're also its reporter or a watcher. Worth confirming
 whether that's actually wanted; excluding the actor would be a small,
 localized change to `notification_service.notify_status_changed()`'s
 signature (it would need the acting user's id, which
 `workflow_service.change_status()` already has as `changed_by_user`).
 
-**No digest/batching for notification emails (§1)** — a status change
+**No digest/batching for notification emails (§1)** - a status change
 notifying three watchers writes three separate outbox rows/emails, never
 one combined message. Flagged as the more scalable behavior *not* chosen
 here, in case a real deployment would prefer fewer, batched emails.
@@ -396,7 +396,7 @@ it but doesn't fully specify the mechanism. Flagged clearly here in case
 actually the intended reading.
 
 **Rate limiting is IP/account-based and in-process for the memory
-backend (§5.7-5.8)** — under `RATELIMIT_STORAGE=memory` (the default),
+backend (§5.7-5.8)** - under `RATELIMIT_STORAGE=memory` (the default),
 restarting the app process clears every counter; this is inherent to the
 backend's own tradeoff (simplicity, no schema dependency) and is exactly
 why the spec asks for a `database` alternative for multi-instance
@@ -405,13 +405,13 @@ deployments, which is implemented and verified separately (§7, checks
 
 **The DDL has not been run against a live MySQL.** `scripts/create_tables.py`
 was syntax-checked (`py_compile`) and reasoned through, but as in every
-prior stage, the sandbox has no MySQL server to execute it against — in
+prior stage, the sandbox has no MySQL server to execute it against - in
 particular, `dashboard_widgets`' two foreign keys (to `organizations` and
 `users`), the `auth_rate_limits.identifier` unique constraint the
 database-backed rate limiter's upsert depends on, and `email_outbox`'s
-complete lack of any foreign key at all (intentional — see §3) have not
+complete lack of any foreign key at all (intentional - see §3) have not
 been confirmed against a real server. Please run
-`python -m scripts.create_tables` and check its output — it should print
+`python -m scripts.create_tables` and check its output - it should print
 a line for each of the three new tables.
 
 ---
@@ -430,7 +430,7 @@ about if this codebase continues to evolve past this specification:
   the same underlying reasoning: consistency between multiple views of
   the same data matters more than saving a second database round-trip.
   Any new bulk-display feature should probably follow the same shape.
-- The email outbox and its background worker are deliberately generic —
+- The email outbox and its background worker are deliberately generic -
   nothing about `email_outbox_repository`/`notification_worker.py` is
   specific to the three notification types this stage sends. A future
   notification type is just another call to

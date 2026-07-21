@@ -23,7 +23,7 @@ def notify_issue_assigned(issue: dict, assignee: dict) -> None:
     Never called for an *un*-assignment -- there is no one to notify."""
     subject = f"[{issue['issue_key']}] Assigned to you: {issue['title']}"
     body = (
-        f"You have been assigned to {issue['issue_key']} — {issue['title']}.\n\n"
+        f"You have been assigned to {issue['issue_key']} - {issue['title']}.\n\n"
         f"View it here: {_issue_url(issue)}\n"
     )
     email_outbox_repository.create(assignee["email"], subject, body)
@@ -53,7 +53,7 @@ def notify_status_changed(issue: dict, old_status: str, new_status: str) -> None
 
     subject = f"[{issue['issue_key']}] Status changed: {old_status} → {new_status}"
     body = (
-        f"{issue['issue_key']} — {issue['title']} changed status from "
+        f"{issue['issue_key']} - {issue['title']} changed status from "
         f"{old_status} to {new_status}.\n\n"
         f"View it here: {_issue_url(issue)}\n"
     )

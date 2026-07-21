@@ -18,7 +18,7 @@
           <span class="sidebar-toggle-bar"></span>
         </button>
       {% endif %}
-      <a class="brand" href="{{ url_for('dashboard.dashboard') if current_user else url_for('auth.login') }}">
+      <a class="brand" href="{{ url_for('dashboard.dashboard') if current_user else url_for('auth.landing') }}">
         <span class="brand-mark" aria-hidden="true">BT</span>
         <span class="brand-name">Bug Tracker</span>
       </a>

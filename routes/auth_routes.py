@@ -19,6 +19,21 @@ from utils.auth import current_user, end_session, login_required, start_session
 auth_bp = Blueprint("auth", __name__)
 
 
+@auth_bp.get("/")
+def landing():
+    """The public landing page.
+
+    A logged-out visitor sees the marketing/hero page; a logged-in visitor
+    is sent straight to their dashboard rather than seeing the hero page
+    again. This replaced GET / 's old JSON app-status payload (moved to
+    /api/status -- see routes/health_routes.py) so "/" could serve an
+    actual page instead.
+    """
+    if current_user() is not None:
+        return redirect(url_for("dashboard.dashboard"))
+    return render_template("landing.html")
+
+
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "GET":

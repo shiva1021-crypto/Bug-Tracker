@@ -20,7 +20,7 @@
       <select class="input" id="report-project" name="project_id">
         <option value="">All projects</option>
         {% for p in projects %}
-          <option value="{{ p.id }}" {{ "selected" if filters.get('project_id') == (p.id | string) else "" }}>{{ p.project_key }} — {{ p.name }}</option>
+          <option value="{{ p.id }}" {{ "selected" if filters.get('project_id') == (p.id | string) else "" }}>{{ p.project_key }} - {{ p.name }}</option>
         {% endfor %}
       </select>
     </div>

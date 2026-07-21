@@ -343,6 +343,43 @@ h1, h2, h3 { margin: 0; font-weight: 600; color: var(--text); }
   color: var(--text-muted);
 }
 
+/* ----------------------------------------------------------- landing --- */
+
+.landing-shell {
+  min-height: calc(100vh - var(--header-h));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+.landing-hero {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.landing-title { font-size: 30px; }
+
+.landing-tagline {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.landing-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn-lg { padding: 10px 24px; font-size: 15px; }
+
 /* --------------------------------------------------------------- forms -- */
 
 .field { margin-bottom: 16px; }

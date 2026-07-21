@@ -10,9 +10,14 @@ from services import health_service
 health_bp = Blueprint("health", __name__)
 
 
-@health_bp.get("/")
+@health_bp.get("/api/status")
 def index():
-    """Basic app status. No auth."""
+    """Basic app status. No auth.
+
+    Was GET / through Stage 10; moved here so "/" could become the public
+    landing page (see routes/auth_routes.py::landing). Nothing about the
+    payload itself changed.
+    """
     return jsonify(health_service.app_status()), 200
 
 

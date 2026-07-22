@@ -1,120 +1,712 @@
 {% extends "base.html" %}
+{% from "macros.html" import render_type_icon %}
+
 {% block title %}Board · Bug Tracker{% endblock %}
 {% block main_class %}app-main-board{% endblock %}
 
 {% block content %}
-<div class="board-page">
+<style>
+    /* High-fidelity Jira Board styles, copied from reference-ui/templates/board.html.
+       Self-contained on purpose (matches the reference file) -- it only
+       relies on the design-token variables (--primary, --surface, --border,
+       --text, ...) that the global stylesheet defines. */
+    .jira-breadcrumbs {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+    .board-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+    .board-title-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .board-title-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius);
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        color: #FFFFFF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .board-title-text h1 {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0;
+    }
+    .board-sub-nav {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 16px;
+        gap: 20px;
+        overflow-x: auto;
+        padding-bottom: 1px;
+    }
+    .board-sub-nav a {
+        padding: 6px 0;
+        color: var(--text-subtle);
+        font-weight: 500;
+        font-size: 13.5px;
+        border-bottom: 2px solid transparent;
+        text-decoration: none;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .board-sub-nav a:hover {
+        color: var(--text);
+    }
+    .board-sub-nav a.active {
+        color: var(--primary);
+        font-weight: 700;
+        border-bottom: 2px solid var(--primary);
+    }
+    .board-sub-nav a.disabled {
+        pointer-events: none;
+        opacity: 0.6;
+    }
+    .board-controls-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+    .board-controls-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .board-search-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .board-search-icon {
+        position: absolute;
+        left: 8px;
+        color: var(--text-muted);
+        font-size: 12px;
+        pointer-events: none;
+        display: inline-flex;
+        align-items: center;
+    }
+    .board-search-input {
+        padding: 4px 8px 4px 24px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        font-size: 13px;
+        width: 140px;
+        min-height: 28px !important;
+        background: var(--bg);
+        color: var(--text);
+        outline: none;
+        transition: border-color var(--transition-speed), width var(--transition-speed);
+    }
+    .board-search-input:focus {
+        border-color: var(--primary);
+        width: 190px;
+    }
+    .board-avatars-list {
+        display: flex;
+        align-items: center;
+        margin-left: 8px;
+        margin-right: 8px;
+    }
+    .board-avatar-circle {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        font-size: 9.5px;
+        font-weight: 800;
+        margin-left: -4px;
+        border: 1.5px solid var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #0C66E4;
+        background: #DEEBFF;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        cursor: pointer;
+        transition: transform 0.1s ease;
+    }
+    .board-avatar-circle:hover {
+        transform: scale(1.1);
+        z-index: 10;
+    }
+    .board-avatar-clear {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--surface-hover);
+        border: 1.5px dashed var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        margin-left: -4px;
+        font-size: 9px;
+        color: var(--text-subtle);
+        font-weight: bold;
+        line-height: 1;
+    }
+    .board-filter-select {
+        padding: 2px 6px;
+        font-size: 12.5px;
+        font-weight: 600;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-subtle);
+        outline: none;
+        cursor: pointer;
+        min-height: 28px !important;
+        width: 120px;
+    }
+    .board-filter-select:hover {
+        background: var(--surface-hover);
+        color: var(--text);
+    }
+    .board-controls-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .header-icon.placeholder-action-btn {
+        cursor: pointer;
+        border: none;
+        outline: none;
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        background: var(--surface-hover);
+        color: var(--text-subtle);
+    }
 
-  {% include "partials/flashes.html" %}
+    /* Kanban Columns */
+    .kanban-board {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        overflow-x: auto;
+        padding-bottom: 24px;
+        flex-grow: 1;
+    }
+    .kanban-column {
+        width: 260px;
+        background: #F4F5F7;
+        border-radius: 4px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex-shrink: 0;
+        min-height: 350px;
+    }
+    body.dark-mode .kanban-column {
+        background: var(--surface-hover);
+    }
+    .kanban-column-heading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+    .kanban-column-heading h2 {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin: 0;
+        letter-spacing: 0.5px;
+    }
+    .kanban-column-count {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        background: var(--border);
+        padding: 1px 6px;
+        border-radius: 99px;
+    }
+    .kanban-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 50px;
+    }
+    .kanban-group-header {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        padding: 8px 2px 2px;
+        list-style: none;
+    }
+    .kanban-group-header:first-child {
+        padding-top: 0;
+    }
+    .kanban-card {
+        background: #FFFFFF !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 3px !important;
+        padding: 10px !important;
+        box-shadow: 0 1px 1px rgba(9, 30, 66, 0.2), 0 0 1px rgba(9, 30, 66, 0.2) !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        cursor: grab;
+        list-style: none;
+    }
+    body.dark-mode .kanban-card {
+        background: var(--surface) !important;
+    }
+    .kanban-card.dragging {
+        opacity: 0.5;
+        border-style: dashed;
+        box-shadow: none !important;
+    }
+    .kanban-card[hidden] {
+        display: none !important;
+    }
+    .kanban-card-title {
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        color: var(--text) !important;
+        text-decoration: none !important;
+        line-height: 1.4 !important;
+        display: block;
+        word-break: break-word;
+    }
+    .kanban-card-title:hover {
+        color: var(--primary) !important;
+        text-decoration: underline !important;
+    }
+    .kanban-card-meta-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 6px;
+    }
+    .kanban-card-meta-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .kanban-issue-key {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+    .kanban-issue-type-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+    }
+    .story-points-badge {
+        background: var(--surface-hover);
+        color: var(--text-subtle);
+        font-size: 10px;
+        font-weight: 700;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+    }
+    .kanban-card-empty {
+        font-size: 11.5px;
+        padding: 12px 0;
+        color: var(--text-muted);
+        text-align: center;
+        font-style: italic;
+        list-style: none;
+    }
+    .kanban-column-add {
+        width: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 36px;
+        border-radius: 4px;
+        background: #F4F5F7;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        flex-shrink: 0;
+        border: none;
+    }
+    .kanban-load-more {
+        margin-top: 4px;
+        width: 100%;
+        font-size: 11.5px !important;
+        min-height: 26px !important;
+        padding: 4px 8px !important;
+    }
+    .kanban-column-create {
+        margin-top: auto;
+        padding-top: 8px;
+    }
+    .kanban-column-create a {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-muted);
+        font-size: 12.5px;
+        font-weight: 500;
+        text-decoration: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    .kanban-column-create a:hover {
+        background: rgba(9, 30, 66, 0.06);
+    }
+</style>
 
-  <div class="board-topbar">
-    <form method="get" action="{{ url_for('board.board') }}" class="board-filter-form">
-      <div class="board-filter-field">
-        <label class="label" for="board-project">Project</label>
-        <select id="board-project" name="project" class="input board-select" onchange="this.form.submit()">
-          {% for p in projects %}
-            <option value="{{ p.id }}" {{ 'selected' if selected_project and p.id == selected_project.id else '' }}>{{ p.project_key }} - {{ p.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
+<!-- Breadcrumbs -->
+<nav class="jira-breadcrumbs">
+    <span>Spaces</span>
+    <span style="font-size: 10px; opacity: 0.6;">/</span>
+    <span>{{ current_organization_name or "Organization" }}</span>
+</nav>
 
-      <div class="board-filter-field">
-        <label class="label" for="board-sprint">Sprint</label>
-        <select id="board-sprint" name="sprint" class="input board-select" disabled title="Sprints arrive in Stage 8">
-          <option value="">All Sprints</option>
-        </select>
-      </div>
-
-      <div class="board-filter-field">
-        <label class="label" for="board-group-by">Group By</label>
-        <select id="board-group-by" name="group_by" class="input board-select" onchange="this.form.submit()">
-          {% for option in group_by_options %}
-            <option value="{{ option }}" {{ 'selected' if option == group_by else '' }}>
-              {{ {'none': 'None', 'assignee': 'Assignee', 'priority': 'Priority', 'type': 'Issue Type'}[option] }}
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-    </form>
-
-    {% if board and board.assignees %}
-    <div class="board-assignee-row" data-assignee-filter-row>
-      {% for a in board.assignees %}
-        <button type="button" class="board-assignee-avatar avatar" data-assignee-filter-trigger data-assignee-id="{{ a.id }}" title="Filter to {{ a.name }} (click again to clear)">{{ a.name[0] | upper }}</button>
-      {% endfor %}
-    </div>
-    {% endif %}
-  </div>
-
-  {% if not projects %}
-    <p class="empty-state">Create a project first to use the board.</p>
-  {% elif not board %}
-    <p class="empty-state">Select a project to see its board.</p>
-  {% else %}
-    <div class="board-columns" data-board-columns data-move-url="{{ url_for('board.move_issue') }}" data-csrf-token="{{ csrf_token() }}">
-      {% for column in board.columns %}
-        <div class="board-column">
-          <div class="board-column-head">
-            <h2 class="board-column-title">{{ column.status }}</h2>
-            <span class="board-column-count" data-column-count>{{ column.count }}</span>
-          </div>
-
-          <ul class="board-column-list" data-board-column-list data-status="{{ column.status }}">
-            {% if column.count == 0 %}
-              <li class="board-empty-placeholder" data-empty-placeholder>No issues</li>
-            {% endif %}
-            {% for entry in column.entries %}
-              {% if entry.kind == 'header' %}
-                <li class="board-group-header">{{ entry.label }}</li>
-              {% else %}
-                {% set card = entry.card %}
-                <li class="board-card"
-                    draggable="true"
-                    data-issue-id="{{ card.id }}"
-                    data-assignee-id="{{ card.assigned_to or '' }}"
-                    {{ 'hidden' if entry.hidden else '' }}>
-                  <div class="board-card-top">
-                    <span class="board-card-key">{{ card.issue_key }}</span>
-                    <span class="type-badge type-{{ card.issue_type | lower }}">{{ card.issue_type }}</span>
-                  </div>
-                  <p class="board-card-title">{{ card.title }}</p>
-                  {% if card.labels %}
-                  <div class="board-card-labels">
-                    {% for label in card.labels.split(',') %}
-                      {% set label = label.strip() %}
-                      {% if label %}
-                        <span class="board-label-dot board-label-dot-{{ label | label_color_index }}" title="{{ label }}"></span>
-                      {% endif %}
-                    {% endfor %}
-                  </div>
-                  {% endif %}
-                  <div class="board-card-bottom">
-                    <span class="board-priority-flag priority-flag-{{ card.priority | lower }}" title="Priority: {{ card.priority }}">&#9679;</span>
-                    {% if card.story_points is not none %}
-                      <span class="board-points-badge">{{ card.story_points }}</span>
-                    {% else %}
-                      <span class="board-points-badge board-points-badge-empty"></span>
-                    {% endif %}
-                    {% if card.assigned_to_name %}
-                      <span class="avatar board-card-avatar" title="{{ card.assigned_to_name }}">{{ card.assigned_to_name[0] | upper }}</span>
-                    {% else %}
-                      <span class="avatar board-card-avatar board-card-avatar-empty" title="Unassigned">&mdash;</span>
-                    {% endif %}
-                  </div>
-                </li>
-              {% endif %}
-            {% endfor %}
-          </ul>
-
-          {% if column.hidden_count > 0 %}
-            <button type="button" class="btn btn-secondary btn-sm board-load-more" data-load-more>Load {{ column.hidden_count }} more</button>
-          {% endif %}
+<!-- Page Heading -->
+<div class="board-title-row">
+    <div class="board-title-left">
+        <div class="board-title-avatar">{{ (current_organization_name or "O")[:1] | upper }}</div>
+        <div class="board-title-text">
+            <h1>{{ current_organization_name or "Organization" }}</h1>
         </div>
-      {% endfor %}
     </div>
-  {% endif %}
 
-  <div class="board-toast" data-board-toast hidden></div>
-
+    <!--
+        Reference's title row also has a cluster of fake "A / B / C"
+        collaborator avatars and an invite button. Those aren't backed by
+        any real data (no collaborator list exists at this scope), so
+        rather than invent fictitious teammates they're dropped here --
+        the real, data-backed assignee avatars are further down in the
+        filter row. The top-right icon buttons are kept: they're already
+        wired to an honest "coming soon" toast via script.js's
+        .placeholder-action-btn handler, not a fake feature.
+    -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="header-icon placeholder-action-btn" data-action-name="Share" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+        </button>
+        <button class="header-icon placeholder-action-btn" data-action-name="Star Space" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        </button>
+        <button class="header-icon placeholder-action-btn" data-action-name="Configure Space" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+        <button class="header-icon placeholder-action-btn" data-action-name="Expand View" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+        </button>
+    </div>
 </div>
+
+<!-- Tabs sub-nav. Calendar / Docs / Forms are disabled placeholders in the
+     reference file itself (no route ever backed them); Summary, Backlog and
+     Timeline are remapped to this app's real endpoints. -->
+<nav class="board-sub-nav">
+    <a href="{{ url_for('dashboard.dashboard') }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="17" y1="9" x2="17" y2="21"></line><line x1="9" y1="10" x2="17" y2="10"></line><line x1="9" y1="15" x2="17" y2="15"></line></svg>
+        Summary
+    </a>
+    <a href="{{ url_for('backlog.backlog', project=selected_project.id if selected_project else none) }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        Backlog
+    </a>
+    <a href="#" class="active">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+        Board
+    </a>
+    <a href="#" class="disabled">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        Calendar
+    </a>
+    <a href="{{ url_for('versions.list_versions') }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+        Timeline
+    </a>
+    <a href="#" class="disabled">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        Docs
+    </a>
+    <a href="#" class="disabled">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 17h6M9 12h6M9 7h6"></path></svg>
+        Forms
+    </a>
+</nav>
+
+<!-- Controls Row -->
+<div class="board-controls-row">
+    <div class="board-controls-left">
+        <!-- Live client-side search (script.js targets .board-search-input) -->
+        <div class="board-search-container">
+            <span class="board-search-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
+            <input type="text" class="board-search-input" placeholder="Search board">
+        </div>
+
+        <!-- Assignee quick-filter avatars: real assignees present on this
+             board (board_service.get_board's `assignees` list), not
+             reference's fake "developers" list. -->
+        {% if board and board.assignees %}
+        <div class="board-avatars-list" data-assignee-filter-row>
+            {% for a in board.assignees %}
+                <span class="board-avatar-circle quick-assignee-filter" data-assignee-id="{{ a.id }}" title="Filter by: {{ a.name }}">{{ a.name[:1] | upper }}</span>
+            {% endfor %}
+            <div class="board-avatar-clear" title="Clear filter" onclick="window.clearAssigneeFilter && window.clearAssigneeFilter()">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </div>
+        </div>
+        {% endif %}
+
+        <button type="button" id="boardFilterBtn" class="button-secondary" style="min-height: 28px; padding: 4px 10px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; border-radius: 4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+            Filter
+        </button>
+
+        <!-- Project / group-by filter form. script.js's #boardFilterBtn
+             handler toggles this form's visibility exactly like the
+             reference file; it's shown by default whenever a project or
+             group_by has been explicitly chosen. -->
+        <form method="GET" action="{{ url_for('board.board') }}" class="board-filter-form" style="margin: 0; {% if request.args.get('project') or request.args.get('group_by') %}display: inline-flex;{% else %}display: none;{% endif %} gap: 6px; align-items: center;">
+            <select name="project" aria-label="Filter board by project" class="board-filter-select" onchange="this.form.submit()">
+                {% for p in projects %}
+                    <option value="{{ p.id }}" {{ 'selected' if selected_project and p.id == selected_project.id else '' }}>{{ p.project_key }}</option>
+                {% endfor %}
+            </select>
+            <!--
+                Reference has a working sprint dropdown here. This board
+                route accepts a `sprint` query param (see board_routes.py)
+                but only ever passes it through unused -- board_service.get_board
+                doesn't take a sprint argument, so filtering the board by
+                sprint isn't wired up yet even though Sprints themselves are
+                a real, fully-built feature (see backlog.html). Left
+                disabled rather than pretending it filters anything.
+            -->
+            <select name="sprint" aria-label="Filter by sprint" class="board-filter-select" disabled title="Board filtering by sprint isn't wired up yet">
+                <option value="">All Sprints</option>
+            </select>
+            <!--
+                Reference's group-by select is pure client-side card
+                reshuffling (id="boardGroupBy" in script.js) with a
+                priority map that doesn't match this app's Low/Medium/High/
+                Critical scale and no support for grouping by type. This
+                app's board already groups server-side with real group
+                headers (board_service.get_board's `group_by`), so this
+                submits a real GET param instead -- deliberately given a
+                different id so script.js's incompatible client-side
+                handler never attaches to it.
+            -->
+            <select name="group_by" id="board-group-by" aria-label="Group by" class="board-filter-select" onchange="this.form.submit()">
+                {% for option in group_by_options %}
+                    <option value="{{ option }}" {{ 'selected' if option == group_by else '' }}>
+                        Group by: {{ {'none': 'None', 'assignee': 'Assignee', 'priority': 'Priority', 'type': 'Issue Type'}[option] }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button class="button-secondary" type="submit" style="min-height: 28px; padding: 4px 8px; font-size: 12.5px; border-radius: 4px;">Apply</button>
+        </form>
+    </div>
+
+    <div class="board-controls-right">
+        <!-- No active-sprint concept is available to this route yet (see
+             the sprint-select comment above), so this always renders in
+             its disabled state rather than reference's conditional one. -->
+        <button class="button" style="background: var(--primary); color: #FFF; border-radius: 4px; padding: 4px 12px; font-size: 13.5px; font-weight: 600; min-height: 28px !important; cursor: not-allowed; opacity: 0.6;" disabled title="Board sprint completion isn't wired up yet -- use the Backlog page to close a sprint">Complete sprint</button>
+
+        <button class="header-icon placeholder-action-btn" data-action-name="Configure Board" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+        <button class="header-icon placeholder-action-btn" data-action-name="View Options" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+        </button>
+    </div>
+</div>
+
+{% if not projects %}
+    <p class="empty-state">Create a project first to use the board.</p>
+{% elif not board %}
+    <p class="empty-state">Select a project to see its board.</p>
+{% else %}
+<!-- Hidden CSRF field, read by script.js's drag-and-drop handler via
+     input[name="csrf_token"]. -->
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<section class="kanban-board">
+    {% for column in board.columns %}
+        <div class="kanban-column" data-status="{{ column.status }}">
+            <div class="kanban-column-heading">
+                <h2>
+                    {{ column.status }}
+                    {% if column.status == 'Done' %}
+                        <span style="color: var(--success); display: inline-flex; align-items: center;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </span>
+                    {% endif %}
+                </h2>
+                <span class="kanban-column-count">{{ column.count }}</span>
+            </div>
+
+            <ul class="kanban-cards" data-board-column-list>
+                {% for entry in column.entries %}
+                    {% if entry.kind == 'header' %}
+                        <li class="kanban-group-header">{{ entry.label }}</li>
+                    {% else %}
+                        {% set card = entry.card %}
+                        <article class="kanban-card"
+                                 data-id="{{ card.id }}"
+                                 data-key="{{ card.issue_key }}"
+                                 data-assigned-id="{{ card.assigned_to or '' }}"
+                                 data-assignee-name="{{ card.assigned_to_name or '' }}"
+                                 data-priority="{{ card.priority or 'Medium' }}"
+                                 data-update-url="{{ url_for('board.move_issue') }}"
+                                 data-can-move="{{ 'true' if card.can_drag else 'false' }}"
+                                 {{ 'hidden' if entry.hidden else '' }}>
+                            <a class="kanban-card-title" href="{{ url_for('issues.issue_detail', issue_id=card.id) }}">{{ card.title }}</a>
+
+                            <div class="kanban-card-meta-bottom">
+                                <div class="kanban-card-meta-left">
+                                    <span class="kanban-issue-type-icon" title="Type: {{ card.issue_type }}">
+                                        {{ render_type_icon(card.issue_type, 13) }}
+                                    </span>
+                                    <strong class="kanban-issue-key">{{ card.issue_key }}</strong>
+                                    {% if card.story_points is not none %}
+                                        <span class="story-points-badge" title="Story points">{{ card.story_points }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="kanban-card-meta-right">
+                                    {% if card.assigned_to %}
+                                        <span class="user-avatar-initial" title="Assigned to: {{ card.assigned_to_name }}" style="width: 20px; height: 20px; font-size: 9px; background: #DEEBFF; color: #0C66E4; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 800; border-radius: 50%;">
+                                            {{ card.assigned_to_name[:1] | upper }}
+                                        </span>
+                                    {% else %}
+                                        <span class="user-avatar-initial" title="Unassigned" style="width: 20px; height: 20px; font-size: 10px; background: var(--bg); color: var(--text-muted); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </article>
+                    {% endif %}
+                {% else %}
+                    <li class="kanban-card-empty">No issues</li>
+                {% endfor %}
+            </ul>
+
+            {% if column.hidden_count > 0 %}
+                <button type="button" class="button-secondary kanban-load-more" data-load-more onclick="this.previousElementSibling.querySelectorAll('[hidden]').forEach(function(c){c.hidden=false;}); this.remove();">Load {{ column.hidden_count }} more</button>
+            {% endif %}
+
+            <div class="kanban-column-create">
+                <a href="{{ url_for('issues.add_issue') }}">
+                    <span style="font-size: 15px; font-weight: bold;">+</span>
+                    Create
+                </a>
+            </div>
+        </div>
+    {% endfor %}
+
+    <button type="button" class="kanban-column-add placeholder-action-btn" data-action-name="Add Column" title="Add Column">+</button>
+</section>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Assignee quick-filter avatars. Mirrors the reference file's own
+    // inline script, just reading the real assignee ids rendered above
+    // instead of a fictional developer list.
+    const avatarFilters = document.querySelectorAll('.quick-assignee-filter');
+    const cards = document.querySelectorAll('.kanban-card');
+    const columns = document.querySelectorAll('.kanban-column');
+    let activeFilterId = null;
+
+    avatarFilters.forEach(filter => {
+        filter.addEventListener('click', function() {
+            const devId = this.getAttribute('data-assignee-id');
+
+            if (activeFilterId === devId) {
+                clearFilter();
+            } else {
+                activeFilterId = devId;
+                avatarFilters.forEach(f => {
+                    if (f.getAttribute('data-assignee-id') === devId) {
+                        f.style.border = '2px solid var(--primary)';
+                        f.style.transform = 'scale(1.1)';
+                        f.style.zIndex = '10';
+                    } else {
+                        f.style.border = '1.5px solid var(--bg)';
+                        f.style.transform = 'scale(1)';
+                        f.style.zIndex = '1';
+                    }
+                });
+
+                cards.forEach(card => {
+                    const cardAssignedId = card.getAttribute('data-assigned-id');
+                    card.style.display = (cardAssignedId === devId) ? '' : 'none';
+                });
+
+                updateFilteredCounts();
+            }
+        });
+    });
+
+    window.clearAssigneeFilter = function() {
+        clearFilter();
+    };
+
+    function clearFilter() {
+        activeFilterId = null;
+        avatarFilters.forEach(f => {
+            f.style.border = '1.5px solid var(--bg)';
+            f.style.transform = 'scale(1)';
+            f.style.zIndex = '1';
+        });
+        cards.forEach(card => {
+            card.style.display = '';
+        });
+        updateFilteredCounts();
+    }
+
+    function updateFilteredCounts() {
+        columns.forEach(col => {
+            const countBadge = col.querySelector('.kanban-column-count');
+            const visibleCards = col.querySelectorAll('.kanban-card:not([style*="display: none"]):not([hidden])').length;
+            if (countBadge) {
+                countBadge.textContent = visibleCards;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

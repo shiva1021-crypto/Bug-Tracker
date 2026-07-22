@@ -181,6 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // Prepare FormData for the update request
                 const formData = new FormData();
+                formData.append("issue_id", draggedCard.getAttribute("data-id"));
                 formData.append("status", newStatus);
                 formData.append("csrf_token", csrfToken);
                 formData.append("return_to", "board");

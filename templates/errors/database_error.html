@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Database Setup Needed · Bug Tracker{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Database connection failed</p>
+        <h1>MySQL is not reachable</h1>
+    </div>
+</div>
+<section class="panel">
+    <p>
+        The application is running, but it cannot connect to MySQL using the values in <code>.env</code>.
+        Start MySQL, confirm the port, then run the database schema.
+    </p>
+
+    <div class="setup-steps" style="margin-top: 16px;">
+        <h2 style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Fix checklist</h2>
+        <ol style="padding-left: 20px; line-height: 1.8;">
+            <li>Start MySQL from MySQL Workbench, MySQL Installer, Services, XAMPP, or Laragon.</li>
+            <li>Check that MySQL is listening on port <code>3306</code>, or update <code>DB_PORT</code> in <code>.env</code>.</li>
+            <li>Set the correct <code>DB_USER</code> and <code>DB_PASSWORD</code> in <code>.env</code>.</li>
+            <li>Run <code>python -m scripts.create_db</code> and <code>python -m scripts.create_tables</code>.</li>
+            <li>Restart Flask with <code>python run.py</code>.</li>
+        </ol>
+    </div>
+
+    <p class="muted" style="margin-top: 16px;"><strong>Original error:</strong> {{ error }}</p>
+</section>
+{% endblock %}

@@ -1,137 +1,205 @@
 {% extends "base.html" %}
-{% block title %}Reports · Bug Tracker{% endblock %}
+{% from "macros.html" import render_priority_icon %}
+
+{% block title %}Reports — BugTracker{% endblock %}
 
 {% block content %}
-<div class="page page-wide reports-page">
-
-  {% include "partials/flashes.html" %}
-
-  <div class="page-head no-print">
-    <h1 class="page-title">Reports</h1>
-    <div class="page-head-actions">
-      <a class="btn btn-secondary" href="{{ url_for('reports.export_csv', **filters) }}">Export CSV</a>
-      <button type="button" class="btn btn-secondary" data-print-report>Print</button>
+<div class="page-heading no-print">
+    <div>
+        <p class="eyebrow">Reporting & Analytics</p>
+        <h1>Issue Reports</h1>
     </div>
-  </div>
-
-  <form method="get" action="{{ url_for('reports.reports') }}" class="card report-filter-bar no-print">
-    <div class="field">
-      <label class="label" for="report-project">Project</label>
-      <select class="input" id="report-project" name="project_id">
-        <option value="">All projects</option>
-        {% for p in projects %}
-          <option value="{{ p.id }}" {{ "selected" if filters.get('project_id') == (p.id | string) else "" }}>{{ p.project_key }} - {{ p.name }}</option>
-        {% endfor %}
-      </select>
+    <div class="action-row">
+        <button class="button button-secondary print-report" type="button">
+            <span>🖨️</span> Export PDF / Print
+        </button>
+        <a class="button button-secondary" href="{{ url_for('reports.export_csv', **filters) }}">
+            <span>📥</span> Export CSV
+        </a>
     </div>
-
-    <div class="field">
-      <label class="label" for="report-status">Status</label>
-      <select class="input" id="report-status" name="status">
-        <option value="">All statuses</option>
-        {% for s in statuses %}
-          <option value="{{ s }}" {{ "selected" if filters.get('status') == s else "" }}>{{ s }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="field">
-      <label class="label" for="report-priority">Priority</label>
-      <select class="input" id="report-priority" name="priority">
-        <option value="">All priorities</option>
-        {% for p in priorities %}
-          <option value="{{ p }}" {{ "selected" if filters.get('priority') == p else "" }}>{{ p }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="field">
-      <label class="label" for="report-date-from">From</label>
-      <input class="input" type="date" id="report-date-from" name="date_from" value="{{ filters.get('date_from', '') }}">
-    </div>
-
-    <div class="field">
-      <label class="label" for="report-date-to">To</label>
-      <input class="input" type="date" id="report-date-to" name="date_to" value="{{ filters.get('date_to', '') }}">
-    </div>
-
-    <button type="submit" class="btn btn-primary">Apply</button>
-  </form>
-
-  <p class="report-summary-line">{{ issue_count }} issue{{ '' if issue_count == 1 else 's' }} match{{ 'es' if issue_count == 1 else '' }} this filter.</p>
-
-  <div class="report-charts-grid">
-    <div class="card">
-      <h2 class="section-title">Status Breakdown</h2>
-      {% if result.status_counts %}
-        <canvas class="report-bar-chart" data-report-chart="bar"
-                data-chart-labels='{{ (result.status_counts | map(attribute="label") | list) | tojson }}'
-                data-chart-counts='{{ (result.status_counts | map(attribute="count") | list) | tojson }}'
-                height="200"></canvas>
-      {% else %}
-        <p class="empty-state">No matching issues.</p>
-      {% endif %}
-    </div>
-
-    <div class="card">
-      <h2 class="section-title">Priority Distribution</h2>
-      {% if result.priority_counts %}
-        <canvas class="report-bar-chart" data-report-chart="bar"
-                data-chart-labels='{{ (result.priority_counts | map(attribute="label") | list) | tojson }}'
-                data-chart-counts='{{ (result.priority_counts | map(attribute="count") | list) | tojson }}'
-                height="200"></canvas>
-      {% else %}
-        <p class="empty-state">No matching issues.</p>
-      {% endif %}
-    </div>
-
-    <div class="card report-category-card">
-      <h2 class="section-title">Issues by Category</h2>
-      {% if result.category_counts %}
-        <canvas class="report-bar-chart" data-report-chart="horizontalBar"
-                data-chart-labels='{{ (result.category_counts | map(attribute="label") | list) | tojson }}'
-                data-chart-counts='{{ (result.category_counts | map(attribute="count") | list) | tojson }}'
-                height="220"></canvas>
-      {% else %}
-        <p class="empty-state">No matching issues.</p>
-      {% endif %}
-    </div>
-  </div>
-
 </div>
-{% endblock %}
 
-{% block scripts %}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-  <script>
-    document.querySelectorAll("[data-report-chart]").forEach(function (canvas) {
-      var labels = JSON.parse(canvas.getAttribute("data-chart-labels"));
-      var counts = JSON.parse(canvas.getAttribute("data-chart-counts"));
-      var kind = canvas.getAttribute("data-report-chart");
-      var horizontal = kind === "horizontalBar";
+<!--
+    Reference's filter bar also has Severity and Issue Type dropdowns.
+    services/report_service.py::parse_filters() only ever recognized
+    project_id, status, priority, date_from, date_to -- no severity, no
+    issue_type -- so those two are dropped rather than faked. Field names
+    below (date_from/date_to) match the real filter keys, not reference's
+    start_date/end_date.
+-->
+<form method="GET" action="{{ url_for('reports.reports') }}" class="filter-box no-print">
+    <select name="project_id" aria-label="Filter by Project">
+        <option value="">All Projects</option>
+        {% for project in projects %}
+            <option value="{{ project.id }}" {% if filters.get('project_id') == project.id|string %}selected{% endif %}>{{ project.project_key }} - {{ project.name }}</option>
+        {% endfor %}
+    </select>
+    <select name="status" aria-label="Filter by Status">
+        <option value="">All Statuses</option>
+        {% for status in statuses %}
+            <option value="{{ status }}" {% if filters.get('status') == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+    </select>
+    <select name="priority" aria-label="Filter by Priority">
+        <option value="">All Priorities</option>
+        {% for priority in priorities %}
+            <option value="{{ priority }}" {% if filters.get('priority') == priority %}selected{% endif %}>{{ priority }}</option>
+        {% endfor %}
+    </select>
+    <input type="date" name="date_from" value="{{ filters.get('date_from', '') }}" aria-label="From date">
+    <input type="date" name="date_to" value="{{ filters.get('date_to', '') }}" aria-label="To date">
+    <button type="submit" style="min-height: 38px;">Apply</button>
+</form>
 
-      new Chart(canvas, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "Issues",
-            data: counts,
-            backgroundColor: "#0052cc"
-          }]
-        },
-        options: {
-          indexAxis: horizontal ? "y" : "x",
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: horizontal ? { x: { beginAtZero: true } } : { y: { beginAtZero: true } }
-        }
-      });
+<p class="report-summary-line">{{ issue_count }} issue{{ '' if issue_count == 1 else 's' }} match{{ 'es' if issue_count == 1 else '' }} this filter.</p>
+
+<!--
+    Reference visualizes these three breakdowns with hand-rolled CSS
+    percentage bars and no Chart.js at all. This stage's own spec text
+    ("bar charts for status and priority, a horizontal bar chart for
+    category breakdown... Chart.js usage is already set up the same way
+    across these files") describes Chart.js bar charts, matching how this
+    app's dashboard and backlog burndown already chart things -- so these
+    stay Chart.js bar/horizontal-bar charts (as they already were before
+    this rebuild) rather than switching to reference's un-Chart.js'd
+    percentage bars, which the stage's own written spec doesn't actually
+    describe.
+-->
+<div class="chart-grid no-print">
+    <div class="panel">
+        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Status Breakdown</h2>
+        {% if result.status_counts %}
+            <canvas class="report-bar-chart" data-report-chart="bar"
+                    data-chart-labels='{{ (result.status_counts | map(attribute="label") | list) | tojson }}'
+                    data-chart-counts='{{ (result.status_counts | map(attribute="count") | list) | tojson }}'
+                    height="200"></canvas>
+        {% else %}
+            <p class="empty">No matching issues.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Priority Distribution</h2>
+        {% if result.priority_counts %}
+            <canvas class="report-bar-chart" data-report-chart="bar"
+                    data-chart-labels='{{ (result.priority_counts | map(attribute="label") | list) | tojson }}'
+                    data-chart-counts='{{ (result.priority_counts | map(attribute="count") | list) | tojson }}'
+                    height="200"></canvas>
+        {% else %}
+            <p class="empty">No matching issues.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel report-category-card">
+        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Issues by Category</h2>
+        {% if result.category_counts %}
+            <canvas class="report-bar-chart" data-report-chart="horizontalBar"
+                    data-chart-labels='{{ (result.category_counts | map(attribute="label") | list) | tojson }}'
+                    data-chart-counts='{{ (result.category_counts | map(attribute="count") | list) | tojson }}'
+                    height="220"></canvas>
+        {% else %}
+            <p class="empty">No matching issues.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!--
+    Reference's results table has Due Date and no Reporter/Created At.
+    search_for_report() doesn't select due_date at all, so that column is
+    dropped; Reporter and Created At are real columns it does select
+    (needed for the CSV export already) and are shown here instead.
+-->
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 90px;">Key</th>
+                    <th style="width: 100px;">Type</th>
+                    <th>Summary</th>
+                    <th style="width: 90px;">Project</th>
+                    <th style="width: 120px;">Status</th>
+                    <th style="width: 110px;">Priority</th>
+                    <th style="width: 90px;">Severity</th>
+                    <th style="width: 140px;">Assignee</th>
+                    <th style="width: 140px;">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in result.rows %}
+                    <tr>
+                        <td><strong style="color: var(--text-muted);">{{ row.issue_key }}</strong></td>
+                        <td>
+                            <span class="issue-type-badge type-{{ row.issue_type.lower() }}" style="font-size: 10px; padding: 1px 4px;">{{ row.issue_type }}</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('issues.issue_detail', issue_id=row.id) }}" style="font-weight: 600; color: var(--text);">{{ row.title }}</a>
+                        </td>
+                        <td>{{ row.project_key }}</td>
+                        <td>
+                            <span class="status-badge status-{{ row.status.lower().replace(' ', '_') }}">{{ row.status }}</span>
+                        </td>
+                        <td>
+                            <span class="priority-badge" style="display: inline-flex; align-items: center; gap: 4px;">
+                                {{ render_priority_icon(row.priority, 12) }}
+                                <span style="font-size: 12px;">{{ row.priority }}</span>
+                            </span>
+                        </td>
+                        <td><span style="font-size: 12px; font-weight: 500;">{{ row.severity }}</span></td>
+                        <td>
+                            {% if row.assigned_to_name %}
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="user-avatar-initial" style="width: 20px; height: 20px; font-size: 9px; background: var(--primary-subtle); color: var(--primary);">
+                                        {{ row.assigned_to_name[:1]|upper }}
+                                    </span>
+                                    <span>{{ row.assigned_to_name }}</span>
+                                </div>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.created_at.strftime('%d %b %Y') if row.created_at else "—" }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="9" class="empty">No report rows match the selected filters.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-report-chart]').forEach(function (canvas) {
+        var labels = JSON.parse(canvas.getAttribute('data-chart-labels'));
+        var counts = JSON.parse(canvas.getAttribute('data-chart-counts'));
+        var horizontal = canvas.getAttribute('data-report-chart') === 'horizontalBar';
+
+        new Chart(canvas, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: 'Issues', data: counts, backgroundColor: '#0052cc' }] },
+            options: {
+                indexAxis: horizontal ? 'y' : 'x',
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: horizontal ? { x: { beginAtZero: true } } : { y: { beginAtZero: true } }
+            }
+        });
     });
+});
+</script>
 
-    var printButton = document.querySelector("[data-print-report]");
-    if (printButton) {
-      printButton.addEventListener("click", function () { window.print(); });
-    }
-  </script>
+<!--
+    Printer-friendly view (spec's own Definition of Done): hide the app
+    shell and filter controls, leaving just the summary/charts/table. The
+    "Export PDF / Print" button above (.print-report) is already wired by
+    static/script.js to call window.print().
+-->
+<style>
+@media print {
+    .jira-header, .jira-sidebar, .no-print { display: none !important; }
+    .jira-main-content { margin: 0 !important; width: 100% !important; padding: 0 !important; }
+}
+</style>
 {% endblock %}

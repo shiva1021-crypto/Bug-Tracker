@@ -1,101 +1,203 @@
 {% extends "base.html" %}
-{% block title %}Versions · Bug Tracker{% endblock %}
+
+{% block title %}Releases — BugTracker{% endblock %}
 
 {% block content %}
-<div class="page page-wide">
+<style>
+.version-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+.version-panel-heading {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-hover);
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.version-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.version-row:last-child { border-bottom: none; }
+.version-name {
+    font-weight: 600;
+    font-size: 15px;
+}
+.version-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.version-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.version-badge.unreleased { background: #eef; color: #338; }
+.version-badge.released { background: #dee; color: #060; }
+.version-progress {
+    width: 120px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.version-progress-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+.empty-versions {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 24px;
+    text-align: center;
+}
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px;
+    min-width: 400px;
+    max-width: 90vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.modal-box h2 { margin: 0 0 16px; font-size: 18px; }
+.modal-box label { display: block; font-size: 13px; font-weight: 600; margin: 8px 0 4px; }
+.modal-box input, .modal-box select {
+    width: 100%;
+    padding: 8px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    box-sizing: border-box;
+}
+</style>
 
-  {% include "partials/flashes.html" %}
-
-  <div class="page-head">
-    <h1 class="page-title">Versions</h1>
-    {% if can_manage %}
-      <button type="button" class="btn btn-primary" data-new-version-toggle>+ New Version</button>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+    <h1 style="font-size:22px;font-weight:600;margin:0;">Releases</h1>
+    {% if can_manage and projects %}
+        <button type="button" class="button" onclick="document.getElementById('createVersionModal').classList.add('open')">+ Create Version</button>
     {% endif %}
-  </div>
-
-  {% if can_manage %}
-  <div class="card new-version-form" data-new-version-form hidden>
-    <h2 class="section-title">New Version</h2>
-    <form method="post" action="{{ url_for('versions.list_versions') }}" novalidate>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-      <div class="field">
-        <label class="label" for="version-project">Project</label>
-        <select class="input" id="version-project" name="project_id" required>
-          <option value="">Select a project…</option>
-          {% for p in projects %}
-            <option value="{{ p.id }}">{{ p.project_key }} - {{ p.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="field">
-        <label class="label" for="version-name">Name</label>
-        <input class="input" type="text" id="version-name" name="name" maxlength="120" required>
-      </div>
-
-      <div class="field">
-        <label class="label" for="version-release-date">Release Date (optional)</label>
-        <input class="input" type="date" id="version-release-date" name="release_date">
-      </div>
-
-      <button type="submit" class="btn btn-primary">Create Version</button>
-    </form>
-  </div>
-  {% endif %}
-
-  {% for entry in versions_by_project %}
-    <div class="card">
-      <h2 class="section-title">
-        <span class="project-key-badge">{{ entry.project.project_key }}</span>
-        {{ entry.project.name }}
-      </h2>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Version</th>
-            <th>Release Date</th>
-            <th>Status</th>
-            <th>Open</th>
-            <th>Resolved</th>
-            <th>Total</th>
-            {% if can_manage %}<th></th>{% endif %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in entry.versions %}
-          <tr>
-            <td>{{ row.version.name }}</td>
-            <td>{{ row.version.release_date.strftime('%d %b %Y') if row.version.release_date else '-' }}</td>
-            <td><span class="badge version-status-{{ row.version.status }}">{{ row.version.status | capitalize }}</span></td>
-            <td>{{ row.counts.open }}</td>
-            <td>{{ row.counts.resolved }}</td>
-            <td>{{ row.counts.total }}</td>
-            {% if can_manage %}
-            <td class="version-row-actions">
-              {% if row.version.status == 'unreleased' %}
-                <form method="post" action="{{ url_for('versions.release_version', version_id=row.version.id) }}">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="btn btn-secondary btn-sm">Release</button>
-                </form>
-              {% endif %}
-              <form method="post" action="{{ url_for('versions.archive_version', version_id=row.version.id) }}"
-                    onsubmit="return confirm('Archive this version? It will be hidden from this list, but issues already assigned to it keep their fix version.');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-danger btn-sm">Archive</button>
-              </form>
-            </td>
-            {% endif %}
-          </tr>
-          {% else %}
-          <tr><td colspan="{{ 7 if can_manage else 6 }}" class="empty-row">No versions yet for this project.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% else %}
-    <p class="empty-state">Create a project first to add versions.</p>
-  {% endfor %}
-
 </div>
+
+<!--
+    Reference's Releases page is scoped to one project at a time (a
+    dropdown selects the project; the create-version modal assumes that
+    project is already chosen). This app's real /versions route
+    intentionally lists every project's versions together on one page --
+    "mirroring how /automation is one page covering every project rather
+    than one page per project" (see routes/version_routes.py's own
+    docstring) -- so there's no project filter here, and the create-version
+    modal has its own project picker instead of inheriting one from a
+    selector that doesn't exist on this page.
+
+    Reference also renders each version's individual issue list
+    (version.issues). The real route only computes per-version counts
+    (version_service.issue_counts -> open/resolved/total), not the issues
+    themselves, so that section is left out rather than faked.
+-->
+{% if not projects %}
+    <p class="empty-versions">Create a project first to add versions.</p>
+{% else %}
+    {% for entry in versions_by_project %}
+        <div class="version-panel">
+            <div class="version-panel-heading">
+                <span class="project-key-badge">{{ entry.project.project_key }}</span>
+                {{ entry.project.name }}
+            </div>
+            {% if entry.versions %}
+                {% for row in entry.versions %}
+                    <div class="version-row">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="version-name">{{ row.version.name }}</span>
+                            <span class="version-badge {{ row.version.status }}">{{ row.version.status }}</span>
+                        </div>
+                        <div class="version-meta">
+                            <span>{{ row.counts.total }} issue{{ '' if row.counts.total == 1 else 's' }} ({{ row.counts.open }} open, {{ row.counts.resolved }} resolved)</span>
+                            {% if row.counts.total > 0 %}
+                                <div class="version-progress" title="{{ row.counts.resolved }}/{{ row.counts.total }} resolved">
+                                    <div class="version-progress-fill" style="width:{{ (row.counts.resolved / row.counts.total * 100)|round }}%"></div>
+                                </div>
+                            {% endif %}
+                            {% if row.version.release_date %}
+                                <span>{{ row.version.release_date.strftime('%d %b %Y') }}</span>
+                            {% endif %}
+                            {% if can_manage %}
+                                {% if row.version.status == 'unreleased' %}
+                                    <form method="POST" action="{{ url_for('versions.release_version', version_id=row.version.id) }}" style="display:inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="button-secondary" style="font-size:11px;min-height:24px;padding:2px 8px;">Release</button>
+                                    </form>
+                                {% endif %}
+                                <form method="POST" action="{{ url_for('versions.archive_version', version_id=row.version.id) }}" style="display:inline" onsubmit="return confirm('Archive this version? It will be hidden from this list, but issues already assigned to it keep their fix version.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="button-secondary" style="font-size:11px;min-height:24px;padding:2px 8px;">Archive</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-versions">No versions yet for this project.</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Create Version Modal -->
+{% if can_manage and projects %}
+<div class="modal-overlay" id="createVersionModal">
+    <div class="modal-box">
+        <h2>Create Version</h2>
+        <form method="POST" action="{{ url_for('versions.list_versions') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="ver_project">Project</label>
+            <select id="ver_project" name="project_id" required>
+                <option value="">Select a project…</option>
+                {% for project in projects %}
+                    <option value="{{ project.id }}">{{ project.project_key }} - {{ project.name }}</option>
+                {% endfor %}
+            </select>
+            <label for="ver_name">Version Name</label>
+            <input type="text" id="ver_name" name="name" required placeholder="e.g. v1.0">
+            <label for="ver_date">Release Date (optional)</label>
+            <input type="date" id="ver_date" name="release_date">
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+                <button type="button" class="button-secondary" onclick="this.closest('.modal-overlay').classList.remove('open')">Cancel</button>
+                <button type="submit" class="button">Create Version</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

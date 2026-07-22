@@ -555,9 +555,9 @@
 </div>
 
 {% if not projects %}
-    <p class="empty-state">Create a project first to use the board.</p>
+    <p class="empty">Create a project first to use the board.</p>
 {% elif not board %}
-    <p class="empty-state">Select a project to see its board.</p>
+    <p class="empty">Select a project to see its board.</p>
 {% else %}
 <!-- Hidden CSRF field, read by script.js's drag-and-drop handler via
      input[name="csrf_token"]. -->

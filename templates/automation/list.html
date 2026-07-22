@@ -1,140 +1,248 @@
 {% extends "base.html" %}
-{% block title %}Automation · Bug Tracker{% endblock %}
+
+{% block title %}Automation Rules — BugTracker{% endblock %}
 
 {% block content %}
-<div class="page page-wide">
-
-  {% include "partials/flashes.html" %}
-
-  <div class="page-head">
-    <h1 class="page-title">Automation Rules</h1>
-    <button type="button" class="btn btn-primary" data-new-rule-toggle>+ New Rule</button>
-  </div>
-
-  <div class="card new-rule-form" data-new-rule-form {{ '' if form_open else 'hidden' }}>
-    <h2 class="section-title">New Rule</h2>
-    <form method="post" action="{{ url_for('automation.list_rules') }}" novalidate>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-      <div class="field">
-        <label class="label" for="rule-name">Name</label>
-        <input class="input" type="text" id="rule-name" name="name" value="{{ form.get('name', '') }}" maxlength="150" required autofocus>
-      </div>
-
-      <div class="field">
-        <label class="label" for="rule-scope">Scope</label>
-        <select class="input" id="rule-scope" name="project_id">
-          <option value="">Organization-wide (every project)</option>
-          {% for p in projects %}
-            <option value="{{ p.id }}" {{ "selected" if form.get('project_id') == (p.id | string) else "" }}>{{ p.project_key }} - {{ p.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="field">
-        <label class="label" for="rule-trigger">Trigger</label>
-        <select class="input" id="rule-trigger" name="trigger_event" required>
-          {% for t in triggers %}
-            <option value="{{ t }}" {{ "selected" if form.get('trigger_event') == t else "" }}>{{ t | replace('_', ' ') | capitalize }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="field">
-        <label class="label">Conditions (optional)</label>
-        <p class="hint">Field is compared against the issue's own data (e.g. <code>status</code>, <code>priority</code>) or the event's own keys (e.g. <code>new_status</code> for Status Changed, <code>field_name</code> for Field Updated).</p>
-        <div data-condition-rows>
-          <div class="condition-row" data-condition-row>
-            <input class="input" type="text" name="condition_field" placeholder="Field (e.g. new_status)">
-            <select class="input" name="condition_operator">
-              {% for op in condition_operators %}
-                <option value="{{ op }}">{{ op | replace('_', ' ') | capitalize }}</option>
-              {% endfor %}
-            </select>
-            <input class="input" type="text" name="condition_value" placeholder="Value (e.g. Testing)">
-            <button type="button" class="btn btn-secondary btn-sm" data-remove-condition-row>Remove</button>
-          </div>
+<div class="jira-main-content-narrow">
+    <div class="page-heading" style="margin-bottom: 20px;">
+        <div>
+            <p class="eyebrow">Workflow automation</p>
+            <h1>Automation Rules</h1>
         </div>
-        <button type="button" class="btn btn-secondary btn-sm" data-add-condition-row>+ Add Condition</button>
-      </div>
+    </div>
 
-      <div class="field">
-        <label class="label" for="rule-action-type">Action</label>
-        <select class="input" id="rule-action-type" name="action_type" required data-action-type-select>
-          <option value="">Select an action…</option>
-          {% for a in action_types %}
-            <option value="{{ a }}" {{ "selected" if form.get('action_type') == a else "" }}>{{ a | replace('_', ' ') | capitalize }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="field" data-action-field="transition_status" hidden>
-        <label class="label" for="action-status">Target Status</label>
-        <select class="input" id="action-status" name="action_status">
-          {% for s in statuses %}
-            <option value="{{ s }}">{{ s }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="field" data-action-field="assign_to" hidden>
-        <label class="label" for="action-user">Assign To</label>
-        <select class="input" id="action-user" name="action_user_id">
-          <option value="">Select a developer…</option>
-          {% for developer in developers %}
-            <option value="{{ developer.id }}">{{ developer.full_name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="field" data-action-field="assign_to_role" hidden>
-        <label class="label" for="action-role">Assign To Role</label>
-        <select class="input" id="action-role" name="action_role">
-          {% for role in roles %}
-            <option value="{{ role }}">{{ role_labels.get(role, role) }}</option>
-          {% endfor %}
-        </select>
-        <p class="hint">A random user with this role in the organization is picked when the rule fires.</p>
-      </div>
-
-      <div class="field" data-action-field="add_comment" hidden>
-        <label class="label" for="action-comment">Comment Text</label>
-        <textarea class="input" id="action-comment" name="action_comment_text" rows="3"
-                  placeholder="e.g. {issue_key} moved to {status}">{{ form.get('action_comment_text', '') }}</textarea>
-        <p class="hint">Placeholders: <code>{issue_key}</code>, <code>{title}</code>, <code>{status}</code>, <code>{priority}</code>.</p>
-      </div>
-
-      <button type="submit" class="btn btn-primary">Create Rule</button>
-    </form>
-  </div>
-
-  <div class="rule-grid">
-    {% for rule in rules %}
-      <div class="card rule-card">
-        <div class="rule-card-head">
-          <h2 class="rule-card-name">{{ rule.name }}</h2>
-          <span class="badge {{ 'rule-enabled' if rule.enabled else 'rule-disabled' }}">{{ 'Enabled' if rule.enabled else 'Disabled' }}</span>
-        </div>
-        <p class="rule-card-line"><strong>Scope:</strong> {{ (projects | selectattr('id', 'equalto', rule.project_id) | map(attribute='project_key') | first) if rule.project_id else 'Organization-wide' }}</p>
-        <p class="rule-card-line"><strong>Trigger:</strong> {{ rule.trigger_event | replace('_', ' ') | capitalize }}</p>
-        <p class="rule-card-line"><strong>Condition:</strong> {{ condition_summary(rule) }}</p>
-        <p class="rule-card-line"><strong>Action:</strong> {{ action_summary(rule) }}</p>
-        <div class="rule-card-actions">
-          <form method="post" action="{{ url_for('automation.toggle_rule', rule_id=rule.id) }}">
+    <section class="panel form-card" style="margin-bottom: 24px;">
+        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Create Rule</h2>
+        <form method="POST" action="{{ url_for('automation.list_rules') }}" novalidate>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-secondary btn-sm">{{ 'Disable' if rule.enabled else 'Enable' }}</button>
-          </form>
-          <form method="post" action="{{ url_for('automation.delete_rule', rule_id=rule.id) }}"
-                onsubmit="return confirm('Delete this automation rule?');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-          </form>
-        </div>
-      </div>
-    {% else %}
-      <p class="empty-state">No automation rules yet.</p>
-    {% endfor %}
-  </div>
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="name">Rule Name</label>
+                    <input id="name" name="name" maxlength="150" required placeholder="e.g. Auto-review on completion" value="{{ form.get('name', '') }}">
+                </div>
+                <div class="form-group">
+                    <label for="project_id">Project</label>
+                    <select id="project_id" name="project_id">
+                        <option value="">All projects</option>
+                        {% for project in projects %}
+                            <option value="{{ project.id }}" {% if form.get('project_id') == (project.id | string) %}selected{% endif %}>{{ project.project_key }} - {{ project.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="trigger_event">Trigger Event *</label>
+                    <select id="trigger_event" name="trigger_event" required>
+                        {% for t in triggers %}
+                            <option value="{{ t }}" {% if form.get('trigger_event') == t %}selected{% endif %}>{{ t | replace('_', ' ') | capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="action_type">Action *</label>
+                    <!--
+                        Reference collapses every action type into one free-text
+                        "Action Value" field. This app's real backend
+                        (services/automation_service.py::validate_rule) expects a
+                        typed field per action type instead -- action_status,
+                        action_user_id, action_role, or action_comment_text -- so
+                        a single text box can't submit a valid rule here (there's
+                        no way to type a developer's user id reliably by hand).
+                        The typed field groups below switch with this select.
+                    -->
+                    <select id="action_type" name="action_type" required onchange="toggleActionField(this.value);">
+                        <option value="">-- Select --</option>
+                        {% for a in action_types %}
+                            <option value="{{ a }}" {% if form.get('action_type') == a %}selected{% endif %}>{{ a | replace('_', ' ') | capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
 
+            <div class="form-group action-field" data-action-field="transition_status" style="display: {{ 'block' if form.get('action_type') == 'transition_status' else 'none' }};">
+                <label for="action_status">Target Status</label>
+                <select id="action_status" name="action_status">
+                    {% for s in statuses %}
+                        <option value="{{ s }}" {% if form.get('action_status') == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group action-field" data-action-field="assign_to" style="display: {{ 'block' if form.get('action_type') == 'assign_to' else 'none' }};">
+                <label for="action_user_id">Assign To</label>
+                <select id="action_user_id" name="action_user_id">
+                    <option value="">-- Select a developer --</option>
+                    {% for developer in developers %}
+                        <option value="{{ developer.id }}" {% if form.get('action_user_id') == (developer.id | string) %}selected{% endif %}>{{ developer.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group action-field" data-action-field="assign_to_role" style="display: {{ 'block' if form.get('action_type') == 'assign_to_role' else 'none' }};">
+                <label for="action_role">Assign To Role</label>
+                <select id="action_role" name="action_role">
+                    {% for role in roles %}
+                        <option value="{{ role }}" {% if form.get('action_role') == role %}selected{% endif %}>{{ role_labels.get(role, role) }}</option>
+                    {% endfor %}
+                </select>
+                <p class="hint" style="font-size: 11px; color: var(--text-muted);">A random user with this role in the organization is picked when the rule fires.</p>
+            </div>
+
+            <div class="form-group action-field" data-action-field="add_comment" style="display: {{ 'block' if form.get('action_type') == 'add_comment' else 'none' }};">
+                <label for="action_comment_text">Comment Text</label>
+                <textarea id="action_comment_text" name="action_comment_text" placeholder="e.g. {issue_key} moved to {status}">{{ form.get('action_comment_text', '') }}</textarea>
+                <p class="hint" style="font-size: 11px; color: var(--text-muted);">Placeholders: {issue_key}, {title}, {status}, {priority}.</p>
+            </div>
+
+            <details style="margin-top: 12px; margin-bottom: 12px;" {% if form.get('condition_field') %}open{% endif %}>
+                <summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted);">Conditions (optional)</summary>
+                <p class="hint" style="font-size: 11px; color: var(--text-muted); margin: 6px 0;">
+                    Field is compared against the issue's own data (e.g. status, priority) or the event's own keys (e.g. new_status for Status Changed, field_name for Field Updated).
+                </p>
+                <div id="condition-rows">
+                    {% set cond_fields = form.getlist('condition_field') if form.getlist is defined else [] %}
+                    {% set cond_operators = form.getlist('condition_operator') if form.getlist is defined else [] %}
+                    {% set cond_values = form.getlist('condition_value') if form.getlist is defined else [] %}
+                    {% if cond_fields %}
+                        {% for cf in cond_fields %}
+                            {% set current_op = cond_operators[loop.index0] if loop.index0 < cond_operators|length else '' %}
+                            {% set current_val = cond_values[loop.index0] if loop.index0 < cond_values|length else '' %}
+                            <div class="two-column condition-row" style="align-items: flex-end; margin-bottom: 8px;">
+                                <div class="form-group">
+                                    <label>Field</label>
+                                    <input type="text" name="condition_field" value="{{ cf }}" placeholder="e.g. new_status">
+                                </div>
+                                <div class="form-group">
+                                    <label>Operator</label>
+                                    <select name="condition_operator">
+                                        {% for op in condition_operators %}
+                                            <option value="{{ op }}" {% if op == current_op %}selected{% endif %}>{{ op | replace('_', ' ') | capitalize }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Value</label>
+                                    <input type="text" name="condition_value" value="{{ current_val }}" placeholder="e.g. Testing">
+                                </div>
+                                <button type="button" class="button-secondary" style="min-height: 38px;" onclick="this.closest('.condition-row').remove();">Remove</button>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="two-column condition-row" style="align-items: flex-end; margin-bottom: 8px;">
+                            <div class="form-group">
+                                <label>Field</label>
+                                <input type="text" name="condition_field" placeholder="e.g. new_status">
+                            </div>
+                            <div class="form-group">
+                                <label>Operator</label>
+                                <select name="condition_operator">
+                                    {% for op in condition_operators %}
+                                        <option value="{{ op }}">{{ op | replace('_', ' ') | capitalize }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Value</label>
+                                <input type="text" name="condition_value" placeholder="e.g. Testing">
+                            </div>
+                            <button type="button" class="button-secondary" style="min-height: 38px;" onclick="this.closest('.condition-row').remove();">Remove</button>
+                        </div>
+                    {% endif %}
+                </div>
+                <button type="button" class="button-secondary" onclick="addConditionRow();">+ Add Condition</button>
+            </details>
+
+            <button type="submit">Create Rule</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Existing Rules ({{ rules|length }})</h2>
+        {% if rules %}
+            {% for rule in rules %}
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <strong>{{ rule.name }}</strong>
+                            <span class="eyebrow" style="font-size: 10px;">{{ rule.trigger_event.replace('_', ' ') }}</span>
+                            {% if rule.enabled %}
+                                <span style="font-size: 10px; color: var(--success); font-weight: 600;">● Enabled</span>
+                            {% else %}
+                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">○ Disabled</span>
+                            {% endif %}
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                            <strong>Scope:</strong> {{ (projects | selectattr('id', 'equalto', rule.project_id) | map(attribute='project_key') | first) if rule.project_id else 'All projects' }}
+                        </p>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                            <strong>Action:</strong> {{ action_summary(rule) }}
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                            <strong>Condition:</strong> {{ condition_summary(rule) }}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                        <form method="POST" action="{{ url_for('automation.toggle_rule', rule_id=rule.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="button-secondary" style="min-height: 24px; padding: 2px 8px; font-size: 11px;">
+                                {{ 'Disable' if rule.enabled else 'Enable' }}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('automation.delete_rule', rule_id=rule.id) }}" onsubmit="return confirm('Delete rule &#39;{{ rule.name }}&#39;?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="button-secondary" style="min-height: 24px; padding: 2px 8px; font-size: 11px; color: var(--danger);">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="empty">No automation rules yet. Create one above.</p>
+        {% endif %}
+    </section>
 </div>
+
+<!--
+    Same story as fields.html: static/script.js no longer carries any
+    data-attribute hooks for this page (it was fully replaced with
+    reference-ui's script.js earlier, which doesn't know about condition
+    rows or per-action-type fields), so the interactivity this page's real
+    data model needs -- switching the action's typed field group, and
+    adding/removing condition rows -- lives in its own inline script here,
+    the same way reference embeds page-specific behavior directly in its
+    templates rather than the shared bundle.
+-->
+<script>
+function toggleActionField(actionType) {
+    document.querySelectorAll('.action-field').forEach(function (el) {
+        el.style.display = (el.getAttribute('data-action-field') === actionType) ? 'block' : 'none';
+    });
+}
+
+function addConditionRow() {
+    var rows = document.getElementById('condition-rows');
+    var row = document.createElement('div');
+    row.className = 'two-column condition-row';
+    row.style.alignItems = 'flex-end';
+    row.style.marginBottom = '8px';
+    row.innerHTML =
+        '<div class="form-group"><label>Field</label>' +
+        '<input type="text" name="condition_field" placeholder="e.g. new_status"></div>' +
+        '<div class="form-group"><label>Operator</label>' +
+        '<select name="condition_operator"></select></div>' +
+        '<div class="form-group"><label>Value</label>' +
+        '<input type="text" name="condition_value" placeholder="e.g. Testing"></div>' +
+        '<button type="button" class="button-secondary" style="min-height: 38px;" onclick="this.closest(\'.condition-row\').remove();">Remove</button>';
+    var select = row.querySelector('select[name="condition_operator"]');
+    select.innerHTML = '';
+    var ops = {{ condition_operators | tojson }};
+    ops.forEach(function (op) {
+        var opt = document.createElement('option');
+        opt.value = op;
+        opt.textContent = op.replace('_', ' ').replace(/^./, function (c) { return c.toUpperCase(); });
+        select.appendChild(opt);
+    });
+    rows.appendChild(row);
+}
+</script>
 {% endblock %}

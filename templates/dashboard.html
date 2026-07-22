@@ -1,140 +1,191 @@
 {% extends "base.html" %}
-{% block title %}Dashboard · Bug Tracker{% endblock %}
+{% from "macros.html" import render_type_icon, render_priority_icon %}
+
+{% block title %}Dashboard — BugTracker{% endblock %}
 
 {% block content %}
-<div class="page page-wide">
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Overview</p>
+        <h1>Dashboard</h1>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button class="button-secondary" type="button" onclick="document.getElementById('add-widget-modal').style.display='flex'">+ Add Widget</button>
+        <a class="button" href="{{ url_for('issues.add_issue') }}">+ Create Issue</a>
+    </div>
+</div>
 
-  {% include "partials/flashes.html" %}
-
-  <div class="page-head">
-    <h1 class="page-title">Dashboard</h1>
-    <button type="button" class="btn btn-primary" data-add-widget-toggle>+ Add Widget</button>
-  </div>
-
-  <div class="dashboard-grid">
+<div class="dashboard-grid" id="dashboard-grid">
     {% for widget in widgets %}
-      <div class="card dashboard-widget dashboard-widget-{{ widget.width }}">
-        <div class="dashboard-widget-head">
-          <h2 class="dashboard-widget-title">{{ widget.title }}</h2>
-          <form method="post" action="{{ url_for('dashboard.remove_widget', widget_id=widget.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="dashboard-widget-remove" title="Remove widget" aria-label="Remove widget">&times;</button>
-          </form>
-        </div>
-
-        <div class="dashboard-widget-body">
-          {% if widget.widget_type == 'stats_summary' %}
-            <div class="stats-summary-grid">
-              <div class="stats-summary-stat">
-                <span class="stats-summary-value">{{ widget.data.total }}</span>
-                <span class="stats-summary-label">Total</span>
-              </div>
-              <div class="stats-summary-stat">
-                <span class="stats-summary-value">{{ widget.data.open }}</span>
-                <span class="stats-summary-label">Open</span>
-              </div>
-              <div class="stats-summary-stat">
-                <span class="stats-summary-value">{{ widget.data.resolved }}</span>
-                <span class="stats-summary-label">Resolved</span>
-              </div>
+        <div class="panel dashboard-widget widget-{{ widget.width }}" data-widget-id="{{ widget.id }}">
+            <div class="section-heading" style="margin-bottom: 12px;">
+                <h2>{{ widget.title }}</h2>
+                <form method="POST" action="{{ url_for('dashboard.remove_widget', widget_id=widget.id) }}" onsubmit="return confirm('Remove this widget?');" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="button-secondary" style="min-height: 24px; padding: 2px 6px; font-size: 10px; color: var(--danger);">✕</button>
+                </form>
             </div>
 
-          {% elif widget.widget_type == 'recent_issues' %}
-            <ul class="dashboard-recent-list">
-              {% for issue in widget.data.issues %}
-                <li class="dashboard-recent-row">
-                  <span class="type-badge type-{{ issue.issue_type | lower }}">{{ issue.issue_type }}</span>
-                  <a href="{{ url_for('issues.issue_detail', issue_id=issue.id) }}" class="dashboard-recent-key">{{ issue.issue_key }}</a>
-                  <span class="dashboard-recent-title">{{ issue.title }}</span>
-                  <span class="badge status-badge status-{{ issue.status | lower | replace(' ', '-') }}">{{ issue.status }}</span>
-                </li>
-              {% else %}
-                <li class="empty-state">No issues yet.</li>
-              {% endfor %}
-            </ul>
+            {% if widget.widget_type == 'stats_summary' %}
+                <!--
+                    Reference shows six stats (Total / To Do / In Progress /
+                    Testing / Done / Critical). This app's real
+                    issue_repository.stats_summary() only computes
+                    total/open/resolved -- there's no per-status or
+                    per-priority breakdown in that query -- so only those
+                    three real numbers are shown rather than padding out
+                    four more cards with data that doesn't exist. (A status
+                    breakdown is exactly what the "Issues by Status" chart
+                    widget is for.)
+                -->
+                <div class="stats-grid">
+                    <article class="stat-card"><span>Total</span><strong>{{ widget.data.total or 0 }}</strong></article>
+                    <article class="stat-card"><span>Open</span><strong style="color:var(--primary);">{{ widget.data.open or 0 }}</strong></article>
+                    <article class="stat-card" style="border-left:4px solid var(--success);"><span style="color:var(--success);">Resolved</span><strong style="color:var(--success);">{{ widget.data.resolved or 0 }}</strong></article>
+                </div>
 
-          {% else %}
-            {% if widget.data.labels %}
-              <div class="dashboard-chart-container">
-                <canvas
-                  class="dashboard-chart"
-                  data-dashboard-chart
-                  data-chart-labels='{{ widget.data.labels | tojson }}'
-                  data-chart-counts='{{ widget.data.counts | tojson }}'
-                  height="220"></canvas>
-              </div>
+            {% elif widget.widget_type == 'recent_issues' %}
+                <!--
+                    Reference's recent-issues table has an Assignee column.
+                    issue_repository.list_recent() doesn't join/select
+                    assigned_to at all (it's a lightweight "what's newest"
+                    query), so there's no real assignee name to show here.
+                    Project is fetched instead (it's real and already
+                    useful context for "what just got filed").
+                -->
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:90px;">Key</th>
+                                <th style="width:90px;">Type</th>
+                                <th>Title</th>
+                                <th style="width:110px;">Priority</th>
+                                <th style="width:120px;">Status</th>
+                                <th style="width:90px;">Project</th>
+                                <th style="width:70px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for issue in widget.data.issues %}
+                                <tr>
+                                    <td><strong style="color:var(--text-muted);">{{ issue.issue_key }}</strong></td>
+                                    <td>
+                                        <span class="issue-type-badge type-{{ issue.issue_type | lower }}" style="font-size: 10px; padding: 1px 4px; display: inline-flex; align-items: center; gap: 4px;">
+                                            {{ render_type_icon(issue.issue_type, 11) }}
+                                            {{ issue.issue_type }}
+                                        </span>
+                                    </td>
+                                    <td><a href="{{ url_for('issues.issue_detail', issue_id=issue.id) }}" style="font-weight:600;color:var(--text);">{{ issue.title }}</a></td>
+                                    <td>
+                                        <span class="priority-badge" style="display: inline-flex; align-items: center; gap: 4px;">
+                                            {{ render_priority_icon(issue.priority, 12) }}
+                                            <span>{{ issue.priority }}</span>
+                                        </span>
+                                    </td>
+                                    <td><span class="status-badge status-{{ issue.status | lower | replace(' ', '_') }}">{{ issue.status }}</span></td>
+                                    <td>{{ issue.project_key }}</td>
+                                    <td><a href="{{ url_for('issues.issue_detail', issue_id=issue.id) }}" class="button button-secondary" style="min-height:26px;padding:2px 8px;font-size:11px;">View</a></td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="7" class="empty">No issues yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            {% elif widget.widget_type in ('issues_by_status', 'issues_by_priority', 'issues_by_severity', 'issues_by_type') %}
+                <!--
+                    Reference feeds this chart by looping raw {status,
+                    count} rows straight into the inline script. This app's
+                    dashboard_service.widget_data() already reshapes that
+                    into parallel {labels, counts} lists (the same shape
+                    Stage 10's report charts and Stage 7's board use), so
+                    the canvas is populated from data-* attributes instead
+                    of a per-row template loop -- same real numbers, just
+                    read from the shape the service actually returns.
+                -->
+                {% if widget.data.labels %}
+                    <canvas
+                        id="chart-{{ widget.id }}"
+                        class="dashboard-chart"
+                        data-dashboard-chart
+                        data-chart-labels='{{ widget.data.labels | tojson }}'
+                        data-chart-counts='{{ widget.data.counts | tojson }}'
+                        height="200"></canvas>
+                {% else %}
+                    <p class="empty" style="padding:20px;">No data available.</p>
+                {% endif %}
+
             {% else %}
-              <p class="empty-state">No issues yet.</p>
+                <p class="empty" style="padding:20px;">No data available.</p>
             {% endif %}
-          {% endif %}
         </div>
-      </div>
     {% else %}
-      <p class="empty-state">No widgets on your dashboard yet. Add one to get started.</p>
+        <p class="empty">No widgets on your dashboard yet. Add one to get started.</p>
     {% endfor %}
-  </div>
-
 </div>
 
-<div class="modal-overlay" data-add-widget-modal hidden>
-  <div class="modal-card card">
-    <h2 class="section-title">Add Widget</h2>
-    <form method="post" action="{{ url_for('dashboard.add_widget') }}" novalidate>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-      <div class="field">
-        <label class="label" for="widget-type">Widget Type</label>
-        <select class="input" id="widget-type" name="widget_type" required>
-          {% for wt in widget_types %}
-            <option value="{{ wt }}">{{ widget_labels.get(wt, wt) }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="field">
-        <label class="label" for="widget-title">Title</label>
-        <input class="input" type="text" id="widget-title" name="title" maxlength="120" placeholder="Leave blank to use the default title">
-      </div>
-
-      <div class="field">
-        <label class="label" for="widget-width">Width</label>
-        <select class="input" id="widget-width" name="width" required>
-          {% for w in widths %}
-            <option value="{{ w }}" {{ "selected" if w == "half" else "" }}>{{ w | capitalize }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn btn-secondary" data-add-widget-cancel>Cancel</button>
-        <button type="submit" class="btn btn-primary">Add Widget</button>
-      </div>
-    </form>
-  </div>
+<!-- Add Widget Modal -->
+<div id="add-widget-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div class="panel" style="width:480px;max-width:90vw;padding:24px;">
+        <h2 style="font-size:18px;font-weight:600;margin-bottom:16px;">Add Widget</h2>
+        <form method="POST" action="{{ url_for('dashboard.add_widget') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="widget_type">Widget Type</label>
+                <select id="widget_type" name="widget_type" required>
+                    {% for wt in widget_types %}
+                        <option value="{{ wt }}">{{ widget_labels.get(wt, wt) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="title">Title</label>
+                <input id="title" name="title" maxlength="120" placeholder="Leave blank to use the default title">
+            </div>
+            <div class="form-group">
+                <label for="width">Width</label>
+                <select id="width" name="width" required>
+                    {% for w in widths %}
+                        <option value="{{ w }}" {{ 'selected' if w == 'half' else '' }}>{{ w | capitalize }} Width</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:16px;">
+                <button class="button-secondary" type="button" onclick="document.getElementById('add-widget-modal').style.display='none'">Cancel</button>
+                <button type="submit">Add Widget</button>
+            </div>
+        </form>
+    </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-  <script>
-    document.querySelectorAll("[data-dashboard-chart]").forEach(function (canvas) {
-      var labels = JSON.parse(canvas.getAttribute("data-chart-labels"));
-      var counts = JSON.parse(canvas.getAttribute("data-chart-counts"));
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-dashboard-chart]').forEach(function (canvas) {
+        var labels = JSON.parse(canvas.getAttribute('data-chart-labels'));
+        var counts = JSON.parse(canvas.getAttribute('data-chart-counts'));
+        var palette = ['#4361ee', '#3a86ff', '#4cc9f0', '#4895ef', '#7209b7', '#f72585', '#e63946', '#f77f00', '#fcbf49', '#606c38'];
+        var colors = labels.map(function (_l, i) { return palette[i % palette.length]; });
 
-      new Chart(canvas, {
-        type: "doughnut",
-        data: {
-          labels: labels,
-          datasets: [{
-            data: counts,
-            backgroundColor: ["#0052cc", "#00875a", "#ff8b00", "#de350b", "#5243aa", "#6b778c", "#00b8d9"]
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { position: "bottom" } }
-        }
-      });
+        new Chart(canvas, {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: counts, backgroundColor: colors }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } } } }
+        });
     });
-  </script>
+});
+</script>
+
+<style>
+.dashboard-grid { display: flex; flex-wrap: wrap; gap: 16px; }
+.dashboard-widget { margin-bottom: 0; }
+.widget-full { width: 100%; }
+.widget-half { width: calc(50% - 8px); }
+.widget-third { width: calc(33.33% - 11px); }
+@media (max-width: 768px) {
+    .widget-half, .widget-third { width: 100%; }
+}
+</style>
 {% endblock %}

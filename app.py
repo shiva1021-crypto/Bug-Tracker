@@ -8,6 +8,7 @@ weak/missing SECRET_KEY makes this raise before the app can serve traffic).
 import os
 from datetime import timedelta
 
+import mysql.connector
 from flask import Flask, render_template, request
 
 from config import config
@@ -77,6 +78,25 @@ def create_app() -> Flask:
         used to distinguish the two cases."""
         return render_template("errors/404.html"), 404
 
+    @app.errorhandler(mysql.connector.Error)
+    def database_unreachable(error):
+        """Stage 10's cloned `database_error.html` (per the spec's Frontend
+        section) isn't reachable from anywhere in the route table on its
+        own -- there's no dedicated route for it, just a template to clone.
+        The only way it's ever actually shown to a developer is if
+        something in the request raises a `mysql.connector.Error`, so this
+        handler is the minimal plumbing needed to make that cloned page do
+        anything at all, the same reasoning already used for
+        infrastructure the route table doesn't spell out (Stage 5's
+        screenshot route, Stage 8/9's delete routes). Every DB call in this
+        app goes through `utils/db.py::get_connection()`, which raises this
+        exact exception class on a connection failure, so catching it here
+        covers "MySQL isn't running," "wrong port," "wrong password," and
+        "database/tables don't exist yet" uniformly -- exactly the set of
+        problems reference's own fix checklist walks through.
+        """
+        return render_template("errors/database_error.html", error=error), 500
+
     @app.before_request
     def enforce_csrf():
         """Validate the CSRF token on every state-changing request.
@@ -126,8 +146,17 @@ def create_app() -> Flask:
         user = current_user()
         organization_name = None
         if user is not None:
-            organization = organization_repository.get_by_id(user["organization_id"])
-            organization_name = organization["name"] if organization else None
+            try:
+                organization = organization_repository.get_by_id(user["organization_id"])
+                organization_name = organization["name"] if organization else None
+            except mysql.connector.Error:
+                # base.html (and therefore errors/database_error.html,
+                # which extends it) renders for every response, including
+                # the database-unreachable error page itself. Without this
+                # guard, a DB outage would make *this* lookup fail too,
+                # turning the friendly error page into an unhandled
+                # exception instead of the message it's supposed to show.
+                organization_name = None
         return {
             "current_user": user,
             "csrf_token": generate_csrf_token,

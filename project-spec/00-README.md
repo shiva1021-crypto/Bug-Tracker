@@ -27,24 +27,20 @@ data model and routes from earlier stages already exist.
 | 9 | Extensibility | `09-extensibility.md` |
 | 10 | Reporting, Dashboards & Ops | `10-reporting-dashboards-ops.md` |
 
-## UI Reference (use this, don't reinvent the design)
+## UI Reference (applied; source files removed)
 
-`reference-ui/` in this folder contains the **actual, real source files** of
-the original app's UI — every template, the full CSS, and the full JS,
-copied as-is. This is not a description of the design, it *is* the design.
+Every template in `templates/`, plus `static/style.css` and
+`static/script.js`, was hand-matched — structure, classes, and wording — to
+a reference UI design (real templates/CSS/JS from another app, used purely
+as a visual design source, not reinvented or reinterpreted). That source
+material lived in `reference-ui/` in this folder during development and has
+since been removed now that its content is fully reflected in the real
+app; the mapping table below is kept for reference on which page's design
+came from which stage. See each `STAGE-0N-REPORT.md` in the project root
+for the specific places a page's real data model didn't support something
+the reference design assumed, and what was done instead.
 
-**Rule: when a stage's document says "use reference-ui/templates/X.html,"
-copy that file's structure, classes, and wording directly into the new
-project.** Only change what genuinely must change for the new stage's data
-(variable names, route names, which fields exist yet). Do not redesign,
-simplify, "improve," or reinterpret the layout, spacing, colors, icons, or
-wording — the goal is a visual clone, not a reimagining.
-
-- `reference-ui/static/css/style.css` — the entire shared stylesheet. Copy it in full starting at Stage 2 and never rewrite it; add to it only if a later stage introduces a component with no existing styles to reuse.
-- `reference-ui/static/js/script.js` — the entire shared script (theme toggle, sidebar collapse, drag-and-drop, AJAX helpers). Copy it in full starting at Stage 2; extend it only when a stage needs new client-side behavior not already covered.
-- `reference-ui/templates/*.html` — one file per page. See the mapping table below for which file belongs to which stage.
-
-| Stage | Reference templates to clone |
+| Stage | Reference templates cloned |
 |---|---|
 | 2 — Authentication | `base.html`, `index.html`, `login.html`, `register.html`, `profile.html` |
 | 3 — Multi-Tenancy & Roles | `users.html` |

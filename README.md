@@ -88,7 +88,7 @@ platform-as-a-service hosts that read one.
 ## Project structure
 
 ```
-app.py                  Flask app factory: blueprints, CSRF, session config
+app.py                  Flask app factory: blueprints, CSRF, session config, error handlers
 config.py               .env loading, typed settings, secret-key policy
 run.py / wsgi.py         dev launcher / production WSGI entry point
 
@@ -106,6 +106,26 @@ project-spec/             the original stage-by-stage specification this app was
 STAGE-0N-REPORT.md        a written report for each of the 10 build stages
 FEATURE-VERIFICATION-RESULTS.md   full checklist run confirming every feature works as specified
 ```
+
+Every page in `templates/` was hand-matched, structure and wording, against a
+reference UI design (real templates/CSS/JS from another app, used purely as
+a visual design source - "a visual clone, not a reimagining"). That
+reference material lived in `project-spec/reference-ui/` during development
+and has since been removed now that its content is fully reflected in the
+real templates; each `STAGE-0N-REPORT.md` documents the specific places a
+page's real data model didn't support something the reference assumed, and
+what was done instead.
+
+## Error handling
+
+A generic `errors/404.html` covers missing/foreign resources, and
+`errors/400.html` covers a rejected CSRF token. If MySQL itself is
+unreachable (down, wrong credentials, schema not yet created), any request
+that touches the database renders `errors/database_error.html` instead of a
+raw 500 - a friendly page with the exact fix checklist from Setup above,
+plus the original driver error. This is wired centrally in `app.py` via an
+`@app.errorhandler(mysql.connector.Error)` handler, so no individual route
+has to catch it itself.
 
 ## Roles & permissions (quick reference)
 
@@ -128,7 +148,12 @@ There's no automated test suite committed to the repo (the sandbox this
 project was built in has no MySQL server, so verification during
 development was done with fake in-memory repositories driving the real
 Flask app - see each `STAGE-0N-REPORT.md`'s "Verification results" section
-and `FEATURE-VERIFICATION-RESULTS.md` for what that covered).
+and `FEATURE-VERIFICATION-RESULTS.md` for what that covered). The later
+pass that hand-matched every page's design to the reference UI (see
+"Project structure" above) was verified the same way (Flask test client +
+mocked services, every populated/empty/permission-gated branch of each
+rebuilt template) but as scratch scripts, not committed - re-run that kind
+of check yourself after any further template changes.
 
 To manually verify a running instance:
 

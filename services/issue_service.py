@@ -1,5 +1,5 @@
 """Issue business rules: hierarchy validation, field validation, screenshot
-handling, permission checks, and create/update orchestration.
+handling, permission checks and create/update orchestration.
 
 Anyone in an organization may create an issue -- the Stage 3 permission
 matrix grants "Create issues" to all four roles, so there is no creator

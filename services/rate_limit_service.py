@@ -14,7 +14,7 @@ Both implement the same three operations (`_is_blocked`, `_record_failure`,
 `_record_success`), so `routes/auth_routes.py` never needs to know which
 backend is active.
 
-Design: only *failed* attempts count against the limit, and a successful
+Design: only *failed* attempts count against the limit and a successful
 attempt clears the counter immediately. This is the standard "account
 lockout" shape (as opposed to counting every request, which would
 eventually lock out a legitimate user who just logs in a lot) and is what

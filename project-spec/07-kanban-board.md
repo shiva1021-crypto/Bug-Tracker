@@ -16,7 +16,7 @@ Stage 6 (status workflow) must be complete.
 
 ## Frontend - Design & Layout
 
-> **Clone this exactly from `reference-ui/templates/board.html`.** Copy structure, classes, and wording as-is - adapt only route/variable names. The drag-and-drop behavior is already implemented in `reference-ui/static/js/script.js` (cloned in Stage 2) - reuse it, don't rewrite it from scratch.
+> **Clone this exactly from `reference-ui/templates/board.html`.** Copy structure, classes and wording as-is - adapt only route/variable names. The drag-and-drop behavior is already implemented in `reference-ui/static/js/script.js` (cloned in Stage 2) - reuse it, don't rewrite it from scratch.
 
 **Board page** (`/board`):
 - Top bar: Project selector dropdown, Sprint selector dropdown (Stage 8), Group-by dropdown, row of assignee avatars (click to filter, click again to clear).
@@ -40,6 +40,6 @@ No new tables - this stage is purely a new way of querying and displaying `bugs`
 ## Definition of Done
 - [ ] Board only shows To Do / In Progress / Testing / Done columns - never Idea.
 - [ ] Dragging a card as an authorized user persists the new status after a page refresh.
-- [ ] Dragging a card as an unauthorized user does not change the database, and the UI reflects that (card returns to original column).
+- [ ] Dragging a card as an unauthorized user does not change the database and the UI reflects that (card returns to original column).
 - [ ] Switching projects reloads the board with only that project's issues.
 - [ ] Clicking an assignee avatar filters the board to only their cards; clicking it again clears the filter.

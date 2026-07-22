@@ -1,4 +1,4 @@
-"""Project business rules: creation, validation, and organization scoping.
+"""Project business rules: creation, validation and organization scoping.
 
 Only Admins and Project Managers may create a project. That is enforced
 here with a fresh database read (`verify_project_creator`), the same
@@ -79,7 +79,7 @@ def create_project(
     """Create a project. Assumes `validate_project` has already passed.
 
     The key is normalized to uppercase here regardless of how it was typed
-    -- the form's helper text says it will be, and the column itself is
+    -- the form's helper text says it will be and the column itself is
     documented as always-uppercase, so this is the single place that
     guarantee is honored rather than trusting the caller to have done it.
     """

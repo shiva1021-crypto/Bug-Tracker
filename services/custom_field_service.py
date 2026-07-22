@@ -1,4 +1,4 @@
-"""Custom-field business rules: definition CRUD, and validating/persisting
+"""Custom-field business rules: definition CRUD and validating/persisting
 per-issue values.
 
 Definitions are always project-specific (per the spec: "Admin/PM can

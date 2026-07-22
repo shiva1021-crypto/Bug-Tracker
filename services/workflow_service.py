@@ -1,11 +1,11 @@
 """Workflow business rules: status transitions, assignment, comments,
-history, and watchers.
+history and watchers.
 
 Kept in its own module rather than folded into `issue_service` because it
 is a distinct concern (Stage 6) layered on top of the issue CRUD Stage 5
 already built -- issue_service.py is left untouched except for the two
 history-recording calls the spec requires on create/edit (see its
-docstring), and the DEFAULT_STATUS change.
+docstring) and the DEFAULT_STATUS change.
 """
 
 from repositories import (
@@ -21,7 +21,7 @@ from services import notification_service
 # the frontend needs to render them in order; nothing in this module
 # actually enforces sequential-only movement between them -- see
 # STAGE-06-REPORT.md for why (the spec deliberately keeps `bugs.status` a
-# VARCHAR rather than an ENUM "for future custom workflows", and neither the
+# VARCHAR rather than an ENUM "for future custom workflows" and neither the
 # feature list nor the Definition of Done requires rejecting a jump, e.g.
 # Idea -> Done -- only the assignment-driven To Do -> In Progress
 # auto-transition is a hard rule). Any permitted user may move a permitted
@@ -30,7 +30,7 @@ STATUSES = ["Idea", "To Do", "In Progress", "Testing", "Done"]
 
 # Same two roles as issue_service.CAN_EDIT_ANY_ROLES, but defined locally --
 # this module's permission rules are conceptually separate from "who can
-# edit issue fields" even though the role set happens to match today, and
+# edit issue fields" even though the role set happens to match today and
 # every other service module in this codebase defines its own role-set
 # constant rather than cross-importing one.
 ADMIN_OR_PM_ROLES = {"admin", "project_manager"}
@@ -41,7 +41,7 @@ def can_update_status(user_id: int, issue: dict) -> dict | None:
     the user row if they may change this issue's status, else None.
 
     Per the spec's reusable rule: true if Admin/PM, OR a Developer who is
-    the assigned user on this issue. Testers, and Developers not assigned
+    the assigned user on this issue. Testers and Developers not assigned
     to this issue, are never allowed -- re-reading the role from the
     database on every call is what makes the Definition of Done's "a Tester
     cannot move status via the API even by crafting the request" item hold,

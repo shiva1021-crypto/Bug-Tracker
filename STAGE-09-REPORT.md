@@ -12,7 +12,7 @@
 ## 1. Goal of this stage
 
 Let each organization tailor the tool without code changes: project-specific
-custom fields, if-this-then-that automation rules, time tracking, and
+custom fields, if-this-then-that automation rules, time tracking and
 release versions.
 
 Deliberately **not** built (belongs to a later stage or out of scope):
@@ -68,8 +68,8 @@ fields, sections), `templates/projects/detail.html` (one new button),
 | `repositories/automation_repository.py` | repositories | SQL for `automation_rules`, including `list_matching` - the automation engine's one read query. JSON (de)serialization of `conditions`/`actions` happens here, same convention as Stage 8's `saved_filter_repository`. |
 | `repositories/time_entry_repository.py` | repositories | SQL for `time_entries`: `create`, `list_by_bug` (chronological ascending). |
 | `repositories/version_repository.py` | repositories | SQL for `versions`: CRUD, `name_exists` (pre-check for the `UNIQUE(project_id, name)` constraint), `set_status`. |
-| `services/custom_field_service.py` | services | Definition validation/CRUD, the Admin/PM `verify_field_manager` gate, and per-issue value validation/persistence (`save_values` returns which fields actually changed, for the `field_updated` trigger). |
-| `services/automation_service.py` | services | Rule validation/CRUD, display-summary helpers, and `execute_automation_rules()` - the automation engine itself. |
+| `services/custom_field_service.py` | services | Definition validation/CRUD, the Admin/PM `verify_field_manager` gate and per-issue value validation/persistence (`save_values` returns which fields actually changed, for the `field_updated` trigger). |
+| `services/automation_service.py` | services | Rule validation/CRUD, display-summary helpers and `execute_automation_rules()` - the automation engine itself. |
 | `services/time_tracking_service.py` | services | Log-time validation, `total_spent()` (always summed fresh from entries, never cached), estimate validation. |
 | `services/version_service.py` | services | Version validation/CRUD, the Admin/PM `verify_version_manager` gate, visible-vs-selectable version lists, release/archive transitions. |
 | `routes/field_routes.py` | routes | `GET/POST /projects/<id>/fields`, `POST /projects/<id>/fields/<id>/delete`, `GET /api/fields?project_id=`. |
@@ -83,19 +83,19 @@ fields, sections), `templates/projects/detail.html` (one new button),
 
 | File | Change |
 |---|---|
-| `scripts/create_tables.py` | Adds `versions`, `custom_field_definitions`, `custom_field_values`, `automation_rules`, `time_entries` DDL; adds `bugs.time_estimate`/`time_remaining`/`fix_version_id` (+ FK) for new databases and a new idempotent `_ensure_bugs_stage9_columns()` migration for existing ones; reorders `STATEMENTS` so `versions` and `custom_field_definitions` precede `bugs` (both are FK targets from `bugs`), and `custom_field_values`/`automation_rules`/`time_entries` follow it. |
+| `scripts/create_tables.py` | Adds `versions`, `custom_field_definitions`, `custom_field_values`, `automation_rules`, `time_entries` DDL; adds `bugs.time_estimate`/`time_remaining`/`fix_version_id` (+ FK) for new databases and a new idempotent `_ensure_bugs_stage9_columns()` migration for existing ones; reorders `STATEMENTS` so `versions` and `custom_field_definitions` precede `bugs` (both are FK targets from `bugs`) and `custom_field_values`/`automation_rules`/`time_entries` follow it. |
 | `repositories/issue_repository.py` | `_COLUMNS` gains `time_estimate, time_remaining, fix_version_id`; `create()`/`update()` gain a `fix_version_id` parameter; adds `update_estimate()`, `count_by_fix_version()`. Nothing existing removed. |
 | `services/issue_service.py` | `validate_issue()` gains a `fix_version_raw` parameter (validated against `version_repository`, must belong to the issue's own project); `create_issue()`/`update_issue()` pass `fix_version_id` through. Nothing else touched. |
-| `routes/issue_routes.py` | `add_issue()` now validates + persists custom field values and fires `issue_created` after a successful create; `edit_issue()` does the same for edits and fires `field_updated` per changed field; `change_status()` and `assign_issue()` fire `status_changed` (the latter only when the auto-transition actually changed status); `issue_detail()` passes custom field values, time-tracking data, and the resolved fix-version row; two new routes, `POST /issues/<id>/time` and `POST /issues/<id>/estimate`. |
+| `routes/issue_routes.py` | `add_issue()` now validates + persists custom field values and fires `issue_created` after a successful create; `edit_issue()` does the same for edits and fires `field_updated` per changed field; `change_status()` and `assign_issue()` fire `status_changed` (the latter only when the auto-transition actually changed status); `issue_detail()` passes custom field values, time-tracking data and the resolved fix-version row; two new routes, `POST /issues/<id>/time` and `POST /issues/<id>/estimate`. |
 | `routes/board_routes.py` | `move_issue()` fires `status_changed` automation after a successful drag-and-drop move - the same trigger the detail page's status dropdown fires, so a rule can't be silently bypassed by using the board instead. |
 | `app.py` | Registers `field_bp`, `automation_bp`, `version_bp`. |
 | `templates/base.html` | Adds "Versions" (everyone) and "Automation" (Admin/PM only) sidebar links. |
 | `templates/projects/detail.html` | Adds a "Custom Fields" button (Admin/PM only) next to "+ Create Issue". |
 | `templates/issues/add.html` | Adds a Fix Version `<select>` and a custom-fields container, both populated via AJAX when the Project field changes. |
 | `templates/issues/edit.html` | Adds a Fix Version `<select>` (server-rendered, since an issue's project can't change) and server-rendered custom-field inputs pre-filled with the issue's current values. |
-| `templates/issues/detail.html` | Adds a Fix Version row to the metadata list, a "Custom Fields" card, and a "Time Tracking" card (stats row, estimate form, log-time form, entry list). |
+| `templates/issues/detail.html` | Adds a Fix Version row to the metadata list, a "Custom Fields" card and a "Time Tracking" card (stats row, estimate form, log-time form, entry list). |
 | `static/style.css` | New "extensibility (Stage 9)" section: custom-field form spacing, time-tracking stats/entries, automation condition rows/rule cards, version status badges. |
-| `static/script.js` | Adds `initNewFieldToggle`/`initFieldTypeOptionsToggle` (fields page), `initNewRuleToggle`/`initConditionRows`/`initActionTypeFields` (automation page), `initNewVersionToggle` (versions page), and `initDynamicFieldsAndVersions` (Add Issue page's AJAX field/version loading). |
+| `static/script.js` | Adds `initNewFieldToggle`/`initFieldTypeOptionsToggle` (fields page), `initNewRuleToggle`/`initConditionRows`/`initActionTypeFields` (automation page), `initNewVersionToggle` (versions page) and `initDynamicFieldsAndVersions` (Add Issue page's AJAX field/version loading). |
 
 ### 2.3 Layering
 
@@ -200,7 +200,7 @@ already happened when the rule was created).
 
 ### 5.2 Automated changes are attributed to the user whose action triggered them, not a synthetic "System" account
 
-There is no "System" user row anywhere in this codebase, and inventing one
+There is no "System" user row anywhere in this codebase and inventing one
 felt like scope beyond what the spec describes. Every automation action
 receives `actor_user_id` - the human who created the issue, changed its
 status, or dragged its board card - and every resulting `bug_history` row
@@ -209,7 +209,7 @@ or comment is written under that person's id. A history entry that reads
 "Alice assigned to Dana" (the second one automation-driven) is intentional:
 from an audit standpoint, Alice's action is what caused both.
 
-### 5.3 `field_updated` fires only from the edit flow, and only for custom fields, not every possible standard-field change
+### 5.3 `field_updated` fires only from the edit flow and only for custom fields, not every possible standard-field change
 
 The spec names three triggers without enumerating exactly what counts as a
 "field" for `field_updated`. A general diff-every-column engine covering
@@ -225,7 +225,7 @@ that moment).
 ### 5.4 Board drag-and-drop fires the same `status_changed` trigger the detail page's status dropdown does
 
 Stage 7's board and the detail page's `POST /issues/<id>/status` both
-change `bugs.status`, and a rule scoped to "on status change, do X" would be
+change `bugs.status` and a rule scoped to "on status change, do X" would be
 silently unreliable if it only fired from one of the two entry points. Both
 `routes/issue_routes.py::change_status` and `routes/board_routes.py::move_issue`
 now call `execute_automation_rules()` identically after a successful,
@@ -271,7 +271,7 @@ routes. Flagged in §8 as the interpretation most worth double-checking.
 flattened dict of the issue's own columns plus whatever trigger-specific
 keys the calling route supplied (`new_status`/`old_status` for
 `status_changed`, `field_name`/`old_value`/`new_value` for `field_updated`).
-Which keys are actually meaningful depends on which trigger is selected, and
+Which keys are actually meaningful depends on which trigger is selected and
 building a picker that cross-references trigger → valid-field-names wasn't
 asked for by the spec. The form's hint text names the common cases instead
 (`status`, `priority`, `new_status`, `field_name`); an unrecognized field
@@ -299,7 +299,7 @@ No new Python dependencies.
 As in every prior stage, the sandbox has no MySQL server, so the full
 request flow was exercised against in-memory stand-ins for every repository
 touched this stage (`custom_field_repository`, `automation_repository`,
-`time_entry_repository`, `version_repository`, and the extended
+`time_entry_repository`, `version_repository` and the extended
 `issue_repository`/`bug_history_repository`/`comment_repository`), each
 matching its real function's exact signature, driven end-to-end through the
 real Flask app (`app.test_client()`), including the CSRF check and every
@@ -310,13 +310,13 @@ permission gate.
 | # | Check | Result |
 |---|---|---|
 | 1-3 | A dropdown custom field is created via `POST /projects/<id>/fields` and immediately appears via `GET /api/fields` | Pass |
-| 4-6 | An issue created with a value for that field persists it, and the value shows on the issue detail sidebar | Pass |
+| 4-6 | An issue created with a value for that field persists it and the value shows on the issue detail sidebar | Pass |
 | 7-9 | Deleting the field definition removes its value from the issue (cascade) **and** the issue detail page still renders without error afterward | Pass |
 | 10-13 | An automation rule with a condition (`new_status equals Testing`) does **not** fire a comment on an unrelated status change, but **does** fire - with `{issue_key}`/`{status}` placeholders correctly substituted - the moment the status actually becomes Testing | Pass |
 | 14-16 | `assign_to_role` (developer) assigns a real developer id, drawn from more than one candidate across six separate issue creations - not a hardcoded id | Pass |
 | 17-19 | The Edit Issue page loads and a submitted edit actually persists (title change confirmed in the store) | Pass |
 | 20-22 | The board's `POST /board/move` drag-and-drop endpoint fires the identical `status_changed` automation the detail page's dropdown does - the same rule fires a second comment when moved into Testing via the board | Pass |
-| 23-26 | An estimate is set, two time entries are logged, their sum is exactly 4.0, and the detail page displays that same total | Pass |
+| 23-26 | An estimate is set, two time entries are logged, their sum is exactly 4.0 and the detail page displays that same total | Pass |
 | 27-32 | A version is created, released (status flips), a second version is archived (status flips); the archived version disappears from `/versions`' main list while the still-active one remains; the archived version's name is still shown correctly on the issue it was already linked to | Pass |
 
 All modified/added Python modules compile cleanly (`py_compile`, exit 0);
@@ -327,7 +327,7 @@ programmatically - `if`/`for`/`block` opens vs. `end*` closes, per file).
 
 - [x] Deleting a custom field definition removes its values from every
       issue that had one, without erroring (confirmed via the FK's
-      `ON DELETE CASCADE`, and by reloading the issue detail page
+      `ON DELETE CASCADE` and by reloading the issue detail page
       immediately afterward)
 - [x] An automation rule with a condition does not fire on unrelated status
       changes, confirmed against the exact example the spec gives ("only
@@ -376,7 +376,7 @@ prior stage, the sandbox has no MySQL server to execute it against - in
 particular, the `versions`/`custom_field_definitions` → `bugs` foreign key
 ordering (both must be created before `bugs` on a fresh database), the
 three new columns + FK on an *existing* `bugs` table via
-`_ensure_bugs_stage9_columns()`, and the `custom_field_values` cascade
+`_ensure_bugs_stage9_columns()` and the `custom_field_values` cascade
 delete have not been confirmed against a real server. Please run
 `python -m scripts.create_tables` and check its output - it should print a
 line for each of the five new tables, plus a line confirming

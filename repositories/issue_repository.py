@@ -36,7 +36,7 @@ def get_by_id_and_org(issue_id: int, organization_id: int) -> dict | None:
 
 def get_detail_by_id_and_org(issue_id: int, organization_id: int) -> dict | None:
     """Same row, plus display-only joined fields for the detail page:
-    project key/name, reporter's name, and the parent's key/title (if any)."""
+    project key/name, reporter's name and the parent's key/title (if any)."""
     with get_connection() as conn:
         cursor = conn.cursor(dictionary=True)
         try:
@@ -273,7 +273,7 @@ def list_board_issues(organization_id: int, project_id: int) -> list[dict]:
     Per the Stage 7 spec's own query-design note: fetch every board-relevant
     row in a single query and let the caller (services/board_service.py)
     group them into columns/sub-groups in application code, rather than
-    running one query per column -- simpler, and avoids column-count
+    running one query per column -- simpler and avoids column-count
     mismatches if a status changes mid-request. "Idea" issues are excluded
     at the SQL level since they can never appear on the board at all (they
     live in the Stage 8 backlog).
@@ -318,7 +318,7 @@ def update_status(issue_id: int, organization_id: int, new_status: str) -> bool:
 def update_assignment(
     issue_id: int, organization_id: int, assigned_to: int | None, status: str
 ) -> bool:
-    """Update assignment, and (per the auto-transition rule) status in the
+    """Update assignment and (per the auto-transition rule) status in the
     same statement -- caller decides the new status; this just persists both
     atomically in one UPDATE so they can never be out of sync."""
     with get_connection() as conn:

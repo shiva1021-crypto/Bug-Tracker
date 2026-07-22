@@ -11,7 +11,7 @@
 
 ## 1. Goal of this stage
 
-The core of the app: create, view, and edit issues (Epic/Story/Task/Bug/
+The core of the app: create, view and edit issues (Epic/Story/Task/Bug/
 Subtask) with a Jira-style parent/child hierarchy and a screenshot
 attachment, all in one `bugs` table.
 
@@ -41,9 +41,9 @@ the first time, exactly as that stage's report said it would be.
 
 | File | Layer | Purpose |
 |---|---|---|
-| `repositories/issue_repository.py` | repositories | SQL for `bugs`: org-scoped get/list/children, and `create()`, which allocates the issue number and inserts the row in one transaction. |
+| `repositories/issue_repository.py` | repositories | SQL for `bugs`: org-scoped get/list/children and `create()`, which allocates the issue number and inserts the row in one transaction. |
 | `services/issue_service.py` | services | Hierarchy validation (reusable function, per the spec's instruction), field validation, screenshot validation/storage, edit-permission check, create/update orchestration. |
-| `routes/issue_routes.py` | routes | `/issues/add`, `/issues/<id>`, `/issues/<id>/edit`, and `/issues/<id>/screenshot` (file-serving; see §5.6). |
+| `routes/issue_routes.py` | routes | `/issues/add`, `/issues/<id>`, `/issues/<id>/edit` and `/issues/<id>/screenshot` (file-serving; see §5.6). |
 | `templates/issues/add.html` | frontend | Two-column create form. |
 | `templates/issues/edit.html` | frontend | Same layout, pre-filled, project/type locked (see §5.4). |
 | `templates/issues/detail.html` | frontend | Header badges, main column, metadata sidebar, child list. |
@@ -53,7 +53,7 @@ the first time, exactly as that stage's report said it would be.
 
 | File | Change |
 |---|---|
-| `scripts/create_tables.py` | Adds the `bugs` table DDL (FKs to organizations, projects, users ×2, and itself for `parent_id`; unique `(organization_id, issue_key)`). |
+| `scripts/create_tables.py` | Adds the `bugs` table DDL (FKs to organizations, projects, users ×2 and itself for `parent_id`; unique `(organization_id, issue_key)`). |
 | `config.py` | Adds `SCREENSHOT_UPLOAD_DIR` (`uploads/screenshots/`, outside `static/`). |
 | `requirements.txt` | Adds `Pillow` (see §5.3 for why). |
 | `.gitignore` | Adds `uploads/` - user-uploaded content is never committed. |
@@ -137,7 +137,7 @@ default if one is ever added.
 
 `services/issue_service.py::validate_issue()` is the single place hierarchy
 rules are checked - parent's type must be in `VALID_PARENT_TYPES_FOR_CHILD`
-for the child's type, parent must be in the same project, and (via
+for the child's type, parent must be in the same project and (via
 `_get_ancestor_chain_ids()`) setting a parent can't create a cycle. Both
 `/issues/add` and `/issues/<id>/edit` call it; there is no separate
 inline check in either route, per the spec's explicit instruction. This
@@ -150,7 +150,7 @@ proving the rejection is a server-side guarantee, not a UI convenience.
 The spec offered either as an example default for the intentionally-
 flexible `VARCHAR` status column. `"To Do"` was chosen as the more
 conventional starting state for a workflow that Stage 6 will build
-(matching common Jira-style boards), and is set once at creation time by
+(matching common Jira-style boards) and is set once at creation time by
 the service layer (`DEFAULT_STATUS`), not the database column default -
 keeping the column itself unconstrained, exactly as the spec asked
 ("NOT ENUM - keep flexible for Stage 6").
@@ -162,7 +162,7 @@ format" in Python is the standard-library `imghdr` module - but it was
 removed in Python 3.13, which `00-README.md` specifies as this project's
 minimum version. Pillow (added to `requirements.txt`) is used instead:
 `Image.open(...).verify()` rejects anything that isn't a genuinely
-parseable image, and the *detected* `Image.format` (not the browser-
+parseable image and the *detected* `Image.format` (not the browser-
 supplied filename or its extension) determines both whether the upload is
 accepted and what extension the stored file gets. Verified directly (§7):
 a plain text file renamed to `evil.png` is rejected with "not a valid
@@ -176,7 +176,7 @@ which could be read as every field staying editable, including Project and
 Issue Type. That reading was rejected: changing either after the fact has
 consequences the spec never addresses - the issue key already embeds the
 original project's prefix (changing projects would leave a `WEB-3` issue
-filed under `MOB`), and changing type could orphan existing children (a
+filed under `MOB`) and changing type could orphan existing children (a
 `Story` with `Subtask` children turned into a `Task`, which cannot have
 children at all). The edit route always uses the *existing* issue's
 `project_id`/`issue_type` for validation - never reads them from the edit
@@ -199,7 +199,7 @@ by an account in Beta Inc, 404s exactly like `/issues/999999` does.
 
 ### 5.6 A screenshot-serving route was added, not in the spec's table, because the spec's own security rule requires it
 
-The spec's Routes table lists only `/issues/add`, `/issues/<id>`, and
+The spec's Routes table lists only `/issues/add`, `/issues/<id>` and
 `/issues/<id>/edit`. But the same spec also requires screenshots be
 "store[d] outside of anything web-servable directly" - meaning the file
 cannot live under `static/`, where Flask would serve it to anyone with the
@@ -232,11 +232,11 @@ built yet") is unchanged.
 ### 5.8 Labels are de-duplicated within a single submission, not across edits
 
 `validate_issue()` splits the labels input on commas, trims each one, drops
-empties, and rejoins - so `"frontend, urgent, frontend"` submitted once
+empties and rejoins - so `"frontend, urgent, frontend"` submitted once
 becomes `"frontend, urgent, frontend"` stored as-is (duplicates within one
 submission are **not** removed; only blank entries from stray commas are).
 This was a deliberate minimal choice: the spec doesn't ask for label
-deduplication, and silently rewriting what a user typed into the field
+deduplication and silently rewriting what a user typed into the field
 beyond stripping whitespace felt like more than "labels (comma input)"
 asked for. Flagged here in case true de-duplication turns out to be
 wanted.
@@ -281,7 +281,7 @@ codebase - **all still pass**, confirming nothing regressed.
 | - | Subtask under an Epic, Bug with any parent, Epic with any parent - all rejected with a clear message | Pass (3 checks) |
 | - | A parent from a different project is rejected ("must belong to the same project") | Pass |
 | - | Issue numbers within one project are sequential and gap-free across the checks above | Pass |
-| - | A real PNG screenshot is accepted, stored under a random filename, and the file genuinely exists on disk | Pass (3 checks) |
+| - | A real PNG screenshot is accepted, stored under a random filename and the file genuinely exists on disk | Pass (3 checks) |
 | - | A text file renamed to `.png` is rejected ("not a valid image") | Pass |
 | - | A 6&nbsp;MB file is rejected on size before any image parsing runs | Pass |
 | - | The reporting Developer can open and successfully edit her own issue | Pass (2 checks) |
@@ -289,14 +289,14 @@ codebase - **all still pass**, confirming nothing regressed.
 | - | An Admin can edit that same issue despite not being the reporter | Pass |
 | - | An issue from another organization 404s by id (both view and edit) | Pass (2 checks) |
 | - | A nonexistent id also 404s - identical response to the cross-org case | Pass |
-| - | The detail page renders reporter name, story points, and label pills correctly | Pass (3 checks) |
+| - | The detail page renders reporter name, story points and label pills correctly | Pass (3 checks) |
 
 **Separately, the real Stage 4 concurrency-safety code was stress-tested**,
 not just re-implemented in a fake: 50 concurrent threads called the actual
 `project_repository.allocate_next_issue_number()` against a fake connection
 whose `SELECT ... FOR UPDATE` is backed by a real `threading.Lock` (so it
 genuinely blocks concurrent callers the way MySQL's row lock would). Result:
-50/50 unique numbers, exactly `{1..50}` with no gaps or duplicates, and the
+50/50 unique numbers, exactly `{1..50}` with no gaps or duplicates and the
 counter landed on the correct final value. This is the "test with
 concurrent requests if possible" line from the Definition of Done,
 exercised against the real locking code rather than assumed correct
@@ -341,7 +341,7 @@ been confirmed against a real server. Please run
 
 **A stray test file was left in the project folder.** While verifying
 screenshot upload, a real (harmless, tiny, solid-red) test PNG was written
-to `uploads/screenshots/` in this project directory, and the sandbox
+to `uploads/screenshots/` in this project directory and the sandbox
 cannot delete files it creates in a mounted folder (a known limitation -
 see `CLAUDE.md`'s notes on the Stage 1 `.writetest` file). One file remains
 at `uploads/screenshots/059b2e1799686e0f3cc96c784f95a263.png` - safe to
@@ -366,7 +366,7 @@ stricter rules are wanted.
   matrix already grants "Update status of assigned issue" to a Developer
   only when it's assigned to them) - `issue_service.get_editor_permission()`
   is the natural place to extend that check.
-- `issue_service.CAN_EDIT_ANY_ROLES`, `ALLOWED_CHILDREN`, and
+- `issue_service.CAN_EDIT_ANY_ROLES`, `ALLOWED_CHILDREN` and
   `VALID_PARENT_TYPES_FOR_CHILD` are the reference constants for any
   Stage 6+ logic that needs to know the same role tiers or hierarchy
   rules - reuse them rather than re-deriving.

@@ -1,4 +1,4 @@
-"""The Stage 9 automation engine: rule validation/CRUD, and
+"""The Stage 9 automation engine: rule validation/CRUD and
 `execute_automation_rules()` -- the single function, per the spec's own
 design note, that every issue-creating/issue-changing route calls at the
 end of its work.
@@ -10,7 +10,7 @@ enforces for a human clicking a button (e.g. `can_update_status`) and
 write directly through the repository layer instead. The user who
 triggered the *event* the rule reacted to is still who the resulting
 history rows/comments are attributed to (`actor_user_id`) -- there is no
-synthetic "System" account in this codebase, and inventing one was judged
+synthetic "System" account in this codebase and inventing one was judged
 out of scope for what this stage describes.
 """
 
@@ -318,7 +318,7 @@ def execute_automation_rules(
     organization_id: int, project_id: int, trigger_event: str, context: dict, actor_user_id: int
 ) -> None:
     """Fetch enabled rules matching the org/project/trigger, evaluate each
-    rule's conditions against `context`, and run matching actions in
+    rule's conditions against `context` and run matching actions in
     order -- the spec's own design note, implemented as one function so
     every calling route stays a one-line addition at the end of its
     existing work.

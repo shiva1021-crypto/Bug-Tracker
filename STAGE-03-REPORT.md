@@ -13,7 +13,7 @@
 
 Turn the single-organization, roleless login system from Stage 2 into a
 multi-tenant system: every user belongs to exactly one organization, four
-roles exist, and an admin panel lets an organization manage its own members
+roles exist and an admin panel lets an organization manage its own members
 and registration requests without ever seeing another organization's data.
 
 Deliberately **not** built (each belongs to a later stage or was never asked for):
@@ -169,7 +169,7 @@ and this one might, since the user was told to test Stage 2 by hand.
    account) is backfilled into a single new organization named
    **"Legacy Organization"**, as **admin** - so nobody who already made an
    account loses access to it.
-4. Only then is the column tightened to `NOT NULL`, and the FK constraint is
+4. Only then is the column tightened to `NOT NULL` and the FK constraint is
    added (also checked against `information_schema.TABLE_CONSTRAINTS` first).
 
 On a brand-new database this whole backfill path is skipped - there are no
@@ -184,13 +184,13 @@ actions rather than trusting a stale session value indefinitely."*
 
 `utils/auth.py::login_required` is a pure session check with no database
 access - that was true in Stage 2 and stays true now, because Stage 1's
-layering rule is routes → services → repositories → utils, and utils sits
+layering rule is routes → services → repositories → utils and utils sits
 below repositories. Having a "cross-cutting" auth helper reach *up* into
 `repositories.user_repository` would invert that dependency and make the
 layering harder to reason about for every stage after this one.
 
 Instead, `services/admin_service.py::verify_admin(user_id)` does the fresh
-read, and every route in `routes/admin_routes.py` calls it first, before
+read and every route in `routes/admin_routes.py` calls it first, before
 touching anything else. The session's cached `role` (in `current_user()`)
 is used only for cosmetic decisions - whether to render the "Users" sidebar
 link - never for gating an actual action. This was verified directly (see
@@ -242,7 +242,7 @@ nothing else to log into yet. If they try `/login` before approval,
 `authenticate()` returns `None` exactly as it would for any unknown email,
 and they see the same generic "Invalid email or password." This was a
 deliberate choice, not an oversight: Stage 2 established that login
-failures must never reveal whether an account exists, and a distinct
+failures must never reveal whether an account exists and a distinct
 "your request is still pending" message on the login form would be exactly
 that kind of leak. Flagging this explicitly in case the intended UX was
 different - happy to add a distinguishable pending-login state if wanted,
@@ -307,9 +307,9 @@ after upgrading if you want to review who ended up where.
 
 The sandbox used for development has no MySQL server, so - as in Stage 2 -
 the full request flow was exercised against an in-memory stand-in for
-`repositories.organization_repository`, `repositories.user_repository`, and
+`repositories.organization_repository`, `repositories.user_repository` and
 `repositories.registration_request_repository`. That covers routes,
-services, CSRF, sessions, role gating, and template rendering; it does not
+services, CSRF, sessions, role gating and template rendering; it does not
 touch the DDL itself (see the open item in §8).
 
 **37 checks, all passing** (one initial failure in the harness itself was a
@@ -372,12 +372,12 @@ even if it seems obviously needed soon." This is flagged rather than
 quietly built, per the same rule.
 
 **Pending-registrant login experience (§5.5).** The chosen behavior - no
-session, straight to `/register/pending`, and a generic login failure if
+session, straight to `/register/pending` and a generic login failure if
 they try early - is the minimal reading consistent with the spec's own
 table design (no `status` column on `users`) and with Stage 2's
 anti-enumeration guarantee. If a distinguishable "your request is pending"
 login state is actually wanted, it needs a small schema addition beyond
-what Stage 3 specifies, and should be a deliberate decision rather than
+what Stage 3 specifies and should be a deliberate decision rather than
 something inferred here.
 
 **Requested-role default (§5.6).** New join requests default to `tester`

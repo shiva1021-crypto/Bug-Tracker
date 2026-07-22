@@ -14,7 +14,7 @@
 Surface insight (filterable reports with charts and CSV export, a
 configurable per-user dashboard) and make the app genuinely deployable:
 outbox-backed email notifications processed by a background worker, login/
-registration rate limiting, and a production WSGI entry point.
+registration rate limiting and a production WSGI entry point.
 
 Deliberately **not** built (belongs outside this stage's scope):
 
@@ -24,7 +24,7 @@ Deliberately **not** built (belongs outside this stage's scope):
   through, but nothing in the frontend currently writes anything into it
   (e.g. there's no "which project should this widget's chart cover"
   option) - the spec's own frontend section only describes picking type,
-  title, and width when adding a widget.
+  title and width when adding a widget.
 - No drag-to-reorder or resize-in-place on the dashboard grid. Widgets can
   be added (appended at the end) and removed; `position` exists and is
   respected on read, but nothing in the frontend lets a user drag a widget
@@ -85,8 +85,8 @@ redirect target changed from `/profile` to `/dashboard`),
 
 | File | Change |
 |---|---|
-| `scripts/create_tables.py` | Adds `dashboard_widgets`, `email_outbox`, `auth_rate_limits` DDL (appended to `STATEMENTS`; no reordering needed since neither `email_outbox` nor `auth_rate_limits` has any foreign key at all, and `dashboard_widgets`' only FKs - to `organizations`/`users` - are already satisfied by every table above it). |
-| `config.py` | Adds `APP_BASE_URL`, the `SMTP_*` settings, `NOTIFICATION_WORKER_ENABLED`/`_INTERVAL_SECONDS`, and `RATELIMIT_STORAGE`/`_MAX_ATTEMPTS`/`_WINDOW_SECONDS`. Nothing existing changed. |
+| `scripts/create_tables.py` | Adds `dashboard_widgets`, `email_outbox`, `auth_rate_limits` DDL (appended to `STATEMENTS`; no reordering needed since neither `email_outbox` nor `auth_rate_limits` has any foreign key at all and `dashboard_widgets`' only FKs - to `organizations`/`users` - are already satisfied by every table above it). |
+| `config.py` | Adds `APP_BASE_URL`, the `SMTP_*` settings, `NOTIFICATION_WORKER_ENABLED`/`_INTERVAL_SECONDS` and `RATELIMIT_STORAGE`/`_MAX_ATTEMPTS`/`_WINDOW_SECONDS`. Nothing existing changed. |
 | `.env.example` | Documents every new setting above with the same inline-comment style already used for Stage 1's settings. |
 | `app.py` | Registers `dashboard_bp` and `report_bp`; starts the notification worker once (guarded against the dev-server reloader double-import - see §5.6). |
 | `repositories/issue_repository.py` | Adds `count_by_status`/`count_by_priority`/`count_by_severity`/`count_by_type`, `stats_summary`, `list_recent` (dashboard aggregates, org-wide, no filters) and `search_for_report` (Reports page's one filtered fetch, reused for every chart and the CSV export). Nothing existing changed. |
@@ -96,7 +96,7 @@ redirect target changed from `/profile` to `/dashboard`),
 | `services/workflow_service.py` | `change_status()` now also calls `notification_service.notify_status_changed()`; `assign_issue()` now also calls `notification_service.notify_issue_assigned()` (only for a real assignment, never an unassignment) and `notify_status_changed()` when its auto-transition actually changed status. |
 | `routes/auth_routes.py` | `login()` and `register()` both check `rate_limit_service.is_blocked()` before proceeding and record success/failure afterward; both routes' successful redirect target changed from `auth.profile` to `dashboard.dashboard` (the spec's new "default landing page after login"). |
 | `templates/base.html` | Brand link now points at `/dashboard` (was `/profile`) when logged in; adds "Dashboard" (top of the sidebar) and "Reports" (Admin/PM only) sidebar links. |
-| `static/style.css` | New "reporting/dashboards/ops (Stage 10)" section: dashboard grid/widget/modal styles, report filter bar + chart grid, and the `@media print` rule. |
+| `static/style.css` | New "reporting/dashboards/ops (Stage 10)" section: dashboard grid/widget/modal styles, report filter bar + chart grid and the `@media print` rule. |
 | `static/script.js` | Adds `initAddWidgetModal()` (open/close/backdrop-click/Escape for the Add Widget modal). |
 
 ### 2.3 Layering
@@ -131,7 +131,7 @@ only ever calls `email_outbox_repository.create()` (one fast INSERT);
 `notification_worker` is the only code that imports `smtplib` at all. A
 request that triggers a notification (assigning an issue, changing its
 status, approving a registration) is never slower because of it - the
-INSERT is the only thing that happens inline, and it happens on the same
+INSERT is the only thing that happens inline and it happens on the same
 connection pool every other write already uses.
 
 ---
@@ -186,7 +186,7 @@ the default four widgets into a personal row for every user the moment
 their account is created - would also satisfy "a new user's dashboard
 shows the default widget set with no manual setup," but would mean every
 future change to what "default" means requires a data migration touching
-every existing user's rows, and would make "did this user customize their
+every existing user's rows and would make "did this user customize their
 dashboard, or do they just have the stock layout" impossible to tell from
 the data. Instead: an organization gets exactly one default layout,
 seeded once (`dashboard_service.ensure_org_defaults`, called from
@@ -195,7 +195,7 @@ seeded once (`dashboard_service.ensure_org_defaults`, called from
 with no personal rows simply reads that default through
 (`dashboard_service.get_layout`); the *first* time they add or remove a
 widget, `_ensure_personal_layout` forks the org default into personal rows
-for them, and only then is their edit applied. One subtlety this
+for them and only then is their edit applied. One subtlety this
 surfaced during verification (§7): forking assigns each copied row a
 brand-new id, so removing a widget the user is looking at (whose id, on
 screen, is still the org-default row's id) has to translate that id
@@ -223,7 +223,7 @@ call site the way an automation rule's conditional firing has to be.
 name]` (not a list) specifically so a reporter who is also watching their
 own issue receives exactly one email, not two. The user who *made* the
 change is not excluded from this list even if they happen to be the
-reporter or a watcher - the spec doesn't ask for that exclusion, and
+reporter or a watcher - the spec doesn't ask for that exclusion and
 implementing it would need a notion of "suppress self-notifications" this
 stage doesn't otherwise track anywhere. Flagged in §8.
 
@@ -315,7 +315,7 @@ waitress-serve --host=0.0.0.0 --port=8000 wsgi:app
 As in every prior stage, the sandbox has no MySQL server, so the full
 request flow was exercised against in-memory stand-ins for every
 repository touched this stage (`dashboard_widget_repository`,
-`email_outbox_repository`, `rate_limit_repository`, and the extended
+`email_outbox_repository`, `rate_limit_repository` and the extended
 `issue_repository`/`watcher_repository`/`organization_repository`/
 `registration_request_repository`), each matching its real function's
 exact signature, driven end-to-end through the real Flask app
@@ -332,14 +332,14 @@ Stage 9 checks, re-confirmed passing against the final codebase).
 |---|---|---|
 | 1-5 | An issue titled `=cmd|'/c calc'!A1` (and a category of `=SUM(1+1)`) exports to CSV with both fields prefixed by a leading apostrophe, never appearing as a raw formula | Pass |
 | 6 | A Developer is redirected away from `/reports` (Admin/PM only) | Pass |
-| 7-14 | Registering a brand-new organization seeds exactly the spec's example default widget set (Statistics Summary, Issues by Status, Issues by Priority, Recent Issues) with zero manual setup, and the dashboard page renders all four | Pass |
+| 7-14 | Registering a brand-new organization seeds exactly the spec's example default widget set (Statistics Summary, Issues by Status, Issues by Priority, Recent Issues) with zero manual setup and the dashboard page renders all four | Pass |
 | 15-17 | Removing a widget for a user who has never customized their layout correctly forks a personal copy and removes the right one - the other three default widgets survive | Pass |
 | 18 | The organization's own default layout is untouched by that one user's edit | Pass |
 | 19-21 | Re-adding a widget afterward preserves the three that remained, plus the new one, with the correct default title | Pass |
 | 22-25 | Repeated failed logins from the same identity are eventually blocked (429); even the *correct* password is rejected while blocked; a fresh window (simulated) lets a correct login through again | Pass |
-| 26-27 | Switching `RATELIMIT_STORAGE` to `database` blocks the same way, and a real row is written to `auth_rate_limits` | Pass |
+| 26-27 | Switching `RATELIMIT_STORAGE` to `database` blocks the same way and a real row is written to `auth_rate_limits` | Pass |
 | 28-30 | Assigning an issue queues exactly one notification email, left `pending` (never sent inline); a subsequent status change queues another | Pass |
-| 31-34 | With `NOTIFICATION_WORKER_ENABLED=false`, issue creation/assignment/status-change all still succeed, and no worker thread is running | Pass |
+| 31-34 | With `NOTIFICATION_WORKER_ENABLED=false`, issue creation/assignment/status-change all still succeed and no worker thread is running | Pass |
 | 35 | With no `SMTP_HOST` configured, a worker poll cycle leaves pending rows untouched (no crash, no false "failed" marks) | Pass |
 | 36-37 | With SMTP "configured" (delivery mocked to succeed), a poll cycle marks every pending row `sent` and none `failed` | Pass |
 | 38-39 | A simulated SMTP failure is caught inside the worker (never raises) and marks only that row `failed` | Pass |
@@ -361,7 +361,7 @@ template's Jinja `{% %}` block tags balance (checked programmatically).
       (confirmed for the hardest case - a user's *very first* edit, which
       requires forking the org default correctly)
 - [x] Repeated failed logins from the same IP eventually get
-      blocked/delayed, and this resets after the configured window
+      blocked/delayed and this resets after the configured window
       (confirmed for both the memory and database backends)
 - [x] The app starts and serves traffic via the production WSGI entry
       point - `wsgi.py`/`waitress-serve` predate this stage (Stage 1) and
@@ -370,7 +370,7 @@ template's Jinja `{% %}` block tags balance (checked programmatically).
       wired in
 - [x] Disabling the notification worker via config does not break issue
       creation/assignment/status changes - confirmed directly: all three
-      still return 200 with the worker off, and no worker thread starts
+      still return 200 with the worker off and no worker thread starts
 
 ---
 
@@ -408,7 +408,7 @@ was syntax-checked (`py_compile`) and reasoned through, but as in every
 prior stage, the sandbox has no MySQL server to execute it against - in
 particular, `dashboard_widgets`' two foreign keys (to `organizations` and
 `users`), the `auth_rate_limits.identifier` unique constraint the
-database-backed rate limiter's upsert depends on, and `email_outbox`'s
+database-backed rate limiter's upsert depends on and `email_outbox`'s
 complete lack of any foreign key at all (intentional - see §3) have not
 been confirmed against a real server. Please run
 `python -m scripts.create_tables` and check its output - it should print

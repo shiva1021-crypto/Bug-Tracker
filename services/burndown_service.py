@@ -21,7 +21,7 @@ def compute_burndown(sprint: dict, issues: list[dict], organization_id: int) -> 
     both are nullable on `sprints`, so a brand-new sprint may not have
     them set yet).
 
-    The "total scope" used for the ideal line, and the weight of each
+    The "total scope" used for the ideal line and the weight of each
     issue in the actual-remaining calculation, is `story_points` if *any*
     issue in the sprint has one set, otherwise a flat 1-per-issue count --
     see STAGE-08-REPORT.md for why point totals aren't recomputed

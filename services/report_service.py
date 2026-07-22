@@ -1,4 +1,4 @@
-"""Reports: date/status/priority/project filtering, chart aggregation, and
+"""Reports: date/status/priority/project filtering, chart aggregation and
 CSV export.
 
 `issue_repository.search_for_report()` is called exactly once per request
@@ -6,7 +6,7 @@ CSV export.
 the CSV export, are all derived from that same in-memory row list -- the
 same "fetch once, group in application code" shape Stage 7's board query
 established, chosen here for the same reason: the charts and the export
-must always agree on which rows matched the filter, and computing three
+must always agree on which rows matched the filter and computing three
 separate `GROUP BY` queries plus a fourth row-fetch could theoretically
 disagree if data changed between queries.
 """

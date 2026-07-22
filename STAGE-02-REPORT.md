@@ -13,7 +13,7 @@
 
 Let a person create an account and log in and out securely. No roles or
 organizations yet - the question this stage answers is only *"does this login
-work, and is the session safe."*
+work and is the session safe."*
 
 Deliberately **not** built (each belongs to a later stage or was never asked for):
 
@@ -134,7 +134,7 @@ Werkzeug is already installed as a hard dependency of Flask, so this adds no new
 package. `requirements.txt` is unchanged from Stage 1.
 
 Plaintext passwords never leave the service layer: `user_repository.create()`
-receives an already-hashed string, and a failed registration re-renders the form
+receives an already-hashed string and a failed registration re-renders the form
 with the name and email preserved but the password fields deliberately blank.
 
 ### 5.2 Login failures are indistinguishable
@@ -160,10 +160,10 @@ stage onward. Rather than decorating each route, `app.py` validates the token in
 a `before_request` hook covering `POST`, `PUT`, `PATCH` and `DELETE`.
 
 The consequence matters for later stages: a new POST route added in Stage 4 or 7
-is protected by default, and *forgetting* the token breaks the form loudly
+is protected by default and *forgetting* the token breaks the form loudly
 instead of silently leaving a hole.
 
-Tokens are compared with `secrets.compare_digest` to avoid timing leaks, and are
+Tokens are compared with `secrets.compare_digest` to avoid timing leaks and are
 rotated whenever the privilege level changes (login and logout).
 
 ### 5.4 Logout is POST-only
@@ -177,7 +177,7 @@ item.
 ### 5.5 Session handling on login and logout
 
 `start_session()` calls `session.clear()` *before* writing `user_id`, so nothing
-from the anonymous session survives the privilege change, and rotates the CSRF
+from the anonymous session survives the privilege change and rotates the CSRF
 token - the standard defence against session-fixation. `end_session()` clears
 and re-issues in the same way.
 
@@ -287,7 +287,7 @@ responses differed only by (a) the per-session CSRF token and (b) the email
 echoed back into the form field - the assertion was comparing raw bytes and was
 too strict. After normalising those two values the bodies are identical, with an
 empty diff. The finding was a faulty test, not an enumeration leak; the
-assertion was the thing at fault, and the behaviour is correct.
+assertion was the thing at fault and the behaviour is correct.
 
 All Python modules compile cleanly (`compileall` exit 0) and all six templates
 parse under Jinja.
@@ -311,7 +311,7 @@ redirects to `/profile`, the only logged-in page this stage specifies. Inventing
 a dashboard would have pulled work forward from a later stage.
 
 **`GET /` stays JSON.** Stage 1 defined `/` as an unauthenticated JSON status
-endpoint, and Stage 2 did not ask for that to change, so it was left alone. The
+endpoint and Stage 2 did not ask for that to change, so it was left alone. The
 header brand link points at `/profile` when logged in and `/login` otherwise, so
 nobody is routed to the JSON page through the UI.
 

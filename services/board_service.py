@@ -1,4 +1,4 @@
-"""Kanban board business rules: querying, grouping, pagination, and the
+"""Kanban board business rules: querying, grouping, pagination and the
 per-card drag permission flag.
 
 No new tables -- per the spec, this stage is "purely a new way of querying

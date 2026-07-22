@@ -1,6 +1,6 @@
 """SQL access for the `bug_history` table.
 
-Records status changes, assignment changes, and other significant edits to
+Records status changes, assignment changes and other significant edits to
 an issue. Ordered chronologically ascending (oldest first) -- deliberately
 the opposite order from comments, since a history panel reads naturally as
 a timeline while comments read naturally newest-first.

@@ -1,10 +1,10 @@
 """Sprint business rules: validation, lifecycle (future -> active -> closed),
 and moving issues between the backlog and a sprint.
 
-Creating, starting, and closing a sprint are gated the same way project
+Creating, starting and closing a sprint are gated the same way project
 creation is: the Stage 3 permission matrix grants "Manage sprints" to
 Admin/PM only (see `services/project_service.py`'s own docstring, which
-names this exact permission), and Stage 8 is the first stage that
+names this exact permission) and Stage 8 is the first stage that
 actually has sprints to manage. `verify_sprint_manager()` follows the
 same fresh-DB-read pattern as every other permission check in this
 codebase (`admin_service.verify_admin`, `project_service.verify_project_creator`,

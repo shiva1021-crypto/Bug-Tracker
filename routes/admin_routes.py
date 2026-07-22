@@ -1,4 +1,4 @@
-"""HTTP handlers for the admin panel: member list, role changes, and
+"""HTTP handlers for the admin panel: member list, role changes and
 registration-request approval/rejection.
 
 Every route here is gated by `_require_admin()`, which re-checks the

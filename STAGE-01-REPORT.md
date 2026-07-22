@@ -11,7 +11,7 @@
 ## 1. Goal of this stage
 
 Stand up a runnable, empty skeleton: a Flask app that boots, connects to MySQL
-through a **pooled** connection, and reports its own health. No product features -
+through a **pooled** connection and reports its own health. No product features -
 this is pure plumbing that every later stage builds on.
 
 Deliberately **not** built in Stage 1 (these belong to later stages):
@@ -43,7 +43,7 @@ repositories/  All SQL / direct database access lives here. Nothing else touches
 utils/         Cross-cutting helpers - the connection pool.
 ```
 
-Routes never import a repository directly, and never talk to the database.
+Routes never import a repository directly and never talk to the database.
 Even though Stage 1's only "query" is a `SELECT 1`, the full chain is wired so
 later stages drop into an established pattern rather than inventing one.
 
@@ -125,7 +125,7 @@ The client gets a readable message; no traceback escapes the process boundary.
 
 ### 3.4 Secret-key policy
 
-Handled in `config._resolve_secret_key()`, and it differs by environment:
+Handled in `config._resolve_secret_key()` and it differs by environment:
 
 **Development** - if `SECRET_KEY` is empty, generate one with
 `secrets.token_urlsafe(48)` and persist it to `.secret_key` on disk. Every
@@ -171,7 +171,7 @@ the same credentials, minus the database name.
 ### 3.6 Session cookie hardening (configured now, used later)
 
 `app.py` sets `SESSION_COOKIE_HTTPONLY=True`, `SESSION_COOKIE_SAMESITE="Lax"`,
-`SESSION_COOKIE_SECURE` from config, and `PERMANENT_SESSION_LIFETIME` from
+`SESSION_COOKIE_SECURE` from config and `PERMANENT_SESSION_LIFETIME` from
 `SESSION_LIFETIME_SECONDS`. The security baseline in the README applies from
 Stage 2 onward, but the cookie configuration is part of app setup, so it lands
 here and is ready when Stage 2 introduces login.
@@ -191,7 +191,7 @@ here and is ready when Stage 2 introduces login.
 
 | Command | What it does |
 |---|---|
-| `python -m scripts.check_db` | Connects to the MySQL server (not the app DB), reports reachability, and says whether `bug_tracker_db` exists yet. Exit `0` / `1`. |
+| `python -m scripts.check_db` | Connects to the MySQL server (not the app DB), reports reachability and says whether `bug_tracker_db` exists yet. Exit `0` / `1`. |
 | `python -m scripts.create_db` | `CREATE DATABASE IF NOT EXISTS` with `utf8mb4` / `utf8mb4_unicode_ci`. Idempotent - safe to re-run. Creates **no tables**. |
 | `python run.py` | Dev server on `127.0.0.1:5000` with debug/reload on. |
 | `waitress-serve --port=8000 wsgi:app` | Production (cross-platform, incl. Windows). |
@@ -256,6 +256,6 @@ python -m scripts.create_db
 - `SECRET_KEY` is already wired into `app.config`, so Flask sessions will sign
   correctly the moment Stage 2 starts using them.
 - Cookie hardening is already in place; Stage 2 adds CSRF tokens, password
-  hashing, and server-side input validation on top.
+  hashing and server-side input validation on top.
 - The database exists but is empty. The first tables arrive in Stage 3, when
   `organization_id` multi-tenancy is introduced.

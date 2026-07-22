@@ -1,6 +1,6 @@
 """Flask application factory.
 
-Wires configuration, session settings, and route blueprints together. Importing
+Wires configuration, session settings and route blueprints together. Importing
 `config` at module load enforces the secret-key policy (in production a
 weak/missing SECRET_KEY makes this raise before the app can serve traffic).
 """
@@ -136,7 +136,7 @@ def create_app() -> Flask:
 
     @app.context_processor
     def inject_globals():
-        """Make `current_user`, `csrf_token()`, and the caller's organization
+        """Make `current_user`, `csrf_token()` and the caller's organization
         name available in every template. `current_organization_name` backs
         the reference-ui sidebar's org badge (base.html) -- the session only
         caches `organization_id` (see utils/auth.py), so the name is looked

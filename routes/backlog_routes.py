@@ -1,6 +1,6 @@
 """HTTP handlers for the Stage 8 backlog page and sprint lifecycle.
 
-Creating, starting, and closing a sprint, and moving an issue between the
+Creating, starting and closing a sprint and moving an issue between the
 backlog and a sprint, are all gated by `sprint_service.verify_sprint_manager()`
 -- the same fresh-DB-read permission pattern used everywhere else in this
 codebase. Every redirect target tries to keep the user on the same

@@ -41,7 +41,7 @@ def register():
 
     # Stage 10: rate limit registration attempts per IP -- keyed by IP only
     # (not the submitted email), since at this point the email may not
-    # correspond to any real account yet, and IP is what actually identifies
+    # correspond to any real account yet and IP is what actually identifies
     # "one script hammering this endpoint."
     client_ip = request.remote_addr or "unknown"
     if rate_limit_service.is_blocked(client_ip):
@@ -143,7 +143,7 @@ def login():
 
     user = auth_service.authenticate(email, password)
     if user is None:
-        # Identical response for unknown email, wrong password, and an email
+        # Identical response for unknown email, wrong password and an email
         # that only exists as a still-pending registration request.
         rate_limit_service.record_failure(client_ip)
         if normalized_email:

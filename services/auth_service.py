@@ -7,7 +7,7 @@ never stored, logged, or returned.
 Stage 3 adds the organization/role decision that happens at registration:
 a brand-new organization name makes the registrant that org's first user,
 automatically Admin; an existing organization name creates a pending
-`registration_requests` row instead of a `users` row, and an admin of that
+`registration_requests` row instead of a `users` row and an admin of that
 org must approve or reject it later (see `services/admin_service.py`).
 
 Stage 4 adds one more step to the new-organization path: a "General"

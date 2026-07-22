@@ -1,5 +1,5 @@
 """Issue-linking business rules: creating a typed, directional link between
-two issues, listing them with the correct per-side label, and removing one
+two issues, listing them with the correct per-side label and removing one
 from either side.
 
 Per the spec, a link is stored once (`bug_id_a` -> `bug_id_b` with a

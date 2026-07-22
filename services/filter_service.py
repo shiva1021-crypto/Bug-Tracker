@@ -1,5 +1,5 @@
 """Issue list/search filtering: parsing query params into a filter dict,
-running the search, and saving/listing a user's saved filter shortcuts.
+running the search and saving/listing a user's saved filter shortcuts.
 
 `filter_data` (what gets saved) is exactly the parsed filter dict -- "the
 full query-param state," per the spec -- so re-applying a saved filter

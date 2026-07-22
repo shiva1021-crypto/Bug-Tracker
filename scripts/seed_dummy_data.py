@@ -2,9 +2,9 @@
 
 Creates one demo organization with a user for every role (admin, project
 manager, developer x2, tester x2), two projects each with sprints and
-versions, and roughly twenty issues spread across every type, status,
-priority, and severity -- plus a few comments, watchers, and time entries
--- so the Kanban board, backlog, dashboard, and reports all have something
+versions and roughly twenty issues spread across every type, status,
+priority and severity -- plus a few comments, watchers and time entries
+-- so the Kanban board, backlog, dashboard and reports all have something
 real to show immediately after running this.
 
 Run from the project root, after the schema exists:
@@ -16,11 +16,11 @@ raw duplicate SQL), so this data is exactly as valid as anything the UI
 would produce: passwords are hashed with the same `generate_password_hash`
 call `services/auth_service.py` uses, issue keys are allocated through
 `project_repository.allocate_next_issue_number` (the same concurrency-safe
-path issue creation always takes), and the seeded organization's dashboard
+path issue creation always takes) and the seeded organization's dashboard
 defaults are seeded via `services/dashboard_service.ensure_org_defaults`,
 identical to what happens when a real organization registers.
 
-Not idempotent, and deliberately so: there is no "already seeded" column
+Not idempotent and deliberately so: there is no "already seeded" column
 on any of these tables to check against short of the organization's name.
 Running this twice is refused outright (see `main()`) rather than silently
 doubling every row -- if you want a fresh copy, delete the demo
@@ -374,7 +374,7 @@ def main() -> int:
         print(f"Creating organization '{ORG_NAME}' and {len(USERS)} users...")
         org_id, users = create_org_and_users()
 
-        print("Creating projects, sprints, and versions...")
+        print("Creating projects, sprints and versions...")
         web_project = create_project_with_sprints_and_versions(org_id, "Web Platform", "WEB")
         mob_project = create_project_with_sprints_and_versions(org_id, "Mobile App", "MOB")
 

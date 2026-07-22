@@ -32,10 +32,10 @@
 
 <!--
     Reference's filter bar also has a free-text search box, a Severity
-    filter, and pagination. This app's search (filter_service.parse_filters
+    filter and pagination. This app's search (filter_service.parse_filters
     / issue_repository.search_issues) only ever supported project, status,
-    priority, issue type, and assignee -- no text search, no severity
-    filter, and no pagination (search_issues returns the full match list).
+    priority, issue type and assignee -- no text search, no severity
+    filter and no pagination (search_issues returns the full match list).
     Rather than fake the missing pieces, this keeps every filter that's
     real and drops the three that aren't.
 -->

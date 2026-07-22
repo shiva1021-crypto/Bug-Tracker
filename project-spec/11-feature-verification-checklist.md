@@ -1,7 +1,7 @@
 # Feature Verification Checklist - All 10 Stages, All Roles
 
 Use this after Stage 10 is built to verify nothing was missed. It breaks
-every feature down to the minute behaviors that are easy to skip, and
+every feature down to the minute behaviors that are easy to skip and
 tags who should be tested against each one: **A**dmin, **P**roject
 Manager, **D**eveloper, **T**ester.
 
@@ -29,13 +29,13 @@ powerful one.
 - [ ] Session cookie has `HttpOnly` and `SameSite=Lax` (check via browser dev tools).
 
 ## Stage 3 - Multi-Tenancy & Roles
-- [ ] Registering with a brand-new org name creates the org, makes the user Admin, and auto-creates a default project.
+- [ ] Registering with a brand-new org name creates the org, makes the user Admin and auto-creates a default project.
 - [ ] Registering with an existing org name creates a **pending** request, not an active login.
 - [ ] A pending user sees only a "pending approval" message - no sidebar, no data, no API access via direct URL either.
 - [ ] **A** - can see the Users admin page; **P/D/T** - cannot (both hidden in UI and blocked if the URL is visited directly).
 - [ ] **A** - can approve a pending request; the new user can then log in immediately after.
 - [ ] **A** - can reject a pending request; that person cannot log in afterward.
-- [ ] **A** - can change another user's role, and it takes effect on that user's very next request (not just next login).
+- [ ] **A** - can change another user's role and it takes effect on that user's very next request (not just next login).
 - [ ] Org A's Admin cannot see, approve, or reject Org B's pending requests, even by guessing a request ID in the URL.
 - [ ] Requester IP is shown next to each pending registration request.
 
@@ -66,9 +66,9 @@ powerful one.
 - [ ] **A/P** - can change status of any issue regardless of assignment.
 - [ ] Assigning an issue in "To Do" auto-moves it to "In Progress"; assigning an issue already past "To Do" does **not** revert or skip its status.
 - [ ] **A/P** - can assign/reassign; **D/T** - cannot assign issues to others.
-- [ ] Every comment shows correct author, avatar/name, and timestamp, newest first.
+- [ ] Every comment shows correct author, avatar/name and timestamp, newest first.
 - [ ] Watch toggle persists (watching, then reloading the page, still shows "watching").
-- [ ] History panel shows status changes, assignment changes, and edits in correct chronological order - nothing silently missing.
+- [ ] History panel shows status changes, assignment changes and edits in correct chronological order - nothing silently missing.
 
 ## Stage 7 - Kanban Board
 - [ ] Board shows only To Do / In Progress / Testing / Done - "Idea" issues never appear on the board.
@@ -114,7 +114,7 @@ powerful one.
 - [ ] Assignment and status-change events actually queue a row in the email outbox; the background worker marks it sent (or failed, with a reason) rather than leaving it pending forever.
 - [ ] Registration approval/rejection also queues a notification email.
 - [ ] Disabling the notification worker via config does not break issue creation, assignment, or status changes elsewhere in the app.
-- [ ] Repeated failed logins from the same identifier eventually get rate-limited, and the limit resets after the configured window.
+- [ ] Repeated failed logins from the same identifier eventually get rate-limited and the limit resets after the configured window.
 - [ ] App runs correctly under the production WSGI entry point, not just the Flask dev server.
 
 ---
@@ -127,7 +127,7 @@ powerful one.
 
 ---
 
-Work through this list, check off what passes, and flag anything that
+Work through this list, check off what passes and flag anything that
 fails with the exact steps to reproduce it - that turns this from a
 checklist into a bug list the next Claude session (or you) can fix
 directly.

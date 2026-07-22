@@ -1,11 +1,11 @@
 """Session helpers and the `login_required` gate.
 
-Session contents: `user_id`, `full_name`, `organization_id`, and `role`.
+Session contents: `user_id`, `full_name`, `organization_id` and `role`.
 `organization_id` and `role` were added in Stage 3 -- they are a *cached
 snapshot* taken at login time, convenient for cosmetic decisions like which
 sidebar links to show. They are not re-verified on every request, so they
 can go stale the moment an admin changes someone's role. Anything that
-actually gates a sensitive action (the admin panel, and every role check
+actually gates a sensitive action (the admin panel and every role check
 added in later stages) must re-read the role from the database instead of
 trusting this snapshot -- see `services/admin_service.py::verify_admin`.
 """
@@ -26,7 +26,7 @@ def start_session(user: dict) -> None:
     """Log a user in.
 
     The session is cleared first so no state from the logged-out session
-    survives, and the CSRF token is rotated because the privilege level changed
+    survives and the CSRF token is rotated because the privilege level changed
     (defends against session-fixation style attacks).
     """
     session.clear()

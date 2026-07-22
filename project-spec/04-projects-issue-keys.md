@@ -16,7 +16,7 @@ Stage 3 (organizations, roles) must be complete.
 
 ## Frontend - Design & Layout
 
-> **Clone this exactly from `reference-ui/templates/projects.html`.** Copy structure, classes, and wording as-is - adapt only route/variable names.
+> **Clone this exactly from `reference-ui/templates/projects.html`.** Copy structure, classes and wording as-is - adapt only route/variable names.
 
 **Projects page** (`/projects`):
 - Grid or list of project cards: project name, key (shown as a colored badge/chip), short description.

@@ -1,7 +1,7 @@
-"""Version/release business rules: validation, visibility, and the
+"""Version/release business rules: validation, visibility and the
 unreleased -> released / -> archived transitions.
 
-Creating, releasing, and archiving a version is Admin/PM-only, the same
+Creating, releasing and archiving a version is Admin/PM-only, the same
 tier as sprint and custom-field management (all three follow the Stage 3
 "organization owner" permission tier this codebase has used consistently
 since Stage 4's project creation).

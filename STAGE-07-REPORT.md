@@ -20,13 +20,13 @@ Deliberately **not** built (belongs to a later stage):
 - No sprint data model or sprint filtering. The spec calls the sprint
   selector out explicitly as "(Stage 8)" - the top bar renders a disabled
   sprint dropdown for layout parity (see §5.5), but nothing behind it is
-  wired up, and `GET /board`'s `sprint` query parameter is accepted and
+  wired up and `GET /board`'s `sprint` query parameter is accepted and
   echoed back to the template but never used to filter anything.
 - No backlog page and no "Idea" column - those issues are excluded from
   the board entirely, exactly as the spec requires.
 - No new tables or schema changes. Per the spec's own Backend section,
   this stage is "purely a new way of querying and displaying `bugs` data
-  already modeled in Stage 5/6" - every column, group, and card comes from
+  already modeled in Stage 5/6" - every column, group and card comes from
   one `SELECT` against the existing `bugs` table.
 
 Stages 1-6 were left intact. The one addition to a Stage 5/6 file is a
@@ -41,7 +41,7 @@ existing function in any prior-stage file was changed.
 
 | File | Layer | Purpose |
 |---|---|---|
-| `services/board_service.py` | services | Column/group/pagination shaping of one project's board issues, and the per-card `can_drag` flag. |
+| `services/board_service.py` | services | Column/group/pagination shaping of one project's board issues and the per-card `can_drag` flag. |
 | `routes/board_routes.py` | routes | `GET /board` (renders the page) and `POST /board/move` (JSON drag-and-drop endpoint). |
 | `templates/board.html` | frontend | Top bar (project/sprint/group-by selectors, assignee avatar row), four columns, card markup, empty/load-more states. |
 
@@ -53,7 +53,7 @@ existing function in any prior-stage file was changed.
 | `app.py` | Registers `board_bp`. Adds one Jinja filter, `label_color_index`, used only to give each distinct label text a stable dot color on board cards (see §5.4) - no schema change, purely a display computation. |
 | `templates/base.html` | Adds a "Board" sidebar link. |
 | `static/style.css` | New "board (Stage 7)" section: topbar, four-column grid, card styling, per-status-independent priority-flag colors, label dots, drag/hover/snap-back states, toast. |
-| `static/script.js` | Adds `initBoardDragAndDrop()`, `initBoardLoadMore()`, `initBoardAssigneeFilter()`, and their shared helpers (`boardPostMove`, `boardUpdateColumnCounts`, `boardShowToast`) - all following the existing one-`init*()`-per-feature convention. |
+| `static/script.js` | Adds `initBoardDragAndDrop()`, `initBoardLoadMore()`, `initBoardAssigneeFilter()` and their shared helpers (`boardPostMove`, `boardUpdateColumnCounts`, `boardShowToast`) - all following the existing one-`init*()`-per-feature convention. |
 
 ### 2.3 Layering
 
@@ -81,7 +81,7 @@ decides whether a status change is allowed, board or no board.
 
 No new tables and no altered columns - the spec is explicit about this
 ("No new tables - this stage is purely a new way of querying and
-displaying `bugs` data"). The board reads the same `bugs`, `users`, and
+displaying `bugs` data"). The board reads the same `bugs`, `users` and
 `projects` tables Stages 3-6 already created.
 
 ---
@@ -158,12 +158,12 @@ usually - but, given only six colors, not always - get different colors.
 Flagged as a cosmetic approximation given the constraints, not a claim
 that it never collides.
 
-### 5.5 The sprint selector is rendered, disabled, and inert
+### 5.5 The sprint selector is rendered, disabled and inert
 
 The spec's own top-bar layout lists a "Sprint selector dropdown (Stage
 8)" alongside the project selector - read as: the layout slot should
 exist now so Stage 8 only has to enable it, not design and insert it. The
-`<select>` is present, disabled, shows a single "All Sprints" option, and
+`<select>` is present, disabled, shows a single "All Sprints" option and
 carries a tooltip explaining why. `GET /board`'s `sprint` query parameter
 is read and passed back into the template (so the disabled control could
 echo a value if one were ever set) but never touches the query in
@@ -174,12 +174,12 @@ spec describes.
 
 ### 5.6 The assignee quick-filter and drag-and-drop are both purely client-side against data already on the page
 
-The spec's route table lists only `project`, `sprint`, and `group_by` as
-`GET /board` query parameters - `assignee` is not among them, and "click
+The spec's route table lists only `project`, `sprint` and `group_by` as
+`GET /board` query parameters - `assignee` is not among them and "click
 an avatar to filter... click again to clear" describes an instant toggle,
 not a page reload. So the quick-filter is implemented entirely in
 `static/script.js`: every card already carries its `assigned_to` id in a
-`data-assignee-id` attribute, and clicking an avatar just hides/shows
+`data-assignee-id` attribute and clicking an avatar just hides/shows
 cards already in the DOM. Likewise, an authorized drag is applied
 optimistically (the card moves in the browser immediately) and only
 reverted if the server's JSON response says `ok: false` - the DoD's
@@ -207,7 +207,7 @@ benefit until the next reload.
 python run.py                       # -> http://127.0.0.1:5000/board
 ```
 
-No new dependencies, no DDL, and no migration step - this stage only adds
+No new dependencies, no DDL and no migration step - this stage only adds
 one read query against the existing `bugs` table.
 
 ---
@@ -232,7 +232,7 @@ HTTP) so its output structure could be asserted precisely.
 | 5-9 | Two different projects render two different boards - the WEB board shows only WEB-prefixed issues, the MOB board shows only its own issue and never a WEB one | Pass |
 | 10 | Requesting `/board` with no `project` param still renders a real board (defaults to the org's first project) | Pass |
 | 11-12 | The Developer assigned to an issue drags it and the status change is returned as authorized *and* actually persisted server-side | Pass |
-| 13-15 | A Tester's drag is rejected (`ok: false`, database unchanged, and a real error message is present in the response) | Pass |
+| 13-15 | A Tester's drag is rejected (`ok: false`, database unchanged and a real error message is present in the response) | Pass |
 | 16 | A **different** (non-assigned) Developer's drag on the same issue is also rejected | Pass |
 | 17 | An Admin/PM's drag succeeds as an override, matching Stage 6's status-change rule exactly | Pass |
 | 18 | Dragging a card to "Idea" is rejected outright - it is not one of the four valid board-drop targets | Pass |
@@ -251,7 +251,7 @@ combination exercised above.
 
 - [x] Board only shows To Do / In Progress / Testing / Done columns - never Idea
 - [x] Dragging a card as an authorized user persists the new status after a page refresh (verified against the real database-backed status, not just the in-memory response)
-- [x] Dragging a card as an unauthorized user does not change the database, and the UI reflects that (server rejects it; the client-side handler reverts the optimistic move on that rejection - see §5.6)
+- [x] Dragging a card as an unauthorized user does not change the database and the UI reflects that (server rejects it; the client-side handler reverts the optimistic move on that rejection - see §5.6)
 - [x] Switching projects reloads the board with only that project's issues
 - [x] Clicking an assignee avatar filters the board to only their cards; clicking it again clears the filter (client-side toggle against the `data-assignee-id` already rendered on each card - see §5.6)
 
@@ -284,7 +284,7 @@ status change and the column it lands in are both always correct; only
 which sub-group heading it visually sits under, immediately after the
 drop, can be momentarily off).
 
-**No DDL this stage** - nothing to run against a live MySQL server, and
+**No DDL this stage** - nothing to run against a live MySQL server and
 nothing new to verify there; this stage's only untested-in-a-real-browser
 surface is the drag-and-drop interaction itself (native HTML5 drag events
 don't have a meaningful sandbox equivalent), which is why `board_service`'s

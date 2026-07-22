@@ -1,4 +1,4 @@
-"""HTTP handlers for creating, viewing, and editing issues, plus serving
+"""HTTP handlers for creating, viewing and editing issues, plus serving
 stored screenshots.
 
 `GET /issues/<id>` and its edit counterpart return a genuine 404 (not a
@@ -6,7 +6,7 @@ redirect-with-flash like `/projects/<id>`) when the id doesn't exist or
 belongs to another organization -- the spec calls this out explicitly for
 issues ("Viewing another organization's issue by guessing its ID returns
 404, not the issue"), so both cases are handled identically via
-`abort(404)`, and Flask's registered 404 handler renders one plain page
+`abort(404)` and Flask's registered 404 handler renders one plain page
 either way. No information about *why* it 404'd (wrong org vs. never
 existed) is distinguishable from the response.
 """
@@ -553,7 +553,7 @@ def issue_screenshot(issue_id):
     Not one of the spec's three listed routes, but required infrastructure:
     the file is stored outside `static/` (per the spec's own security
     requirement), so nothing can load it directly -- this route is the
-    only path to it, and it re-checks organization membership exactly like
+    only path to it and it re-checks organization membership exactly like
     every other issue lookup before streaming anything.
     """
     user = current_user()

@@ -2,7 +2,7 @@
 
 ## Goal
 Stand up a runnable, empty skeleton: a Flask app that boots, connects to
-MySQL through a pooled connection, and reports its own health. No features
+MySQL through a pooled connection and reports its own health. No features
 yet - this is pure plumbing everything else builds on.
 
 ## Prerequisites
@@ -39,6 +39,6 @@ None yet. If you want a visible placeholder, a single JSON status response is en
 ## Definition of Done
 - [ ] App starts with a single command and does not crash.
 - [ ] `/` returns a 200 JSON response.
-- [ ] `/health/db` returns 200 when MySQL is up, and a clean 503 (not a stack trace) when it's down.
+- [ ] `/health/db` returns 200 when MySQL is up and a clean 503 (not a stack trace) when it's down.
 - [ ] Restarting the app does not change the session secret key (dev mode persists it to disk).
 - [ ] Setting `APP_ENV=production` without a strong `SECRET_KEY` causes the app to refuse to start, with a clear error message.

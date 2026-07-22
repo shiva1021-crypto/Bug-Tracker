@@ -69,7 +69,7 @@ def manage_fields(project_id):
 def delete_field(project_id, field_id):
     """Not one of the spec's listed routes, but required infrastructure:
     the frontend section explicitly calls for "a delete button" next to
-    each field in the list, and the spec's Definition of Done requires
+    each field in the list and the spec's Definition of Done requires
     deleting a field to actually work end-to-end -- there is no route to
     do that without this one. Same reasoning already used in Stage 5 (the
     screenshot route) and Stage 8 (the issue list page).

@@ -34,7 +34,7 @@ def notify_status_changed(issue: dict, old_status: str, new_status: str) -> None
 
     Recipients are deduplicated (a reporter who is also watching their own
     issue gets exactly one email, not two). The user who made the change
-    is not excluded from this list -- the spec does not ask for that, and
+    is not excluded from this list -- the spec does not ask for that and
     excluding "the actor" would need a notion of "who is watching notified
     of their own action" this stage doesn't otherwise track; flagged in
     STAGE-10-REPORT.md.

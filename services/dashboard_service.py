@@ -1,5 +1,5 @@
 """Configurable dashboard: widget types, the org-default layout new users
-inherit automatically, and per-user customization.
+inherit automatically and per-user customization.
 
 Storage model (see `repositories/dashboard_widget_repository.py`'s
 docstring): each organization gets one *default* layout, stored as rows
@@ -14,9 +14,9 @@ anything at signup time.
 
 The first time a user actually adds or removes a widget, their personal
 layout is "forked" from the org default (`_ensure_personal_layout`): every
-default row is copied into a personal row for that user, and the
+default row is copied into a personal row for that user and the
 requested change is applied on top of that copy. From then on, that user
-always has personal rows, and reads take the personal list rather than the
+always has personal rows and reads take the personal list rather than the
 org default. This is what makes "removing and re-adding a widget preserves
 the rest of the layout" true even for a user's *very first* edit -- the
 fork happens before the edit, not after, so the other three default

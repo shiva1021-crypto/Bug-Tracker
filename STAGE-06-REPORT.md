@@ -12,8 +12,8 @@
 ## 1. Goal of this stage
 
 Give every issue a defined lifecycle (five ordered statuses), restrict who
-can move it, and keep a full audit trail of every status change,
-assignment change, and significant edit. Add threaded comments and a
+can move it and keep a full audit trail of every status change,
+assignment change and significant edit. Add threaded comments and a
 per-user watch toggle.
 
 Deliberately **not** built (belongs to a later stage):
@@ -44,8 +44,8 @@ rewritten; every other Stage 1-5 file is untouched.
 
 | File | Layer | Purpose |
 |---|---|---|
-| `repositories/comment_repository.py` | repositories | SQL for `comments`: insert, and org-scoped list ordered newest-first. |
-| `repositories/bug_history_repository.py` | repositories | SQL for `bug_history`: insert, and org-scoped list ordered oldest-first, with joined names for the changer and both old/new assignees. |
+| `repositories/comment_repository.py` | repositories | SQL for `comments`: insert and org-scoped list ordered newest-first. |
+| `repositories/bug_history_repository.py` | repositories | SQL for `bug_history`: insert and org-scoped list ordered oldest-first, with joined names for the changer and both old/new assignees. |
 | `repositories/watcher_repository.py` | repositories | SQL for `issue_watchers`: `is_watching`, `add`, `remove`, `count`. |
 | `services/workflow_service.py` | services | `STATUSES`, the reusable `can_update_status` / `can_assign` permission checks, `change_status`, `assign_issue` (with the auto-transition rule), comment/history/watch orchestration. |
 
@@ -57,7 +57,7 @@ rewritten; every other Stage 1-5 file is untouched.
 | `repositories/issue_repository.py` | Adds `update_status()` and `update_assignment()`. Also extends `get_detail_by_id_and_org()`'s join to include `assigned_to_name`, needed by the detail page's new assignment display. |
 | `services/issue_service.py` | `DEFAULT_STATUS` changed from `"To Do"` to `"Idea"` (see §5.2). `create_issue()` now records a "created the issue" history row; `update_issue()` now takes a `changed_by_user_id` parameter and records an "edited the issue" history row. Everything else in this file - hierarchy validation, screenshot handling, `get_editor_permission` - is unchanged. |
 | `routes/issue_routes.py` | Adds `POST /issues/<id>/status`, `POST /issues/<id>/assign`, `POST /issues/<id>/comment`, `POST /issues/<id>/watch`. `issue_detail()` now also computes and passes `statuses`, `can_change_status`, `can_assign`, `assignable_developers`, `comments`, `history`, `watching`, `watcher_count`. `edit_issue()`'s call to `issue_service.update_issue()` now passes the editor's id. |
-| `templates/issues/detail.html` | Adds a colored status badge, a status-change form, a watch toggle, an assignment control in the sidebar, a comments section, and a collapsible history panel. |
+| `templates/issues/detail.html` | Adds a colored status badge, a status-change form, a watch toggle, an assignment control in the sidebar, a comments section and a collapsible history panel. |
 | `static/style.css` | Per-status badge colors, watch-toggle button, status/assign form layout, comment list/form styles, collapsible history panel styles, a small `.text-muted` utility. |
 | `static/script.js` | Adds `initHistoryToggle()`, following the exact show/hide pattern already used by `initNewProjectToggle()`. |
 
@@ -77,7 +77,7 @@ utils/db.py                    pooled connection from Stage 1 (unchanged)
 
 `can_update_status()` and `can_assign()` follow the exact fresh-DB-check
 pattern established by `admin_service.verify_admin`,
-`project_service.verify_project_creator`, and
+`project_service.verify_project_creator` and
 `issue_service.get_editor_permission`: every call re-reads the role from
 the database, never trusts the session's cached role. This is what makes
 the Definition of Done's "a Tester cannot move status via the API even by
@@ -119,7 +119,7 @@ time regardless - see §5.2).
 primary key `(bug_id, user_id)`, both columns `ON DELETE CASCADE`.
 
 No `organization_id` column on any of the three new tables - the spec's
-own table definitions don't include one, and each is always reached
+own table definitions don't include one and each is always reached
 through a join back to `bugs.organization_id` (see each repository's
 `list_by_bug`/`is_watching` etc.), matching the pattern the spec's data
 model actually describes rather than adding a redundant column.
@@ -146,7 +146,7 @@ Stage 5's convention) before any permission or business logic runs.
 ### 5.1 Creation and edits record history from inside `issue_service`, not `workflow_service`
 
 The spec requires "every ... significant field edit" to appear in the
-history table, and issue creation/editing already lives entirely in
+history table and issue creation/editing already lives entirely in
 Stage 5's `issue_service.py`. Rather than have `workflow_service` reach
 into issue creation/editing (which would invert the dependency the two
 modules should have), `create_issue()` and `update_issue()` each call
@@ -164,10 +164,10 @@ assignment renders as "changed status from X to Y" / "assigned to Z" /
 Stage 5's report flagged this default as an open interpretation call
 between the spec's two suggested values. Stage 6's spec resolves it: the
 five-status order is given explicitly as "Idea → To Do → In Progress →
-Testing → Done," so `"Idea"` is now the correct starting state, and
+Testing → Done," so `"Idea"` is now the correct starting state and
 keeping `"To Do"` would put every newly created issue one step ahead of
 where the canonical order says it should start. `issue_service.DEFAULT_STATUS`
-is updated, and `scripts/create_tables.py` gained `_ensure_bugs_status_default()`
+is updated and `scripts/create_tables.py` gained `_ensure_bugs_status_default()`
 - an idempotent `ALTER TABLE ... SET DEFAULT` - so a database that already
 ran Stage 5's version of the script picks up the corrected default too,
 not just brand-new databases.
@@ -179,7 +179,7 @@ for the next valid status/statuses," which could be read as only allowing
 forward, sequential movement (Idea → To Do, never Idea → Done directly).
 That reading was rejected: the Definition of Done never tests for
 rejecting a skip, the Backend section's only hard rule is the
-assignment-driven To Do → In Progress auto-transition, and the spec
+assignment-driven To Do → In Progress auto-transition and the spec
 explicitly keeps `status` a `VARCHAR` rather than an `ENUM` "to keep it
 flexible for future custom workflows" - a signal that this stage
 shouldn't hard-code a strict linear pipeline that a later stage would
@@ -207,7 +207,7 @@ in the correct order (assignment first, then the status row it caused).
 The spec's frontend section says the reassignment dropdown lists
 "developers in the project's organization" - read as: only accounts with
 the `developer` role, in the same organization as the assigner (not the
-wider set of every role, and not any organization). `workflow_service.assign_issue()`
+wider set of every role and not any organization). `workflow_service.assign_issue()`
 enforces this server-side (rejecting a crafted request that tries to
 assign a Tester, an Admin, or a user from a different organization),
 independent of what the dropdown itself would ever let a real browser
@@ -217,7 +217,7 @@ assignee id.
 ### 5.6 Comments are a flat, newest-first list - "threaded" read as chronological threading, not nested replies
 
 The spec calls comments "threaded, newest-first" but the data model gives
-`comments` no `parent_comment_id` or similar column, and the frontend
+`comments` no `parent_comment_id` or similar column and the frontend
 section describes a single list, not nested reply boxes. This was read as
 "threaded" meaning *the conversation is threaded through the issue over
 time* (i.e., a chronological log of remarks), not nested/tree-structured
@@ -247,7 +247,7 @@ As in every prior stage, the sandbox has no MySQL server, so the full
 request flow was exercised against in-memory stand-ins for every
 repository touched this stage (`user_repository`, `project_repository`,
 `issue_repository`, `comment_repository`, `bug_history_repository`,
-`watcher_repository`), matching each real function's exact signature, and
+`watcher_repository`), matching each real function's exact signature and
 driven through the real Flask app (`app.test_client()`) end-to-end:
 routes → services → fake repositories → real Jinja templates.
 
@@ -260,11 +260,11 @@ routes → services → fake repositories → real Jinja templates.
 | 5 | A Developer **not** assigned to the issue cannot change its status | Pass |
 | 6 | The **assigned** Developer can change status | Pass |
 | 7 | An Admin can change status as an override, regardless of assignment | Pass |
-| 8-9 | Assigning an unassigned "To Do" issue auto-transitions it to "In Progress", and the assignment itself is persisted | Pass |
+| 8-9 | Assigning an unassigned "To Do" issue auto-transitions it to "In Progress" and the assignment itself is persisted | Pass |
 | 10 | Assigning an issue already in "Testing" leaves its status unchanged | Pass |
 | 11 | A Developer (non-Admin/PM) cannot assign/reassign at all | Pass |
 | 12-13 | The auto-transition produces two history rows, in the correct order (assignment, then status) | Pass |
-| 14-16 | Two comments are recorded, returned newest-first, and both render on the detail page | Pass |
+| 14-16 | Two comments are recorded, returned newest-first and both render on the detail page | Pass |
 | 17-18 | Watching an issue is stored and the watcher count reflects it | Pass |
 | 19 | The watch relationship survives a **different** user changing the issue's status | Pass |
 | 20 | Un-watching removes the relationship | Pass |
@@ -311,7 +311,7 @@ was syntax-checked (`py_compile`) and reasoned through, but as in every
 prior stage, the sandbox has no MySQL server to execute it against - in
 particular, the four new/changed foreign keys on `bug_history` (two of
 them pointing at `users` with `ON DELETE SET NULL`), the composite primary
-key on `issue_watchers`, and the `ALTER TABLE bugs ALTER COLUMN status SET
+key on `issue_watchers` and the `ALTER TABLE bugs ALTER COLUMN status SET
 DEFAULT 'Idea'` step have not been confirmed against a real server.
 Please run `python -m scripts.create_tables` and check its output -
 it should print a line for each of the three new tables plus a line
@@ -337,7 +337,7 @@ uploads are involved), so there is nothing to clean up.
   only two functions that write to `bugs.status`/`bugs.assigned_to` after
   creation - the board should call through `workflow_service`, not these
   repository functions directly, so history keeps getting recorded.
-- The detail page's status control, assignment control, and watch toggle
+- The detail page's status control, assignment control and watch toggle
   are all plain forms (no JS required for the core action, only the
   history panel's show/hide is JS-driven) - the board can follow the same
   progressive-enhancement approach rather than requiring JS for a status

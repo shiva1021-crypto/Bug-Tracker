@@ -5,7 +5,7 @@ call these functions; routes never do.
 
 Every query that reads or mutates a specific request is scoped by
 organization_id -- this is the tenant isolation boundary from Stage 3
-onward, and it is what stops an admin from one organization approving or
+onward and it is what stops an admin from one organization approving or
 even seeing a request that belongs to another.
 """
 

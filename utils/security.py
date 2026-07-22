@@ -1,7 +1,7 @@
 """CSRF protection.
 
 A per-session token is generated on first use, embedded as a hidden field in
-every POST form, and compared on every incoming POST. Comparison uses
+every POST form and compared on every incoming POST. Comparison uses
 `secrets.compare_digest` to avoid leaking information through timing.
 """
 

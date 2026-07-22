@@ -3,7 +3,7 @@
 Run from the project root:
     python -m scripts.create_tables
 
-Idempotent: every CREATE TABLE uses IF NOT EXISTS, and the users-table
+Idempotent: every CREATE TABLE uses IF NOT EXISTS and the users-table
 migration (adding organization_id / role) checks information_schema before
 altering anything, so re-running this script is always safe.
 
@@ -469,7 +469,7 @@ def _ensure_bugs_sprint_column(cursor) -> None:
 
 
 def _ensure_bugs_stage9_columns(cursor) -> None:
-    """Add `bugs.time_estimate`, `bugs.time_remaining`, and
+    """Add `bugs.time_estimate`, `bugs.time_remaining` and
     `bugs.fix_version_id` (+ its FK to `versions`) to a database that ran
     an earlier stage's version of this script before Stage 9 existed.
 

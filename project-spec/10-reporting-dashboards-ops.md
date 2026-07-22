@@ -2,7 +2,7 @@
 
 ## Goal
 Surface insight (reports, dashboards) and make the app safe and ready to
-actually deploy: email notifications, rate limiting, and production
+actually deploy: email notifications, rate limiting and production
 hosting.
 
 ## Prerequisites
@@ -10,7 +10,7 @@ Stage 9 (extensibility) must be complete. This is the final stage.
 
 ## Features to build
 **Reports**
-- Filterable by date range, status, priority, and project (Admin/PM only).
+- Filterable by date range, status, priority and project (Admin/PM only).
 - Charts: status breakdown, priority distribution, issues-by-category.
 - CSV export of the filtered issue list - must be safe against CSV formula injection (neutralize values starting with `=`, `+`, `-`, `@`, or a tab character by prefixing them, e.g. with a leading apostrophe, before writing the export).
 - Printer-friendly view.
@@ -35,7 +35,7 @@ Stage 9 (extensibility) must be complete. This is the final stage.
 
 ## Frontend - Design & Layout
 
-> **Clone these exactly from `reference-ui/`:** `templates/dashboard.html`, `templates/reports.html`, `templates/database_error.html`. Copy structure, classes, and wording as-is - adapt only route/variable names. Chart.js usage (doughnut/bar charts) is already set up the same way across these files - follow the existing pattern rather than introducing a different charting approach.
+> **Clone these exactly from `reference-ui/`:** `templates/dashboard.html`, `templates/reports.html`, `templates/database_error.html`. Copy structure, classes and wording as-is - adapt only route/variable names. Chart.js usage (doughnut/bar charts) is already set up the same way across these files - follow the existing pattern rather than introducing a different charting approach.
 
 **Dashboard page** (`/dashboard`, the default landing page after login):
 - CSS grid layout; each widget is a card with a header (title + a remove "×" button) and its content area.
@@ -65,12 +65,12 @@ Stage 9 (extensibility) must be complete. This is the final stage.
 | GET | `/reports` | Filtered charts view |
 | GET | `/reports/export.csv` | CSV download of filtered results |
 
-**Background worker note:** run a simple loop/thread on app startup that polls `email_outbox` for `pending` rows, attempts SMTP delivery, and marks each `sent` or `failed`. Make it configurable to disable entirely (`NOTIFICATION_WORKER_ENABLED=false`) for environments without SMTP configured, so the app still runs without crashing.
+**Background worker note:** run a simple loop/thread on app startup that polls `email_outbox` for `pending` rows, attempts SMTP delivery and marks each `sent` or `failed`. Make it configurable to disable entirely (`NOTIFICATION_WORKER_ENABLED=false`) for environments without SMTP configured, so the app still runs without crashing.
 
 ## Definition of Done
 - [ ] A CSV export containing a title like `=cmd|'/c calc'!A1` opens safely in Excel/Sheets as plain text, not as an executed formula.
 - [ ] A new user's dashboard shows the default widget set with no manual setup.
 - [ ] Removing and re-adding a widget preserves the rest of the layout.
-- [ ] Repeated failed logins from the same IP eventually get blocked/delayed, and this resets after the configured window.
+- [ ] Repeated failed logins from the same IP eventually get blocked/delayed and this resets after the configured window.
 - [ ] The app starts and serves traffic via the production WSGI entry point, not just the dev server.
 - [ ] Disabling the notification worker via config does not break issue creation/assignment/status changes - email just doesn't get sent.

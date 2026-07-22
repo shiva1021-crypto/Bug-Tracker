@@ -10,7 +10,7 @@ Stage 7 (board) must be complete.
 ## Features to build
 **Sprints & Backlog**
 - Backlog page: list of unassigned-to-sprint issues for a project, plus a way to create a sprint and drag/assign issues into it.
-- A sprint has a name, optional goal, start date, end date, and one of three states: `future`, `active`, `closed`.
+- A sprint has a name, optional goal, start date, end date and one of three states: `future`, `active`, `closed`.
 - Only one sprint per project can be `active` at a time.
 - Starting a sprint moves it from `future` to `active`. Closing it moves it to `closed`.
 - A burndown chart auto-renders for the currently active sprint: ideal-progress line vs. actual remaining work, day by day across the sprint's date range.
@@ -31,7 +31,7 @@ Stage 7 (board) must be complete.
 **Backlog page** (`/backlog`):
 - Project selector at top.
 - "Backlog" section: flat list of unsprinted issues, each row with a dropdown to assign it into an existing sprint (or "+ New Sprint").
-- One collapsible section per sprint (future/active), each showing its issues, a story-point total, and Start/Close buttons as appropriate for its state.
+- One collapsible section per sprint (future/active), each showing its issues, a story-point total and Start/Close buttons as appropriate for its state.
 - Active sprint section additionally shows the burndown chart inline (line chart, x-axis = sprint days, y-axis = remaining story points/issues).
 
 **Issue Detail page (extend):** add a "Linked Issues" panel in the sidebar - list of "Blocks WEB-12", "Relates to API-4", etc., each clickable, plus a small form to add a new link (pick link type + target issue by key/search).

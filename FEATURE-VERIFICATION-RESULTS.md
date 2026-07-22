@@ -11,11 +11,11 @@ Flask app and the real route → service → repository code, driven by
 done. As always, the sandbox has no MySQL server, so every repository call
 is backed by an in-memory fake with the exact same function signature as
 the real one - the routes, services, permission checks, CSRF handling,
-sessions, and template rendering are all real, only the SQL layer is
+sessions and template rendering are all real, only the SQL layer is
 substituted.
 
 The harness used two organizations ("Acme Corp" with an Admin, a PM, two
-Developers, and a Tester; "Beta Inc" with its own Admin/project/issue) so
+Developers and a Tester; "Beta Inc" with its own Admin/project/issue) so
 every cross-tenant isolation check is against genuinely different-org data,
 not a single org's data filtered two ways.
 
@@ -70,7 +70,7 @@ that caveat for a *behavior* - only for the literal on-screen rendering.
 
 ## Stage 3 - Multi-Tenancy & Roles
 
-- [x] A brand-new org name creates the org, makes the registrant Admin, and
+- [x] A brand-new org name creates the org, makes the registrant Admin and
       auto-creates a default project.
 - [x] An existing org name creates a pending request, not an active login.
 - [x] A pending user's request carries no `users` row at all - nothing to
@@ -81,7 +81,7 @@ that caveat for a *behavior* - only for the literal on-screen rendering.
       immediately after.
 - [x] **A** can reject a pending request; that person cannot log in
       afterward.
-- [x] **A** can change another user's role, and it takes effect on the very
+- [x] **A** can change another user's role and it takes effect on the very
       next request (not just next login) - verified by changing Terry's
       role and having her *next request*, with no re-login, reach a
       PM-only page.
@@ -104,12 +104,12 @@ that caveat for a *behavior* - only for the literal on-screen rendering.
 - [x] Issue keys auto-increment correctly per project, even created
       back-to-back.
 - [x] Epic→Story/Task and Story→Subtask accepted; Task/Bug/Subtask as a
-      parent, and Epic-as-child-of-anything, all rejected with a clean
+      parent and Epic-as-child-of-anything, all rejected with a clean
       400, never a raw DB error.
 - [x] A parent that would create a cycle is rejected. *Note: under this
       app's hierarchy rules, a true A-contains-B/B-as-A's-parent cycle
       cannot actually be constructed through the UI/API - issue type is
-      immutable after creation, Epics can never have a parent at all, and
+      immutable after creation, Epics can never have a parent at all and
       Story/Task/Subtask each accept only one specific parent type, so the
       type-compatibility check alone already blocks every case a cycle
       could arise in, before the dedicated cycle-detection code even runs.
@@ -212,7 +212,7 @@ that caveat for a *behavior* - only for the literal on-screen rendering.
 - [x] CSV export neutralizes a formula-like title *and* a formula-like
       category with a leading apostrophe; the raw formula never appears
       un-neutralized anywhere in the export.
-- [x] Print-only markup/button exists, and the `@media print` rule in
+- [x] Print-only markup/button exists and the `@media print` rule in
       `static/style.css` genuinely hides `.app-header`/`.sidebar`/
       `.no-print` elements. *The actual print preview rendering is a
       browser behavior outside this harness's reach - the CSS rule that
@@ -223,7 +223,7 @@ that caveat for a *behavior* - only for the literal on-screen rendering.
       of the layout and positions.
 - [x] Each of the 6 widget types returns real computed data (not a
       placeholder) when rendered - verified individually for
-      `stats_summary`, `recent_issues`, and all four `issues_by_*` types.
+      `stats_summary`, `recent_issues` and all four `issues_by_*` types.
       *Chart.js actually painting the doughnut charts from that data is a
       browser rendering step outside this harness's reach; the data feed
       into it is confirmed correct.*
@@ -236,7 +236,7 @@ that caveat for a *behavior* - only for the literal on-screen rendering.
       genuinely does not start while disabled (checked `threading.
       enumerate()` directly, not just the config flag).
 - [x] Repeated failed logins from the same identifier get rate-limited
-      (429), and the limit resets after the window.
+      (429) and the limit resets after the window.
 - [x] App runs under the production WSGI entry point. *Unchanged since
       Stage 1/10 and not re-executed as a live process in this run - see
       the Stage 10 report's own setup section for how to confirm this
@@ -248,7 +248,7 @@ that caveat for a *behavior* - only for the literal on-screen rendering.
 
 - [x] Every list/detail page filters by `organization_id` - a second
       organization ("Beta Inc") was populated with its own project, issue,
-      sprint, version, custom field, and automation rule, and confirmed
+      sprint, version, custom field and automation rule and confirmed
       absent from every one of Org A's equivalent pages (projects, issues,
       backlog, versions, automation, dashboard) in a single sweep, plus a
       direct-by-id 404 check on the cross-org issue.

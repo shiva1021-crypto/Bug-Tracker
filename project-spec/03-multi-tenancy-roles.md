@@ -29,7 +29,7 @@ Stage 2 (working login/session) must be complete.
 
 ## Frontend - Design & Layout
 
-> **Clone this exactly from `reference-ui/templates/users.html`.** Copy structure, classes, and wording as-is - adapt only route/variable names. The sidebar shown here is part of `base.html` (already cloned in Stage 2) - extend its nav links per role, don't rebuild the sidebar itself.
+> **Clone this exactly from `reference-ui/templates/users.html`.** Copy structure, classes and wording as-is - adapt only route/variable names. The sidebar shown here is part of `base.html` (already cloned in Stage 2) - extend its nav links per role, don't rebuild the sidebar itself.
 
 **Register page (update from Stage 2):** add an "Organization Name" field. Show helper text: "New name → you become the admin. Existing name → your request needs approval."
 

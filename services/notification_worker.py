@@ -1,9 +1,9 @@
 """The background worker that actually delivers queued emails.
 
 Per the spec's own design note: "run a simple loop/thread on app startup
-that polls `email_outbox` for `pending` rows, attempts SMTP delivery, and
+that polls `email_outbox` for `pending` rows, attempts SMTP delivery and
 marks each `sent` or `failed`." Started once from `app.py` as a daemon
-thread -- it never blocks a request, and it never prevents the process
+thread -- it never blocks a request and it never prevents the process
 from exiting (`daemon=True`).
 
 Two separate ways this must never crash the app, both by design rather

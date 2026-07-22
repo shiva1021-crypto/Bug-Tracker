@@ -3,7 +3,7 @@
 A Jira-style bug tracking and agile project management tool: multi-tenant
 organizations, role-based permissions, issue hierarchy (Epic → Story/Task →
 Subtask), a Kanban board, sprint planning with burndown charts, custom
-fields, automation rules, configurable dashboards, and email notifications.
+fields, automation rules, configurable dashboards and email notifications.
 
 Built with Flask (Python) and MySQL, server-rendered with Jinja2 - no JS
 framework, no build step.
@@ -54,7 +54,7 @@ python -m scripts.create_db
 python -m scripts.create_tables
 
 # 6. (Optional) Seed realistic sample data - one organization with a login
-#    for every role, two projects, sprints, issues, comments, and more.
+#    for every role, two projects, sprints, issues, comments and more.
 #    See the printed output for the login emails/password.
 python -m scripts.seed_dummy_data
 ```
@@ -113,12 +113,12 @@ a visual design source - "a visual clone, not a reimagining"). That
 reference material lived in `project-spec/reference-ui/` during development
 and has since been removed now that its content is fully reflected in the
 real templates; each `STAGE-0N-REPORT.md` documents the specific places a
-page's real data model didn't support something the reference assumed, and
+page's real data model didn't support something the reference assumed and
 what was done instead.
 
 ## Error handling
 
-A generic `errors/404.html` covers missing/foreign resources, and
+A generic `errors/404.html` covers missing/foreign resources and
 `errors/400.html` covers a rejected CSRF token. If MySQL itself is
 unreachable (down, wrong credentials, schema not yet created), any request
 that touches the database renders `errors/database_error.html` instead of a

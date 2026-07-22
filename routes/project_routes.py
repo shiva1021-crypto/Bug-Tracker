@@ -1,8 +1,8 @@
-"""HTTP handlers for the projects list, project creation, and a placeholder
+"""HTTP handlers for the projects list, project creation and a placeholder
 project detail page.
 
 Every route is organization-scoped: the list only ever shows the caller's
-own organization's projects, and a project id belonging to another
+own organization's projects and a project id belonging to another
 organization behaves exactly like a nonexistent one -- redirected with a
 generic "not found," no information about other organizations leaks out.
 """

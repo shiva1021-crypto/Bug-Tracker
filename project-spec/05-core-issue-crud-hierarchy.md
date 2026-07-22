@@ -1,7 +1,7 @@
 # Stage 5 - Core Issue CRUD & Hierarchy
 
 ## Goal
-This is the heart of the app: creating, viewing, and editing issues, with a
+This is the heart of the app: creating, viewing and editing issues, with a
 Jira-style type hierarchy and screenshot attachments.
 
 ## Prerequisites
@@ -9,7 +9,7 @@ Stage 4 (projects with issue keys) must be complete.
 
 ## Features to build
 - Issue types: **Epic, Story, Task, Bug, Subtask**.
-- Hierarchy rule: an Epic can contain Stories and Tasks. A Story can contain Subtasks. Task and Bug are flat (no children allowed to be attached to them... except Bug/Task themselves can't be parents). Reject any parent/child combination that breaks this, and reject a parent pointing to itself or to one of its own descendants (a cycle).
+- Hierarchy rule: an Epic can contain Stories and Tasks. A Story can contain Subtasks. Task and Bug are flat (no children allowed to be attached to them... except Bug/Task themselves can't be parents). Reject any parent/child combination that breaks this and reject a parent pointing to itself or to one of its own descendants (a cycle).
 - Create issue: title, description, reproduction steps (optional, mainly for Bugs), category, priority, severity, project, issue type, optional parent, optional screenshot, labels, story points, due date.
 - View issue detail: all fields, plus reporter and (once Stage 6 exists) assignment info.
 - Edit issue: reporter, Admin, or Project Manager can edit; a Developer/Tester can only edit issues they reported.
@@ -18,7 +18,7 @@ Stage 4 (projects with issue keys) must be complete.
 
 ## Frontend - Design & Layout
 
-> **Clone these exactly from `reference-ui/`:** `templates/add_bug.html`, `templates/edit_bug.html`, `templates/bug_details.html`, `templates/macros.html` (issue-type icon SVGs), `templates/view_bugs.html`. Copy structure, classes, and wording as-is - adapt only route/variable names. `bug_details.html` and `view_bugs.html` are large files that later stages (6, 8, 9) will extend further - clone the whole file now even though some of its sections (comments, history, linking, custom fields, time tracking) won't be wired up until those later stages.
+> **Clone these exactly from `reference-ui/`:** `templates/add_bug.html`, `templates/edit_bug.html`, `templates/bug_details.html`, `templates/macros.html` (issue-type icon SVGs), `templates/view_bugs.html`. Copy structure, classes and wording as-is - adapt only route/variable names. `bug_details.html` and `view_bugs.html` are large files that later stages (6, 8, 9) will extend further - clone the whole file now even though some of its sections (comments, history, linking, custom fields, time tracking) won't be wired up until those later stages.
 
 **Add Issue page** (`/issues/add`):
 - Two-column form layout: main column has Title, Description, Reproduction Steps (large textareas); side column has Project, Issue Type (icon-labeled dropdown - each type gets a distinct small icon/color, e.g. Epic=purple, Story=green, Task=blue, Bug=red, Subtask=gray), Priority, Severity, Category, Parent (dropdown filtered to valid parent types only, loaded based on chosen project), Labels (comma input), Story Points (number), Due Date, Screenshot (file picker with a preview thumbnail after selection).
@@ -26,7 +26,7 @@ Stage 4 (projects with issue keys) must be complete.
 
 **Issue Detail page** (`/issues/<id>`):
 - Header: issue key + title, issue-type icon, priority/severity badges.
-- Left/main column: full description, reproduction steps, screenshot (if present), and (later stages add) comments/history/time-tracking here too.
+- Left/main column: full description, reproduction steps, screenshot (if present) and (later stages add) comments/history/time-tracking here too.
 - Right sidebar: metadata panel - Reporter, Category, Labels (as small pill tags), Story Points, Due Date, Parent issue link (if any), list of child issues (if any).
 - "Edit" button (visible only if the current user is allowed to edit this issue).
 

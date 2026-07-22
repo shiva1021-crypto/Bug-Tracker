@@ -3,7 +3,7 @@
 The link is stored once, A -> B with a type (per the spec: "derive the
 reverse label for display on B's page ... rather than storing two rows").
 Every read joins back through `bugs` on both sides so organization
-membership can be checked without a separate query, and so a link is
+membership can be checked without a separate query and so a link is
 never returned or removable via an issue id from a different
 organization.
 """

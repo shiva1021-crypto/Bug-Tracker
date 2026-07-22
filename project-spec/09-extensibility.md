@@ -2,7 +2,7 @@
 
 ## Goal
 Let each organization tailor the tool to its own needs without code
-changes: custom fields, automation rules, time tracking, and release
+changes: custom fields, automation rules, time tracking and release
 versions.
 
 ## Prerequisites
@@ -12,7 +12,7 @@ Stage 8 (agile planning) must be complete.
 **Custom Fields**
 - Admin/PM can define project-specific fields: Text, Number, Date, Dropdown, Checkbox.
 - Dropdown fields require at least 2 options. Fields can be marked required.
-- Fields appear dynamically on the Add/Edit Issue form based on the selected project (load via AJAX when the project changes), and their values display on the issue detail sidebar.
+- Fields appear dynamically on the Add/Edit Issue form based on the selected project (load via AJAX when the project changes) and their values display on the issue detail sidebar.
 - Deleting a field cascades to delete its stored values.
 
 **Automation Rules**
@@ -20,12 +20,12 @@ Stage 8 (agile planning) must be complete.
 - Triggers: `issue_created`, `status_changed`, `field_updated`.
 - Actions: `transition_status` (to a specific status), `assign_to` (specific user), `assign_to_role` (random user with a given role), `add_comment` (system comment, supports placeholders like `{issue_key}`).
 - Optional conditions to restrict when a rule fires (field/operator/value, e.g. only when new status = "Testing").
-- Rules can be scoped to one project or apply org-wide, and can be enabled/disabled without deleting them.
+- Rules can be scoped to one project or apply org-wide and can be enabled/disabled without deleting them.
 
 **Time Tracking**
 - Log work entries on an issue: hours spent + description, recorded with user and timestamp.
 - Track an original estimate and a remaining estimate per issue.
-- Show total time spent (sum of entries), estimate, and remaining on the issue detail sidebar.
+- Show total time spent (sum of entries), estimate and remaining on the issue detail sidebar.
 
 **Versions/Releases**
 - Admin/PM can create versions per project: name, optional release date, status (`unreleased`/`released`/`archived`).
@@ -34,10 +34,10 @@ Stage 8 (agile planning) must be complete.
 
 ## Frontend - Design & Layout
 
-> **Clone these exactly from `reference-ui/`:** `templates/project_custom_fields.html`, `templates/automation_rules.html`, `templates/versions.html`. For the custom fields and time-tracking sections of the issue detail sidebar, reference the corresponding markup already present in `reference-ui/templates/bug_details.html` (cloned whole in Stage 5). Copy structure, classes, and wording as-is - adapt only route/variable names.
+> **Clone these exactly from `reference-ui/`:** `templates/project_custom_fields.html`, `templates/automation_rules.html`, `templates/versions.html`. For the custom fields and time-tracking sections of the issue detail sidebar, reference the corresponding markup already present in `reference-ui/templates/bug_details.html` (cloned whole in Stage 5). Copy structure, classes and wording as-is - adapt only route/variable names.
 
 **Project → Fields page** (`/projects/<id>/fields`, Admin/PM only):
-- List of existing custom fields with type, required flag, and a delete button.
+- List of existing custom fields with type, required flag and a delete button.
 - "+ Add Field" form: Name, Type dropdown, conditionally-shown Options textarea (one per line) for Dropdown type, Required checkbox.
 
 **Automation page** (`/automation`):
@@ -46,13 +46,13 @@ Stage 8 (agile planning) must be complete.
 
 **Issue Detail page (extend further):**
 - Custom field values shown in the sidebar, grouped under a "Custom Fields" heading, using the same widget type they were defined with (text input display, dropdown as plain text, checkbox as ✓/✗).
-- "Time Tracking" panel: Estimate / Spent / Remaining stats row, a "Log Time" mini-form (hours + description), and a chronological list of past entries below it.
+- "Time Tracking" panel: Estimate / Spent / Remaining stats row, a "Log Time" mini-form (hours + description) and a chronological list of past entries below it.
 
 **Versions page** (`/versions`):
 - Table: Version name, release date, status badge, issue counts (open/resolved/total), Release/Archive action buttons.
 - "+ New Version" form: Name, optional Release Date.
 
-**Add/Edit Issue form (extend):** Fix Version dropdown, and custom fields rendered dynamically below the standard fields once a project is selected.
+**Add/Edit Issue form (extend):** Fix Version dropdown and custom fields rendered dynamically below the standard fields once a project is selected.
 
 ## Backend - Data Model & API
 
@@ -82,7 +82,7 @@ Stage 8 (agile planning) must be complete.
 | POST | `/versions/<id>/release` | Mark released |
 | POST | `/versions/<id>/archive` | Archive |
 
-**Automation engine design note:** implement as a single function, e.g. `execute_automation_rules(organization_id, project_id, trigger_event, context)`, called at the end of every route that creates/changes an issue. It should: fetch enabled rules matching the org/project/trigger, evaluate each rule's conditions against the context, and run matching actions in order. Keep this decoupled from the route logic so new triggers/actions can be added without touching every route.
+**Automation engine design note:** implement as a single function, e.g. `execute_automation_rules(organization_id, project_id, trigger_event, context)`, called at the end of every route that creates/changes an issue. It should: fetch enabled rules matching the org/project/trigger, evaluate each rule's conditions against the context and run matching actions in order. Keep this decoupled from the route logic so new triggers/actions can be added without touching every route.
 
 ## Definition of Done
 - [ ] Deleting a custom field definition removes its values from every issue that had one, without erroring.

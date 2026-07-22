@@ -8,7 +8,7 @@ Jira-style bug tracking and agile project management tool from scratch: Flask
 
 Hand these documents to a developer (or an AI coding assistant) **one stage at
 a time, in order**. Each document is self-contained: it lists what to build,
-how it should look, and how the backend/data should work, without assuming
+how it should look and how the backend/data should work, without assuming
 access to any other codebase. Do not skip ahead - later stages assume the
 data model and routes from earlier stages already exist.
 
@@ -30,7 +30,7 @@ data model and routes from earlier stages already exist.
 ## UI Reference (applied; source files removed)
 
 Every template in `templates/`, plus `static/style.css` and
-`static/script.js`, was hand-matched - structure, classes, and wording - to
+`static/script.js`, was hand-matched - structure, classes and wording - to
 a reference UI design (real templates/CSS/JS from another app, used purely
 as a visual design source, not reinvented or reinterpreted). That source
 material lived in `reference-ui/` in this folder during development and has
@@ -38,7 +38,7 @@ since been removed now that its content is fully reflected in the real
 app; the mapping table below is kept for reference on which page's design
 came from which stage. See each `STAGE-0N-REPORT.md` in the project root
 for the specific places a page's real data model didn't support something
-the reference design assumed, and what was done instead.
+the reference design assumed and what was done instead.
 
 | Stage | Reference templates cloned |
 |---|---|
@@ -61,6 +61,6 @@ back to this table.
 - **Backend:** Python 3.13+, Flask, MySQL 8+, `mysql-connector-python`, pooled connections.
 - **Frontend:** Server-rendered Jinja2 templates, one shared `style.css` and `script.js`, no JS framework. Chart.js (via CDN) for charts.
 - **Architecture layering:** `routes/` (HTTP handlers) → `repositories/` (SQL) → `services/` (business rules) → `utils/` (cross-cutting helpers). Keep this separation from Stage 1 onward.
-- **Multi-tenancy:** every table that stores tenant data carries `organization_id`, and every query filters by it. Never trust a client-supplied ID without checking it belongs to the current organization.
+- **Multi-tenancy:** every table that stores tenant data carries `organization_id` and every query filters by it. Never trust a client-supplied ID without checking it belongs to the current organization.
 - **Security baseline (apply from Stage 2 onward):** CSRF tokens on every POST form, hashed passwords, HttpOnly + SameSite session cookies, input validation server-side (never trust client-side validation alone).
 - **Visual style:** clean, Jira-inspired UI - light sidebar + header layout, card-based content areas, a defined color system for priority/status badges, dark mode support from Stage 1's base layout onward.

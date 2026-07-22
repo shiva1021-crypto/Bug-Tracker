@@ -2,7 +2,7 @@
  * Copied verbatim from project-spec/reference-ui/static/js/script.js, per the
  * project's UI Reference convention (00-README.md), with exactly one
  * adaptation: the drag-and-drop board update reads the page's hidden CSRF
- * field by name, and this app's field is named "csrf_token" (see
+ * field by name and this app's field is named "csrf_token" (see
  * utils/security.py::CSRF_FORM_FIELD), not "_csrf_token" as in the reference
  * app. That selector below is changed to match; nothing else is touched.
  */

@@ -33,7 +33,7 @@ Deliberately **not** built (belongs to a later stage, or has no caller yet):
 Stages 1–3 were left intact except for the one line Stage 4's own DoD
 requires: `auth_service.register()`'s new-organization path now also
 creates the default project (see §5.1 - this was flagged as an open item
-in `STAGE-03-REPORT.md` §8/§9, and is resolved here rather than deferred
+in `STAGE-03-REPORT.md` §8/§9 and is resolved here rather than deferred
 again).
 
 ---
@@ -44,7 +44,7 @@ again).
 
 | File | Layer | Purpose |
 |---|---|---|
-| `repositories/project_repository.py` | repositories | SQL for `projects`: list/get (org-scoped), key-exists check, create, and the concurrency-safe issue-number allocator (unused until Stage 5 - see §5.4). |
+| `repositories/project_repository.py` | repositories | SQL for `projects`: list/get (org-scoped), key-exists check, create and the concurrency-safe issue-number allocator (unused until Stage 5 - see §5.4). |
 | `services/project_service.py` | services | Fresh Admin/PM verification, validation (name, key format, per-org key uniqueness), project creation, default-project creation. |
 | `routes/project_routes.py` | routes | `GET /projects`, `POST /projects/create`, `GET /projects/<id>` (placeholder detail). |
 | `templates/projects/list.html` | frontend | Project card grid + inline "+ New Project" form (Admin/PM only). |
@@ -80,7 +80,7 @@ re-reads the role from the database on every request, exactly like
 `admin_service.verify_admin()` - the session's cached role only decides
 whether to show the "+ New Project" button, never whether the POST is
 allowed. This was verified directly (see checks #20–22 in §7): a Developer
-gets no button, and a direct POST to `/projects/create` is still rejected
+gets no button and a direct POST to `/projects/create` is still rejected
 server-side.
 
 ---
@@ -114,7 +114,7 @@ can't share a key; two different orgs can each have their own `WEB`. Same
 | GET | `/projects/<id>` | required | Placeholder detail page. An id belonging to another organization (or that doesn't exist) redirects to `/projects` with a "Project not found" flash - behaves identically to a nonexistent id, so no cross-org information leaks through numeric guessing. |
 
 No new session fields - this stage reads `organization_id`/`role` from the
-session established in Stage 3, and re-verifies role via the database for
+session established in Stage 3 and re-verifies role via the database for
 the one action that needs it (creating a project).
 
 ---
@@ -170,7 +170,7 @@ explaining it takes the caller's existing connection (so it can share a
 transaction with an issue insert) rather than opening its own the way
 every other function in this module does. It is intentionally unused -
 there is nothing yet to call it - and is flagged here rather than wired to
-a route so Stage 5 can call it, decide how to use its return value, and
+a route so Stage 5 can call it, decide how to use its return value and
 own the transaction boundary around the issue insert itself.
 
 ### 5.5 The "Projects" sidebar link is visible to everyone; "Users" stays Admin-only
@@ -191,14 +191,14 @@ Verified directly (check #19): Beta Inc's admin, given Acme Corp's real
 numeric project id, gets the same not-found flash a made-up id would
 produce, not Acme's project.
 
-### 5.7 No project editing/deletion, and no modal
+### 5.7 No project editing/deletion and no modal
 
 The spec's feature list only asks for creating and listing projects, so
 neither an edit form nor a delete action was built. The "+ New Project"
 control is a simple inline `<details>`-style toggle (show/hide via
 `static/script.js`, no new framework) rather than a modal dialog - the
 spec explicitly offered "a small modal or inline form" as equivalent
-options, and an inline form keeps the same plain-HTML-forms pattern every
+options and an inline form keeps the same plain-HTML-forms pattern every
 other page in this codebase already uses, with no new UI machinery (focus
 trapping, backdrop, escape-to-close) that a modal would need.
 
@@ -220,21 +220,21 @@ python run.py                       # → http://127.0.0.1:5000
 As in Stages 2–3, the sandbox used for development has no MySQL server, so
 the full request flow was exercised against in-memory stand-ins for
 `repositories.organization_repository`, `repositories.user_repository`,
-`repositories.registration_request_repository`, and (new this stage)
+`repositories.registration_request_repository` and (new this stage)
 `repositories.project_repository`. This covers routes, services, role
-gating, org isolation, and template rendering; it does not touch the DDL
+gating, org isolation and template rendering; it does not touch the DDL
 itself (see the open item in §8).
 
 **22 new checks for this stage, all passing.** The full Stage 3 suite (37
 checks) was also re-run against the updated codebase to confirm nothing
 regressed - **all 37 still pass**, including registration, login, the
-admin panel, and the fresh-role-check behavior.
+admin panel and the fresh-role-check behavior.
 
 | # | Check | Result |
 |---|---|---|
 | 1 | New-org registration still redirects to `/profile` (unchanged from Stage 3) | Pass |
 | 2–5 | A brand-new organization has exactly one project, named `General`, keyed `GEN`, with `next_issue_number = 1`, immediately after registration | Pass |
-| 6–8 | `GET /projects` is 200 for a logged-in user, lists `General`/`GEN`, and an Admin sees the "+ New Project" button | Pass |
+| 6–8 | `GET /projects` is 200 for a logged-in user, lists `General`/`GEN` and an Admin sees the "+ New Project" button | Pass |
 | 9–10 | Creating a project with a lowercase key (`web`) succeeds and is stored as uppercase `WEB` | Pass |
 | 11–12 | A duplicate key in the same organization is rejected with a clear error; no second row is created | Pass |
 | 13 | A malformed key (wrong length / non-letters) is rejected before touching the database | Pass |
@@ -243,7 +243,7 @@ admin panel, and the fresh-role-check behavior.
 | 17–18 | Beta Inc's `/projects` shows only its own projects, not Acme's | Pass |
 | 19 | Beta's admin, given Acme's real project id, gets "Project not found" - not Acme's project | Pass |
 | 20 | A Developer sees no "+ New Project" button | Pass |
-| 21–22 | A Developer's direct POST to `/projects/create` is rejected server-side (fresh role check), and creates nothing | Pass |
+| 21–22 | A Developer's direct POST to `/projects/create` is rejected server-side (fresh role check) and creates nothing | Pass |
 
 All Python modules compile cleanly (`py_compile`, exit 0) and all 10
 templates (2 new this stage) parse under Jinja with no syntax errors.

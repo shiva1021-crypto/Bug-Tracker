@@ -18,14 +18,14 @@ Stage 1 (running app + DB connection) must be complete.
 
 ## Frontend - Design & Layout
 
-> **Clone these exactly from `reference-ui/`:** `templates/base.html`, `templates/index.html`, `templates/login.html`, `templates/register.html`, `templates/profile.html`, plus the full `static/css/style.css` and `static/js/script.js`. Copy structure, classes, and wording as-is - adapt only route/variable names.
+> **Clone these exactly from `reference-ui/`:** `templates/base.html`, `templates/index.html`, `templates/login.html`, `templates/register.html`, `templates/profile.html`, plus the full `static/css/style.css` and `static/js/script.js`. Copy structure, classes and wording as-is - adapt only route/variable names.
 
 **Landing page** (`/`, public, no login required):
 - This is the first thing anyone sees - a simple hero/marketing page, not a redirect straight to login.
-- Content: app name/logo, a one-line value proposition (e.g. "Track bugs and manage agile projects, all in one place"), and two clear buttons: **Log In** and **Register**.
+- Content: app name/logo, a one-line value proposition (e.g. "Track bugs and manage agile projects, all in one place") and two clear buttons: **Log In** and **Register**.
 - If the visitor is already logged in, `/` should instead redirect them straight to their dashboard (built in Stage 10) - don't show the marketing page to an already-authenticated user.
 - Uses the same header/base layout as the rest of the app so it doesn't feel like a separate site, but without the sidebar (no sidebar until logged in).
-- The header/base layout's logo and app name should link back to `/` when logged out, and to the dashboard when logged in.
+- The header/base layout's logo and app name should link back to `/` when logged out and to the dashboard when logged in.
 
 **Login page** (`/login`):
 - Centered card on a plain background, app logo/name above it.
@@ -40,9 +40,9 @@ Stage 1 (running app + DB connection) must be complete.
 - Link below the form: "Already have an account? Log in."
 
 **Base layout** (used by every page from here on):
-- Top header bar: app name/logo on the left, and on the right - when logged in - the user's name/avatar with a dropdown containing "Profile" and "Log Out".
+- Top header bar: app name/logo on the left and on the right - when logged in - the user's name/avatar with a dropdown containing "Profile" and "Log Out".
 - When logged out, the header just shows Login/Register links.
-- Establish the shared color palette and typography now (this becomes the visual foundation for every later stage): pick a primary accent color, neutral grays for backgrounds/borders, and a monospace or clean sans-serif for the UI font.
+- Establish the shared color palette and typography now (this becomes the visual foundation for every later stage): pick a primary accent color, neutral grays for backgrounds/borders and a monospace or clean sans-serif for the UI font.
 
 ## Backend - Data Model & API
 

@@ -112,9 +112,9 @@ def archive_version(version_id):
 def api_versions():
     """JSON selectable-version list for the Add/Edit Issue form's Fix
     Version dropdown, loaded via AJAX on project change -- the same
-    pattern the spec asks for with custom fields, and necessary for the
+    pattern the spec asks for with custom fields and necessary for the
     same reason: which versions are valid depends on which project is
-    selected, and that can change after the page has already loaded.
+    selected and that can change after the page has already loaded.
     """
     user = current_user()
     project_id = request.args.get("project_id", type=int)

@@ -13,7 +13,7 @@
 
 Scrum-style planning on top of the workflow Stage 6 built and the board
 Stage 7 built: a backlog and sprints (with a real burndown chart), typed
-directional links between issues, and saved filter shortcuts on a new
+directional links between issues and saved filter shortcuts on a new
 issue search page.
 
 Deliberately **not** built (belongs to a later stage or out of scope):
@@ -39,7 +39,7 @@ Stages 1-7 were left intact. The only pre-existing files touched are
 (two new sidebar links), `repositories/issue_repository.py` (new query
 functions only - nothing existing changed except `_COLUMNS` gaining
 `sprint_id`), `services/issue_service.py` (one new read-only helper,
-`list_org_users`), and `templates/issues/detail.html` (a new sidebar
+`list_org_users`) and `templates/issues/detail.html` (a new sidebar
 panel, inserted without touching the existing markup around it).
 
 ---
@@ -53,10 +53,10 @@ panel, inserted without touching the existing markup around it).
 | `repositories/sprint_repository.py` | repositories | SQL for `sprints`: create, org-scoped get/list, `get_active_for_project` (the single-active-sprint check's data source), `set_status`. |
 | `repositories/issue_link_repository.py` | repositories | SQL for `issue_links`: create, `exists` (dedup check), org-scoped get/list (joined with both issues' key/title), delete. |
 | `repositories/saved_filter_repository.py` | repositories | SQL for `saved_filters`; the only place `filter_data`'s JSON (de)serialization happens. |
-| `services/sprint_service.py` | services | Validation, the Admin/PM `verify_sprint_manager` gate, the future→active→closed lifecycle (including the single-active-per-project rule), and backlog↔sprint issue assignment. |
+| `services/sprint_service.py` | services | Validation, the Admin/PM `verify_sprint_manager` gate, the future→active→closed lifecycle (including the single-active-per-project rule) and backlog↔sprint issue assignment. |
 | `services/burndown_service.py` | services | Reconstructs each sprint day's real remaining work from Stage 6's `bug_history` audit trail. |
-| `services/link_service.py` | services | The 7-option directional link form, duplicate/self-link rejection, and per-side label derivation. |
-| `services/filter_service.py` | services | Query-param parsing, the search itself, and saved-filter persistence/listing. |
+| `services/link_service.py` | services | The 7-option directional link form, duplicate/self-link rejection and per-side label derivation. |
+| `services/filter_service.py` | services | Query-param parsing, the search itself and saved-filter persistence/listing. |
 | `routes/backlog_routes.py` | routes | `GET /backlog`, `POST /sprints/create`, `POST /sprints/<id>/start`, `POST /sprints/<id>/close`, `POST /issues/<id>/sprint`. |
 | `routes/filter_routes.py` | routes | `POST /filters/save`, `GET /filters`. |
 | `templates/backlog.html` | frontend | Project selector, new-sprint form, backlog list, one collapsible section per open sprint, inline Chart.js burndown for the active sprint. |
@@ -73,7 +73,7 @@ panel, inserted without touching the existing markup around it).
 | `app.py` | Registers `backlog_bp` and `filter_bp`; adds a `{% block scripts %}` hook to the base layout (see §5.6) and no other logic. |
 | `templates/base.html` | Adds "Backlog" and "Issues" sidebar links; adds the `scripts` block before `</body>`. |
 | `templates/issues/detail.html` | Adds the "Linked Issues" sidebar panel (list + add-link form) between the metadata card and the Child Issues card. |
-| `static/style.css` | New "backlog", "issue list", and "linked issues" sections. |
+| `static/style.css` | New "backlog", "issue list" and "linked issues" sections. |
 | `static/script.js` | Adds `initNewSprintToggle()`, `initBacklogSprintSelects()` (the "+ New Sprint" dropdown-option interception), `initSaveFilterForm()` (the name-prompt flow). |
 
 ### 2.3 Layering
@@ -150,7 +150,7 @@ sides to establish organization membership, the same pattern
 The spec's frontend section says "Issue List page (extend)," but no such
 page exists: Stage 5 deliberately kept the project detail page's issue
 table minimal and explicitly did *not* build a real list/search page
-(STAGE-05-REPORT.md §5.7), and no stage since has added one. Saved
+(STAGE-05-REPORT.md §5.7) and no stage since has added one. Saved
 filters are meaningless without somewhere to apply status/priority/
 project/assignee filters and see results, so `GET /issues` was added as
 the minimal necessary infrastructure - the same reasoning already used
@@ -202,7 +202,7 @@ known timestamp, confirming the line actually drops on the right day
 rather than being flat. Two simplifications were made deliberately: (1)
 the chart uses whichever issues are *currently* in the sprint, so an
 issue added or removed from the sprint mid-sprint is treated as if it had
-always been there (or never was), and (2) the same is true for point
+always been there (or never was) and (2) the same is true for point
 values - a story-point re-estimate changes the whole chart's shape
 retroactively rather than only affecting days after the re-estimate.
 Both are standard simplifications for a burndown built without a
@@ -215,7 +215,7 @@ gets a meaningful chart instead of an all-zero one.
 
 The spec says "pick link type + target issue by key/search." A true
 type-ahead search would need a new AJAX endpoint the spec's route table
-doesn't list, and "search" without further detail is read here as the
+doesn't list and "search" without further detail is read here as the
 looser of the two options already named ("by key") rather than a reason
 to add API surface the spec never asked for. `link_service.create_link()`
 looks the typed key up with an exact, case-insensitive (via upper-casing
@@ -243,7 +243,7 @@ loading on every page in the app.
 sprints (`OPEN_STATUSES`); a closed sprint's section simply stops
 rendering on `/backlog`. The spec's own frontend description only calls
 for "one collapsible section per sprint (future/active)" - closed
-sprints were never asked to appear there, and there is no other page yet
+sprints were never asked to appear there and there is no other page yet
 for browsing sprint history. This is a real, flagged gap (once a sprint
 closes, there is currently no UI to see it again at all, though its data
 and its issues' history remain intact), acceptable because reporting
@@ -269,7 +269,7 @@ backlog page, exactly as `00-README.md`'s global convention specifies
 As in every prior stage, the sandbox has no MySQL server, so the full
 request flow was exercised against in-memory stand-ins for every
 repository touched this stage (`sprint_repository`, `issue_link_repository`,
-`saved_filter_repository`, and the new `issue_repository` functions),
+`saved_filter_repository` and the new `issue_repository` functions),
 matching each real function's exact signature, driven both directly
 (service-level, for precise assertions on burndown math and link
 labeling) and through the real Flask app (`app.test_client()`) end-to-end
@@ -280,9 +280,9 @@ for the permission-gated routes.
 | # | Check | Result |
 |---|---|---|
 | 1-4 | `verify_sprint_manager` allows Admin/PM and rejects Developer/Tester | Pass |
-| 5-11 | A sprint is created, started (future→active), a second sprint's start is rejected while one is active (and it stays `future`, with a real error message), the active sprint closes, and only then can the second one start | Pass |
+| 5-11 | A sprint is created, started (future→active), a second sprint's start is rejected while one is active (and it stays `future`, with a real error message), the active sprint closes and only then can the second one start | Pass |
 | 12-18 | A new issue starts in the backlog; assigning it into a sprint removes it from the backlog and adds it to the sprint's list; moving it back to the backlog reverses both; assigning into a **closed** sprint is rejected | Pass |
-| 19-24 | A 5-day sprint's burndown has 5 data points, correct total scope (3+2=5 points), an ideal line from 5 to 0, and an actual line that stays at 5 for two days then drops to 2 on and after the exact timestamp an issue's real history shows it reaching "Done" -- confirmed non-flat | Pass |
+| 19-24 | A 5-day sprint's burndown has 5 data points, correct total scope (3+2=5 points), an ideal line from 5 to 0 and an actual line that stays at 5 for two days then drops to 2 on and after the exact timestamp an issue's real history shows it reaching "Done" -- confirmed non-flat | Pass |
 | 25 | A sprint with no start/end date returns `None` from the burndown computation rather than fabricated data | Pass |
 | 26-27 | A link creates exactly one stored row | Pass |
 | 28-29 | The source issue shows "Blocks", the target issue shows "Blocked by" toward the source -- derived from that one row | Pass |
@@ -290,7 +290,7 @@ for the permission-gated routes.
 | 31 | Creating the identical link twice is rejected | Pass |
 | 32-33 | A symmetric "relates to" link's *reverse* pairing is recognized and rejected as the same relationship | Pass |
 | 34-36 | A link is removed successfully from the non-owning side and is gone from both issues' link lists afterward | Pass |
-| 37-40 | A saved filter's `filter_data` round-trips correctly, and re-running it after a new matching issue is created includes that issue | Pass |
+| 37-40 | A saved filter's `filter_data` round-trips correctly and re-running it after a new matching issue is created includes that issue | Pass |
 | 41-46 | Route-level: `/backlog` renders for an Admin; a Developer's `POST /sprints/create` and `POST /sprints/<id>/start` are both rejected; `/issues` renders with real filtered results; `POST /filters/save` and `POST /issues/<id>/link` (+ its `/remove`) all work end-to-end through the real routes | Pass |
 | 47-48 | The issue detail page renders its new "Linked Issues" panel; the backlog page still renders cleanly after all the state changes above | Pass |
 
@@ -344,10 +344,10 @@ was syntax-checked (`py_compile`) and reasoned through, but as in every
 prior stage, the sandbox has no MySQL server to execute it against - in
 particular, the `sprints`→`bugs` foreign key ordering (sprints must be
 created before bugs on a fresh database), the `issue_links` table's two
-FKs to `bugs`, and the `saved_filters.filter_data` JSON column have not
+FKs to `bugs` and the `saved_filters.filter_data` JSON column have not
 been confirmed against a real server. Please run
 `python -m scripts.create_tables` and check its output - it should print
-a line for `sprints`, `issue_links`, and `saved_filters`, plus a line
+a line for `sprints`, `issue_links` and `saved_filters`, plus a line
 confirming `bugs.sprint_id` was added (only relevant if your database
 predates this stage).
 

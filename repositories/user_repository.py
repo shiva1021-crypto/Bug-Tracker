@@ -5,7 +5,7 @@ functions; routes never do.
 
 `email` stays a global lookup (not organization-scoped): a user does not
 know their organization until after they are found by email and
-authenticated, and `users.email` is globally UNIQUE by design (one email,
+authenticated and `users.email` is globally UNIQUE by design (one email,
 one account, one organization). Every query that reads or writes org-scoped
 *data* -- the member list, role changes -- filters by organization_id;
 that is the tenant isolation boundary introduced in this stage.
@@ -120,7 +120,7 @@ def create(
     """Insert a new user and return its id.
 
     Only ever receives an already-hashed password -- hashing is the service
-    layer's job, and a plaintext password must never reach this module.
+    layer's job and a plaintext password must never reach this module.
     """
     with get_connection() as conn:
         cursor = conn.cursor()

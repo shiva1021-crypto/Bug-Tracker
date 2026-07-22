@@ -6,7 +6,7 @@ linked `STAGE-0N-REPORT.md`. For setup/run instructions, see `README.md`.
 
 | # | Stage | Goal | Key Features | Main Pages | Status | Full Report |
 |---|---|---|---|---|---|---|
-| 1 | Foundation & Setup | Runnable skeleton: Flask app + pooled MySQL connection + health checks | App boot, DB connection pool, dev/prod env config, secret-key policy | — (JSON health endpoints only) | ✅ Complete | [STAGE-01-REPORT.md](STAGE-01-REPORT.md) |
+| 1 | Foundation & Setup | Runnable skeleton: Flask app + pooled MySQL connection + health checks | App boot, DB connection pool, dev/prod env config, secret-key policy | - (JSON health endpoints only) | ✅ Complete | [STAGE-01-REPORT.md](STAGE-01-REPORT.md) |
 | 2 | Authentication | Secure account creation, login/logout, and session handling | Registration, hashed passwords, generic login errors, POST-only logout, `login_required`, profile page | Landing, Login, Register, Profile | ✅ Complete | [STAGE-02-REPORT.md](STAGE-02-REPORT.md) |
 | 3 | Multi-Tenancy & Roles | Turn single-user login into a multi-organization system with roles | Org-scoped data on every query, new-org vs join-existing-org registration, admin approval queue, Admin/PM/Developer/Tester role matrix | Admin › Users | ✅ Complete | [STAGE-03-REPORT.md](STAGE-03-REPORT.md) |
 | 4 | Projects & Issue Keys | Let an org split work into projects with short issue-key codes | Project CRUD (2-6 letter key), auto-incrementing per-project issue counter, default "General" project on org creation | Projects | ✅ Complete | [STAGE-04-REPORT.md](STAGE-04-REPORT.md) |
@@ -18,7 +18,7 @@ linked `STAGE-0N-REPORT.md`. For setup/run instructions, see `README.md`.
 | 10 | Reporting, Dashboards & Ops | Surface insight and make the app production-ready | Filterable reports with charts + CSV export + print view, configurable dashboard widgets, email outbox worker, login rate limiting, production WSGI entry point, friendly DB-outage page | Dashboard, Reports | ✅ Complete | [STAGE-10-REPORT.md](STAGE-10-REPORT.md) |
 
 All 10 stages are built and their pages have additionally been hand-matched
-to the original reference UI design (structure, classes, and wording) —
+to the original reference UI design (structure, classes, and wording) -
 see `README.md`'s "Project structure" section for what changed there and
 each `STAGE-0N-REPORT.md` for where the real data model didn't support
 something the reference design assumed.

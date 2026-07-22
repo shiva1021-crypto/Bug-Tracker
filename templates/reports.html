@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros.html" import render_priority_icon %}
 
-{% block title %}Reports — BugTracker{% endblock %}
+{% block title %}Reports - BugTracker{% endblock %}
 
 {% block content %}
 <div class="page-heading no-print">
@@ -158,7 +158,7 @@
                                 <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
                             {% endif %}
                         </td>
-                        <td>{{ row.created_at.strftime('%d %b %Y') if row.created_at else "—" }}</td>
+                        <td>{{ row.created_at.strftime('%d %b %Y') if row.created_at else "-" }}</td>
                     </tr>
                 {% else %}
                     <tr><td colspan="9" class="empty">No report rows match the selected filters.</td></tr>

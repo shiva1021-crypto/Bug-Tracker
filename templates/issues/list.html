@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros.html" import render_type_icon, render_priority_icon %}
 
-{% block title %}Issues — BugTracker{% endblock %}
+{% block title %}Issues - BugTracker{% endblock %}
 
 {% block content %}
 <div class="page-heading">
@@ -130,7 +130,7 @@
                                 <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
                             {% endif %}
                         </td>
-                        <td>{{ row.story_points if row.story_points is not none else '—' }}</td>
+                        <td>{{ row.story_points if row.story_points is not none else '-' }}</td>
                         <td>
                             <a href="{{ url_for('issues.issue_detail', issue_id=row.id) }}" class="button button-secondary" style="min-height: 26px; padding: 2px 8px; font-size: 11px;">View</a>
                         </td>

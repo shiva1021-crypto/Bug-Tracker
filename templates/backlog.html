@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros.html" import render_type_icon, render_priority_icon %}
 
-{% block title %}Backlog — BugTracker{% endblock %}
+{% block title %}Backlog - BugTracker{% endblock %}
 
 {% block content %}
 <style>
@@ -387,7 +387,7 @@
             <form method="POST" action="{{ url_for('backlog.assign_sprint', issue_id=issue.id) }}" class="assign-sprint-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <select name="sprint_id">
-                    <option value="">— No sprint —</option>
+                    <option value="">- No sprint -</option>
                     {% for section in sprint_sections %}
                         <option value="{{ section.sprint.id }}">{{ section.sprint.name }}</option>
                     {% endfor %}

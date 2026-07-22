@@ -1,4 +1,4 @@
-# Stage 10 — Reporting, Dashboards & Ops
+# Stage 10 - Reporting, Dashboards & Ops
 
 ## Goal
 Surface insight (reports, dashboards) and make the app safe and ready to
@@ -12,7 +12,7 @@ Stage 9 (extensibility) must be complete. This is the final stage.
 **Reports**
 - Filterable by date range, status, priority, and project (Admin/PM only).
 - Charts: status breakdown, priority distribution, issues-by-category.
-- CSV export of the filtered issue list — must be safe against CSV formula injection (neutralize values starting with `=`, `+`, `-`, `@`, or a tab character by prefixing them, e.g. with a leading apostrophe, before writing the export).
+- CSV export of the filtered issue list - must be safe against CSV formula injection (neutralize values starting with `=`, `+`, `-`, `@`, or a tab character by prefixing them, e.g. with a leading apostrophe, before writing the export).
 - Printer-friendly view.
 
 **Configurable Dashboard**
@@ -22,24 +22,24 @@ Stage 9 (extensibility) must be complete. This is the final stage.
 
 **Email Notifications**
 - Sent for: issue assignment, status changes (to reporter + watchers), registration approval/rejection.
-- Do not send emails synchronously inside the request/response cycle — write to an outbox table and process it with a background worker/thread so a slow SMTP server never blocks a user's page load.
+- Do not send emails synchronously inside the request/response cycle - write to an outbox table and process it with a background worker/thread so a slow SMTP server never blocks a user's page load.
 
 **Rate Limiting**
 - Limit login and registration attempts per IP/account to slow down brute-force attempts.
-- Support both an in-memory backend (simplest, single-process) and a database-backed backend (works across multiple app instances) — configurable.
+- Support both an in-memory backend (simplest, single-process) and a database-backed backend (works across multiple app instances) - configurable.
 
 **Deployment**
 - A production WSGI entry point (e.g. Waitress or Gunicorn) separate from the Flask dev server.
 - Config split cleanly between development and production (see Stage 1's `APP_ENV` handling).
 - A `Procfile` or equivalent for whichever hosting platform is being used.
 
-## Frontend — Design & Layout
+## Frontend - Design & Layout
 
-> **Clone these exactly from `reference-ui/`:** `templates/dashboard.html`, `templates/reports.html`, `templates/database_error.html`. Copy structure, classes, and wording as-is — adapt only route/variable names. Chart.js usage (doughnut/bar charts) is already set up the same way across these files — follow the existing pattern rather than introducing a different charting approach.
+> **Clone these exactly from `reference-ui/`:** `templates/dashboard.html`, `templates/reports.html`, `templates/database_error.html`. Copy structure, classes, and wording as-is - adapt only route/variable names. Chart.js usage (doughnut/bar charts) is already set up the same way across these files - follow the existing pattern rather than introducing a different charting approach.
 
 **Dashboard page** (`/dashboard`, the default landing page after login):
 - CSS grid layout; each widget is a card with a header (title + a remove "×" button) and its content area.
-- "+ Add Widget" button opens a modal: pick widget type, title, width — added widget appears immediately.
+- "+ Add Widget" button opens a modal: pick widget type, title, width - added widget appears immediately.
 - Chart widgets render with Chart.js (loaded via CDN), doughnut style for the by-status/priority/severity/type breakdowns.
 
 **Reports page** (`/reports`, Admin/PM only):
@@ -48,13 +48,13 @@ Stage 9 (extensibility) must be complete. This is the final stage.
 - "Export CSV" and "Print" buttons near the filter bar.
 - A print-specific stylesheet rule (`@media print`) that hides the sidebar/header and filter controls, showing just the charts/data cleanly.
 
-## Backend — Data Model & API
+## Backend - Data Model & API
 
-**Table: `dashboard_widgets`** — id, organization_id, user_id (nullable = org default), widget_type, title, config (JSON), position, width (enum: full/half/third).
+**Table: `dashboard_widgets`** - id, organization_id, user_id (nullable = org default), widget_type, title, config (JSON), position, width (enum: full/half/third).
 
-**Table: `email_outbox`** — id, to_email, subject, body, status (enum: pending/sent/failed), created_at, sent_at.
+**Table: `email_outbox`** - id, to_email, subject, body, status (enum: pending/sent/failed), created_at, sent_at.
 
-**Table: `auth_rate_limits`** — id, identifier (IP or email), attempt_count, window_started_at (used only if `RATELIMIT_STORAGE=database`).
+**Table: `auth_rate_limits`** - id, identifier (IP or email), attempt_count, window_started_at (used only if `RATELIMIT_STORAGE=database`).
 
 **Routes:**
 | Method | Path | Purpose |
@@ -73,4 +73,4 @@ Stage 9 (extensibility) must be complete. This is the final stage.
 - [ ] Removing and re-adding a widget preserves the rest of the layout.
 - [ ] Repeated failed logins from the same IP eventually get blocked/delayed, and this resets after the configured window.
 - [ ] The app starts and serves traffic via the production WSGI entry point, not just the dev server.
-- [ ] Disabling the notification worker via config does not break issue creation/assignment/status changes — email just doesn't get sent.
+- [ ] Disabling the notification worker via config does not break issue creation/assignment/status changes - email just doesn't get sent.

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros.html" import render_type_icon, render_priority_icon %}
 
-{% block title %}{{ issue.issue_key }} — {{ issue.title }}{% endblock %}
+{% block title %}{{ issue.issue_key }} - {{ issue.title }}{% endblock %}
 
 {% block content %}
 <!-- Jira breadcrumbs -->
@@ -296,7 +296,7 @@
                         {% if issue.story_points %}
                             <span class="story-points-badge" style="width: 24px; height: 24px; font-size: 12px;">{{ issue.story_points }}</span>
                         {% else %}
-                            <span style="color: var(--text-muted);">—</span>
+                            <span style="color: var(--text-muted);">-</span>
                         {% endif %}
                     </span>
                 </div>
@@ -320,7 +320,7 @@
                         {% if issue.time_estimate %}
                             {{ issue.time_estimate }}h
                         {% else %}
-                            <span style="color: var(--text-muted);">—</span>
+                            <span style="color: var(--text-muted);">-</span>
                         {% endif %}
                     </span>
                 </div>
@@ -344,7 +344,7 @@
                         {% if issue.time_remaining %}
                             {{ issue.time_remaining }}h
                         {% else %}
-                            <span style="color: var(--text-muted);">—</span>
+                            <span style="color: var(--text-muted);">-</span>
                         {% endif %}
                     </span>
                 </div>
@@ -410,7 +410,7 @@
                             {% elif field.value is not none %}
                                 {{ field.value }}
                             {% else %}
-                                <span style="color: var(--text-muted);">—</span>
+                                <span style="color: var(--text-muted);">-</span>
                             {% endif %}
                         </span>
                     </div>

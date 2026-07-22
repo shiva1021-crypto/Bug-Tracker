@@ -1,29 +1,29 @@
-# Stage 2 — Authentication
+# Stage 2 - Authentication
 
 ## Goal
 Let a person create an account and log in/out securely. No roles or
-organizations yet — just "does this login work and is the session safe."
+organizations yet - just "does this login work and is the session safe."
 
 ## Prerequisites
 Stage 1 (running app + DB connection) must be complete.
 
 ## Features to build
 - Registration form: full name, email, password (+ confirm password).
-- Passwords are hashed before storage — never stored in plain text.
-- Login form: email + password, with a generic error message on failure (never reveal whether the email exists or the password was wrong — say "Invalid email or password" either way).
+- Passwords are hashed before storage - never stored in plain text.
+- Login form: email + password, with a generic error message on failure (never reveal whether the email exists or the password was wrong - say "Invalid email or password" either way).
 - Logout (must be a POST request, not a plain link, to avoid CSRF logout tricks).
 - Session-based auth: once logged in, the user stays logged in across pages until logout or session expiry.
 - Basic profile page showing the logged-in user's name and email.
 - A `login_required` mechanism: any page that needs a logged-in user redirects to the login page if there isn't one.
 
-## Frontend — Design & Layout
+## Frontend - Design & Layout
 
-> **Clone these exactly from `reference-ui/`:** `templates/base.html`, `templates/index.html`, `templates/login.html`, `templates/register.html`, `templates/profile.html`, plus the full `static/css/style.css` and `static/js/script.js`. Copy structure, classes, and wording as-is — adapt only route/variable names.
+> **Clone these exactly from `reference-ui/`:** `templates/base.html`, `templates/index.html`, `templates/login.html`, `templates/register.html`, `templates/profile.html`, plus the full `static/css/style.css` and `static/js/script.js`. Copy structure, classes, and wording as-is - adapt only route/variable names.
 
 **Landing page** (`/`, public, no login required):
-- This is the first thing anyone sees — a simple hero/marketing page, not a redirect straight to login.
+- This is the first thing anyone sees - a simple hero/marketing page, not a redirect straight to login.
 - Content: app name/logo, a one-line value proposition (e.g. "Track bugs and manage agile projects, all in one place"), and two clear buttons: **Log In** and **Register**.
-- If the visitor is already logged in, `/` should instead redirect them straight to their dashboard (built in Stage 10) — don't show the marketing page to an already-authenticated user.
+- If the visitor is already logged in, `/` should instead redirect them straight to their dashboard (built in Stage 10) - don't show the marketing page to an already-authenticated user.
 - Uses the same header/base layout as the rest of the app so it doesn't feel like a separate site, but without the sidebar (no sidebar until logged in).
 - The header/base layout's logo and app name should link back to `/` when logged out, and to the dashboard when logged in.
 
@@ -40,11 +40,11 @@ Stage 1 (running app + DB connection) must be complete.
 - Link below the form: "Already have an account? Log in."
 
 **Base layout** (used by every page from here on):
-- Top header bar: app name/logo on the left, and on the right — when logged in — the user's name/avatar with a dropdown containing "Profile" and "Log Out".
+- Top header bar: app name/logo on the left, and on the right - when logged in - the user's name/avatar with a dropdown containing "Profile" and "Log Out".
 - When logged out, the header just shows Login/Register links.
 - Establish the shared color palette and typography now (this becomes the visual foundation for every later stage): pick a primary accent color, neutral grays for backgrounds/borders, and a monospace or clean sans-serif for the UI font.
 
-## Backend — Data Model & API
+## Backend - Data Model & API
 
 **Table: `users`**
 | Column | Type | Notes |
@@ -64,10 +64,10 @@ Stage 1 (running app + DB connection) must be complete.
 | POST | `/logout` | Clear session |
 | GET | `/profile` | Show logged-in user's info (requires login) |
 
-**Session data to store on login:** `user_id`, `full_name` (at minimum — `organization_id` and `role` get added in Stage 3).
+**Session data to store on login:** `user_id`, `full_name` (at minimum - `organization_id` and `role` get added in Stage 3).
 
 ## Definition of Done
-- [ ] Visiting `/` while logged out shows the landing page with working Log In / Register buttons — not a blank page, a 404, or an auto-redirect to `/login`.
+- [ ] Visiting `/` while logged out shows the landing page with working Log In / Register buttons - not a blank page, a 404, or an auto-redirect to `/login`.
 - [ ] Visiting `/` while already logged in redirects straight to the dashboard, not the marketing page.
 - [ ] The header logo/app name links to the correct place depending on login state.
 - [ ] Can register a new account and immediately see it hashed (not plaintext) in the `users` table.

@@ -1,121 +1,193 @@
 {% extends "base.html" %}
-{% block title %}Issues · Bug Tracker{% endblock %}
+{% from "macros.html" import render_type_icon, render_priority_icon %}
+
+{% block title %}Issues — BugTracker{% endblock %}
 
 {% block content %}
-<div class="page page-wide">
-
-  {% include "partials/flashes.html" %}
-
-  <div class="page-head">
-    <h1 class="page-title">Issues</h1>
-  </div>
-
-  {% if saved_filters %}
-    <div class="filter-chip-row">
-      {% for f in saved_filters %}
-        <a class="filter-chip" href="{{ url_for('issues.list_issues', **f.filter_data) }}">{{ f.name }}</a>
-      {% endfor %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Issue navigator</p>
+        <h1>Issues</h1>
     </div>
-  {% endif %}
-
-  <div class="issue-filter-bar">
-    <form method="get" action="{{ url_for('issues.list_issues') }}" class="issue-filter-form">
-      <div class="board-filter-field">
-        <label class="label" for="filter-project">Project</label>
-        <select id="filter-project" name="project_id" class="input board-select">
-          <option value="">All Projects</option>
-          {% for p in projects %}
-            <option value="{{ p.id }}" {{ 'selected' if filters.project_id == p.id else '' }}>{{ p.project_key }} - {{ p.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="board-filter-field">
-        <label class="label" for="filter-status">Status</label>
-        <select id="filter-status" name="status" class="input board-select">
-          <option value="">All Statuses</option>
-          {% for s in statuses %}
-            <option value="{{ s }}" {{ 'selected' if filters.status == s else '' }}>{{ s }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="board-filter-field">
-        <label class="label" for="filter-priority">Priority</label>
-        <select id="filter-priority" name="priority" class="input board-select">
-          <option value="">All Priorities</option>
-          {% for p in priorities %}
-            <option value="{{ p }}" {{ 'selected' if filters.priority == p else '' }}>{{ p }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="board-filter-field">
-        <label class="label" for="filter-type">Type</label>
-        <select id="filter-type" name="issue_type" class="input board-select">
-          <option value="">All Types</option>
-          {% for t in issue_types %}
-            <option value="{{ t }}" {{ 'selected' if filters.issue_type == t else '' }}>{{ t }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="board-filter-field">
-        <label class="label" for="filter-assignee">Assignee</label>
-        <select id="filter-assignee" name="assigned_to" class="input board-select">
-          <option value="">Anyone</option>
-          <option value="unassigned" {{ 'selected' if filters.assigned_to == 'unassigned' else '' }}>Unassigned</option>
-          {% for u in org_users %}
-            <option value="{{ u.id }}" {{ 'selected' if filters.assigned_to == u.id else '' }}>{{ u.full_name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-    </form>
-
-    <form method="post" action="{{ url_for('filters.save_filter') }}" class="save-filter-form" data-save-filter-form>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="name" data-save-filter-name value="">
-      <input type="hidden" name="project_id" value="{{ filters.project_id or '' }}">
-      <input type="hidden" name="status" value="{{ filters.status or '' }}">
-      <input type="hidden" name="priority" value="{{ filters.priority or '' }}">
-      <input type="hidden" name="issue_type" value="{{ filters.issue_type or '' }}">
-      <input type="hidden" name="assigned_to" value="{{ filters.assigned_to or '' }}">
-      <button type="button" class="btn btn-secondary btn-sm" data-save-filter-trigger>Save current filter</button>
-    </form>
-  </div>
-
-  <div class="card">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Key</th>
-          <th>Type</th>
-          <th>Title</th>
-          <th>Status</th>
-          <th>Priority</th>
-          <th>Assignee</th>
-          <th>Points</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in results %}
-          <tr>
-            <td><a href="{{ url_for('issues.issue_detail', issue_id=row.id) }}">{{ row.issue_key }}</a></td>
-            <td><span class="type-badge type-{{ row.issue_type | lower }}">{{ row.issue_type }}</span></td>
-            <td>{{ row.title }}</td>
-            <td><span class="badge status-badge status-{{ row.status | lower | replace(' ', '-') }}">{{ row.status }}</span></td>
-            <td><span class="badge priority-{{ row.priority | lower }}">{{ row.priority }}</span></td>
-            <td>{{ row.assigned_to_name or 'Unassigned' }}</td>
-            <td>{{ row.story_points if row.story_points is not none else '-' }}</td>
-          </tr>
-        {% else %}
-          <tr><td colspan="7" class="empty-row">No issues match this filter.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
+    <a class="button" href="{{ url_for('issues.add_issue') }}">+ Create Issue</a>
 </div>
+
+<!-- Saved Filters Bar -->
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+    {% if saved_filters %}
+    <div style="display: flex; align-items: center; gap: 4px;">
+        <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Saved:</span>
+        {% for sf in saved_filters %}
+            <a href="{{ url_for('issues.list_issues', **sf.filter_data) }}"
+               style="font-size: 12px; padding: 2px 8px; border-radius: 3px; background: var(--surface-hover); border: 1px solid var(--border); color: var(--text); text-decoration: none; white-space: nowrap;">
+                {{ sf.name }}
+            </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <button type="button" class="button-secondary" style="font-size:12px;min-height:28px;padding:4px 10px;" onclick="document.getElementById('saveFilterModal').classList.add('open')">
+        Save current filters
+    </button>
+</div>
+
+<!--
+    Reference's filter bar also has a free-text search box, a Severity
+    filter, and pagination. This app's search (filter_service.parse_filters
+    / issue_repository.search_issues) only ever supported project, status,
+    priority, issue type, and assignee -- no text search, no severity
+    filter, and no pagination (search_issues returns the full match list).
+    Rather than fake the missing pieces, this keeps every filter that's
+    real and drops the three that aren't.
+-->
+<form method="GET" action="{{ url_for('issues.list_issues') }}" class="filter-box">
+    <select name="project_id" aria-label="Filter by Project">
+        <option value="">All Projects</option>
+        {% for p in projects %}
+            <option value="{{ p.id }}" {% if filters.project_id == p.id %}selected{% endif %}>{{ p.project_key }} - {{ p.name }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="issue_type" aria-label="Filter by Type">
+        <option value="">All Types</option>
+        {% for issue_type in issue_types %}
+            <option value="{{ issue_type }}" {% if filters.issue_type == issue_type %}selected{% endif %}>{{ issue_type }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="status" aria-label="Filter by Status">
+        <option value="">All Statuses</option>
+        {% for status in statuses %}
+            <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="priority" aria-label="Filter by Priority">
+        <option value="">All Priorities</option>
+        {% for priority in priorities %}
+            <option value="{{ priority }}" {% if filters.priority == priority %}selected{% endif %}>{{ priority }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="assigned_to" aria-label="Filter by Assignee">
+        <option value="">All Assignees</option>
+        <option value="unassigned" {% if filters.assigned_to == 'unassigned' %}selected{% endif %}>Unassigned</option>
+        {% for u in org_users %}
+            <option value="{{ u.id }}" {% if filters.assigned_to == u.id %}selected{% endif %}>{{ u.full_name }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit" style="min-height: 38px;">Search</button>
+    <a href="{{ url_for('issues.list_issues') }}" class="button button-secondary" style="min-height: 38px; display: inline-flex; align-items: center; justify-content: center;">Clear</a>
+</form>
+
+<!-- Issues Table -->
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 100px;">Key</th>
+                    <th style="width: 120px;">Type</th>
+                    <th>Summary</th>
+                    <th style="width: 120px;">Priority</th>
+                    <th style="width: 140px;">Status</th>
+                    <th style="width: 160px;">Assignee</th>
+                    <th style="width: 80px;">Points</th>
+                    <th style="width: 80px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in results %}
+                    <tr>
+                        <td><strong style="color: var(--text-muted);">{{ row.issue_key }}</strong></td>
+                        <td>
+                            <span class="issue-type-badge type-{{ row.issue_type.lower() }}" style="display: inline-flex; align-items: center; gap: 4px;">
+                                {{ render_type_icon(row.issue_type, 13) }}
+                                {{ row.issue_type }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('issues.issue_detail', issue_id=row.id) }}" style="font-weight: 600; color: var(--text);">{{ row.title }}</a>
+                        </td>
+                        <td>
+                            <span class="priority-badge" title="Priority: {{ row.priority }}" style="display: inline-flex; align-items: center; gap: 4px;">
+                                {{ render_priority_icon(row.priority, 13) }}
+                                <span style="font-size: 13px; font-weight: 600; color: var(--text-subtle);">{{ row.priority }}</span>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ row.status.lower().replace(' ', '_') }}">{{ row.status }}</span>
+                        </td>
+                        <td>
+                            {% if row.assigned_to_name %}
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="user-avatar-initial" style="width: 22px; height: 22px; font-size: 10px; background: var(--accent-subtle); color: var(--accent);">
+                                        {{ row.assigned_to_name[:1]|upper }}
+                                    </span>
+                                    <span style="font-weight: 500;">{{ row.assigned_to_name }}</span>
+                                </div>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.story_points if row.story_points is not none else '—' }}</td>
+                        <td>
+                            <a href="{{ url_for('issues.issue_detail', issue_id=row.id) }}" class="button button-secondary" style="min-height: 26px; padding: 2px 8px; font-size: 11px;">View</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="empty">
+                            No issues match the selected filters.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Save Filter Modal -->
+<div class="modal-overlay" id="saveFilterModal">
+    <div class="modal-box">
+        <h2>Save Current Filters</h2>
+        <form method="POST" action="{{ url_for('filters.save_filter') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% for key in ('status', 'priority', 'assigned_to', 'project_id', 'issue_type') %}
+                {% if filters.get(key) %}
+                    <input type="hidden" name="{{ key }}" value="{{ filters[key] }}">
+                {% endif %}
+            {% endfor %}
+            <label for="filter_name">Filter Name</label>
+            <input type="text" id="filter_name" name="name" required placeholder="e.g. My High Priority Bugs" style="width:100%;padding:8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;">
+            <div class="modal-actions" style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+                <button type="button" class="button-secondary" onclick="document.getElementById('saveFilterModal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="button">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px;
+    min-width: 360px;
+    max-width: 90vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.modal-box h2 { margin: 0 0 16px; font-size: 18px; }
+.modal-box label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+</style>
 {% endblock %}

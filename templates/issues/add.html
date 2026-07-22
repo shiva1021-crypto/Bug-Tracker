@@ -1,133 +1,190 @@
 {% extends "base.html" %}
-{% block title %}Create Issue · Bug Tracker{% endblock %}
+
+{% block title %}Create Issue — BugTracker{% endblock %}
 
 {% block content %}
-<div class="page page-wide">
-
-  {% include "partials/flashes.html" %}
-
-  <h1 class="page-title">Create Issue</h1>
-
-  <form method="post" action="{{ url_for('issues.add_issue') }}" enctype="multipart/form-data"
-        novalidate class="issue-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-    <div class="issue-form-grid">
-      <div class="issue-form-main">
-        <div class="field">
-          <label class="label" for="title">Title</label>
-          <input class="input" type="text" id="title" name="title" value="{{ title or '' }}"
-                 maxlength="255" required autofocus>
+<div class="jira-main-content-narrow">
+    <div class="page-heading" style="margin-bottom: 20px;">
+        <div>
+            <p class="eyebrow">Issue lifecycle</p>
+            <h1>Create Issue</h1>
         </div>
-
-        <div class="field">
-          <label class="label" for="description">Description</label>
-          <textarea class="input" id="description" name="description" rows="8" required>{{ description or '' }}</textarea>
-        </div>
-
-        <div class="field">
-          <label class="label" for="reproduction_steps">Reproduction Steps</label>
-          <textarea class="input" id="reproduction_steps" name="reproduction_steps" rows="5"
-                    placeholder="Mainly useful for Bugs">{{ reproduction_steps or '' }}</textarea>
-        </div>
-      </div>
-
-      <div class="issue-form-side">
-        <div class="field">
-          <label class="label" for="project_id">Project</label>
-          <select class="input" id="project_id" name="project_id" required data-project-select>
-            <option value="">Select a project…</option>
-            {% for p in projects %}
-              <option value="{{ p.id }}" {{ "selected" if preselect_project_id == p.id else "" }}>{{ p.project_key }} - {{ p.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="label" for="issue_type">Issue Type</label>
-          <select class="input" id="issue_type" name="issue_type" required data-issue-type-select>
-            <option value="">Select a type…</option>
-            {% for t in issue_types %}
-              <option value="{{ t }}" {{ "selected" if selected_issue_type == t else "" }}>{{ t }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="label" for="priority">Priority</label>
-          <select class="input" id="priority" name="priority" required>
-            {% for p in priorities %}
-              <option value="{{ p }}" {{ "selected" if (selected_priority or "Medium") == p else "" }}>{{ p }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="label" for="severity">Severity</label>
-          <select class="input" id="severity" name="severity" required>
-            {% for s in severities %}
-              <option value="{{ s }}" {{ "selected" if (selected_severity or "Minor") == s else "" }}>{{ s }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="label" for="category">Category</label>
-          <input class="input" type="text" id="category" name="category" value="{{ category or 'General' }}" maxlength="80">
-        </div>
-
-        <div class="field">
-          <label class="label" for="parent_id">Parent</label>
-          <select class="input" id="parent_id" name="parent_id" data-parent-select
-                  data-selected="{{ selected_parent_id or '' }}">
-            <option value="">No parent</option>
-          </select>
-          <p class="hint">Filtered to valid parent types once Project and Issue Type are chosen.</p>
-        </div>
-
-        <div class="field">
-          <label class="label" for="labels">Labels</label>
-          <input class="input" type="text" id="labels" name="labels" value="{{ labels or '' }}" placeholder="frontend, urgent">
-          <p class="hint">Comma-separated.</p>
-        </div>
-
-        <div class="field">
-          <label class="label" for="story_points">Story Points</label>
-          <input class="input" type="number" id="story_points" name="story_points" min="0" step="1" value="{{ story_points or '' }}">
-        </div>
-
-        <div class="field">
-          <label class="label" for="due_date">Due Date</label>
-          <input class="input" type="date" id="due_date" name="due_date" value="{{ due_date or '' }}">
-        </div>
-
-        <div class="field">
-          <label class="label" for="fix_version_id">Fix Version</label>
-          <select class="input" id="fix_version_id" name="fix_version_id" data-fix-version-select
-                  data-selected="{{ selected_fix_version_id or '' }}">
-            <option value="">No fix version</option>
-          </select>
-          <p class="hint">Populated once a Project is selected.</p>
-        </div>
-
-        <div class="field">
-          <label class="label" for="screenshot">Screenshot</label>
-          <input class="input" type="file" id="screenshot" name="screenshot"
-                 accept=".png,.jpg,.jpeg,.gif,.webp" data-screenshot-input>
-          <img class="screenshot-preview" data-screenshot-preview hidden alt="Screenshot preview">
-        </div>
-      </div>
     </div>
 
-    <div class="card custom-fields-section" data-custom-fields-container hidden>
-      <h2 class="section-title">Custom Fields</h2>
-      <div data-custom-fields-list></div>
-    </div>
+    <section class="panel form-card">
+        <form method="POST" action="{{ url_for('issues.add_issue') }}" enctype="multipart/form-data" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <button type="submit" class="btn btn-primary">Create Issue</button>
-  </form>
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="project_id">Project *</label>
+                    <select id="project_id" name="project_id" required>
+                        <option value="">Select a project…</option>
+                        {% for project in projects %}
+                            <option value="{{ project.id }}" {% if preselect_project_id == project.id %}selected{% endif %}>{{ project.project_key }} · {{ project.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="issue_type">Issue Type *</label>
+                    <select id="issue_type" name="issue_type" required>
+                        <option value="">Select a type…</option>
+                        {% for issue_type in issue_types %}
+                            <option value="{{ issue_type }}" {% if (selected_issue_type or 'Bug') == issue_type %}selected{% endif %}>{{ issue_type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
 
+            <div class="form-group">
+                <label for="title">Summary (Title) *</label>
+                <input id="title" type="text" name="title" value="{{ title or '' }}" maxlength="255" required placeholder="Enter a brief, descriptive summary of the issue">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description *</label>
+                <textarea id="description" name="description" required placeholder="Provide a detailed description of the issue, acceptance criteria, or expected outcome...">{{ description or '' }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="reproduction_steps">Reproduction Steps</label>
+                <textarea id="reproduction_steps" name="reproduction_steps" placeholder="List steps to reproduce, actual vs expected results..." style="min-height: 80px;">{{ reproduction_steps or '' }}</textarea>
+            </div>
+
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <input id="category" type="text" name="category" value="{{ category or 'General' }}" maxlength="80">
+                </div>
+                <div class="form-group">
+                    <label for="parent_id">Parent Issue</label>
+                    <select id="parent_id" name="parent_id">
+                        <option value="">No parent (Epic or Standalone)</option>
+                        {% for parent in parent_candidates %}
+                            <option value="{{ parent.id }}" {% if (selected_parent_id | string) == (parent.id | string) %}selected{% endif %}>{{ parent.issue_key }} · {{ parent.title }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="hint" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">The server checks that the chosen parent's type and project are valid for this issue.</p>
+                </div>
+            </div>
+
+            <!--
+                Reference has a "Fix Version" dropdown here too. Versions are
+                project-scoped (see version_service), and on this page no
+                project is chosen yet, so populating it would need the same
+                kind of dynamic per-project loading the custom fields section
+                below already does. issue_service.validate_issue does accept
+                a fix_version_raw, but nothing ever submits one from this
+                page even in the app's original build -- left out rather
+                than wired up with guesswork; it's fully available on the
+                Edit page below, where the project is already fixed.
+            -->
+            <div class="form-group">
+                <label for="labels">Labels</label>
+                <input id="labels" type="text" name="labels" value="{{ labels or '' }}" maxlength="255" placeholder="Comma-separated: frontend, backend, bug-fix">
+            </div>
+
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="story_points">Story Points (Estimate)</label>
+                    <input id="story_points" type="number" name="story_points" min="0" step="1" value="{{ story_points or '' }}" placeholder="e.g. 1, 2, 3, 5, 8">
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Due Date</label>
+                    <input id="due_date" type="date" name="due_date" value="{{ due_date or '' }}">
+                </div>
+            </div>
+
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="priority">Priority *</label>
+                    <select id="priority" name="priority" required>
+                        {% for priority in priorities %}
+                            <option value="{{ priority }}" {% if (selected_priority or 'Medium') == priority %}selected{% endif %}>{{ priority }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="severity">Severity *</label>
+                    <select id="severity" name="severity" required>
+                        {% for severity in severities %}
+                            <option value="{{ severity }}" {% if (selected_severity or 'Minor') == severity %}selected{% endif %}>{{ severity }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label for="screenshot">Upload Screenshot</label>
+                <input id="screenshot" type="file" name="screenshot" accept="image/png,image/jpeg,image/gif,image/webp" style="padding-top: 6px;">
+            </div>
+
+            <div id="custom-fields-container" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
+                <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Custom Fields</h3>
+                <div id="custom-fields-list"><p class="empty" style="font-size:13px;">Select a project to see custom fields.</p></div>
+            </div>
+
+            <div style="display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 16px;">
+                <a href="{{ url_for('board.board') }}" class="button button-secondary">Cancel</a>
+                <button type="submit">Create Issue</button>
+            </div>
+        </form>
+    </section>
 </div>
 
-<script id="parent-candidates-data" type="application/json">{{ parent_candidates | tojson }}</script>
+<script>
+function loadCustomFields(projectId) {
+    var container = document.getElementById('custom-fields-list');
+    if (!projectId) {
+        container.innerHTML = '<p class="empty" style="font-size:13px;">Select a project to see custom fields.</p>';
+        return;
+    }
+    container.innerHTML = '<p style="font-size:13px;color:var(--text-muted);">Loading...</p>';
+    fetch('/api/fields?project_id=' + projectId)
+        .then(function(r) { return r.json(); })
+        .then(function(fields) {
+            if (!fields.length) {
+                container.innerHTML = '<p class="empty" style="font-size:13px;">No custom fields for this project.</p>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < fields.length; i++) {
+                var f = fields[i];
+                html += '<div class="form-group" style="margin-bottom: 12px;">';
+                html += '<label for="custom_field_' + f.id + '">' + f.name + (f.required ? ' <span style="color:var(--danger);">*</span>' : '') + '</label>';
+                if (f.field_type === 'text') {
+                    html += '<input type="text" id="custom_field_' + f.id + '" name="custom_field_' + f.id + '" maxlength="500" placeholder="' + f.name + '"' + (f.required ? ' required' : '') + '>';
+                } else if (f.field_type === 'number') {
+                    html += '<input type="number" id="custom_field_' + f.id + '" name="custom_field_' + f.id + '" step="any" placeholder="' + f.name + '"' + (f.required ? ' required' : '') + '>';
+                } else if (f.field_type === 'date') {
+                    html += '<input type="date" id="custom_field_' + f.id + '" name="custom_field_' + f.id + '"' + (f.required ? ' required' : '') + '>';
+                } else if (f.field_type === 'dropdown') {
+                    html += '<select id="custom_field_' + f.id + '" name="custom_field_' + f.id + '"' + (f.required ? ' required' : '') + '>';
+                    html += '<option value="">-- Select --</option>';
+                    for (var j = 0; j < (f.options || []).length; j++) {
+                        html += '<option value="' + f.options[j] + '">' + f.options[j] + '</option>';
+                    }
+                    html += '</select>';
+                } else if (f.field_type === 'checkbox') {
+                    html += '<label style="font-weight:400;font-size:13px;"><input type="checkbox" id="custom_field_' + f.id + '" name="custom_field_' + f.id + '" value="on"> Yes</label>';
+                }
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        })
+        .catch(function() {
+            container.innerHTML = '<p style="font-size:13px;color:var(--danger);">Could not load custom fields.</p>';
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var projectSelect = document.getElementById('project_id');
+    if (projectSelect) {
+        loadCustomFields(projectSelect.value);
+        projectSelect.addEventListener('change', function() {
+            loadCustomFields(this.value);
+        });
+    }
+});
+</script>
 {% endblock %}

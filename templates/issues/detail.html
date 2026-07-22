@@ -1,335 +1,504 @@
 {% extends "base.html" %}
-{% block title %}{{ issue.issue_key }} · Bug Tracker{% endblock %}
+{% from "macros.html" import render_type_icon, render_priority_icon %}
+
+{% block title %}{{ issue.issue_key }} — {{ issue.title }}{% endblock %}
 
 {% block content %}
-<div class="page page-wide">
+<!-- Jira breadcrumbs -->
+<div class="jira-breadcrumbs">
+    <a href="{{ url_for('projects.list_projects') }}">Projects</a>
+    <span>/</span>
+    <a href="{{ url_for('board.board', project=issue.project_id) }}">{{ issue.project_name }}</a>
+    <span>/</span>
+    <strong>{{ render_type_icon(issue.issue_type, 13) }} {{ issue.issue_key }}</strong>
+</div>
 
-  {% include "partials/flashes.html" %}
-
-  <div class="page-head">
-    <h1 class="page-title">
-      <span class="type-badge type-{{ issue.issue_type | lower }}">{{ issue.issue_type }}</span>
-      <span class="project-key-badge">{{ issue.issue_key }}</span>
-      {{ issue.title }}
-    </h1>
-    <div class="page-head-actions">
-      {% if can_edit %}
-        <a class="btn btn-primary" href="{{ url_for('issues.edit_issue', issue_id=issue.id) }}">Edit</a>
-      {% endif %}
-      <a class="btn btn-secondary" href="{{ url_for('projects.project_detail', project_id=issue.project_id) }}">Back to {{ issue.project_key }}</a>
+<!-- Header layout: Title and edit button -->
+<div class="page-heading" style="margin-bottom: 20px;">
+    <div style="flex-grow: 1;">
+        <h1 style="font-size: 28px; line-height: 1.25; font-weight: 600; color: var(--text);">{{ issue.title }}</h1>
     </div>
-  </div>
+    {% if can_edit %}
+        <a class="button button-secondary" href="{{ url_for('issues.edit_issue', issue_id=issue.id) }}">
+            <span>✏️</span> Edit Issue
+        </a>
+    {% endif %}
+</div>
 
-  <div class="issue-detail-badges">
-    <span class="badge priority-{{ issue.priority | lower }}">Priority: {{ issue.priority }}</span>
-    <span class="badge severity-{{ issue.severity | lower }}">Severity: {{ issue.severity }}</span>
-    <span class="badge status-badge status-{{ issue.status | lower | replace(' ', '-') }}">{{ issue.status }}</span>
-
-    <form method="post" action="{{ url_for('issues.toggle_watch', issue_id=issue.id) }}" class="watch-toggle-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="watch-toggle {{ 'watch-toggle-active' if watching else '' }}" title="{{ 'Stop watching' if watching else 'Watch this issue' }}">
-        <span class="watch-toggle-icon" aria-hidden="true">{{ '●' if watching else '○' }}</span>
-        <span class="watch-toggle-label">{{ 'Watching' if watching else 'Watch' }}</span>
-        <span class="watch-toggle-count">{{ watcher_count }}</span>
-      </button>
-    </form>
-  </div>
-
-  {% if can_change_status %}
-  <div class="card status-control-card">
-    <h2 class="section-title">Change Status</h2>
-    <form method="post" action="{{ url_for('issues.change_status', issue_id=issue.id) }}" class="status-control-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <select name="status" class="input status-select">
-        {% for status_option in statuses %}
-          <option value="{{ status_option }}" {{ 'selected' if status_option == issue.status else '' }}>{{ status_option }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit" class="btn btn-primary btn-sm">Update Status</button>
-    </form>
-  </div>
-  {% endif %}
-
-  <div class="issue-detail-grid">
-    <div class="issue-detail-main">
-      <div class="card">
-        <h2 class="section-title">Description</h2>
-        <p class="issue-body-text">{{ issue.description }}</p>
-      </div>
-
-      {% if issue.reproduction_steps %}
-      <div class="card">
-        <h2 class="section-title">Reproduction Steps</h2>
-        <p class="issue-body-text">{{ issue.reproduction_steps }}</p>
-      </div>
-      {% endif %}
-
-      {% if issue.screenshot_path %}
-      <div class="card">
-        <h2 class="section-title">Screenshot</h2>
-        <img class="issue-screenshot" src="{{ url_for('issues.issue_screenshot', issue_id=issue.id) }}" alt="Issue screenshot">
-      </div>
-      {% endif %}
-
-      <div class="card">
-        <h2 class="section-title">Comments</h2>
-        <form method="post" action="{{ url_for('issues.add_comment', issue_id=issue.id) }}" class="comment-form">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="field">
-            <textarea class="input" name="comment" rows="3" placeholder="Add a comment…" required></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm">Comment</button>
-        </form>
-
-        <ul class="comment-list">
-          {% for comment in comments %}
-            <li class="comment-item">
-              <span class="avatar" aria-hidden="true">{{ comment.author_name[0] | upper }}</span>
-              <div class="comment-body">
-                <div class="comment-meta">
-                  <span class="comment-author">{{ comment.author_name }}</span>
-                  <span class="comment-timestamp">{{ comment.created_at.strftime('%d %b %Y %H:%M') }}</span>
+<!-- Details layout grid -->
+<div class="details-layout">
+    <!-- Left Column: Primary Content -->
+    <div class="details-main">
+        <article class="panel details-card">
+            <!-- Parent Issue Indicator if exists -->
+            {% if issue.parent_id %}
+                <div style="background: var(--surface-hover); padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 16px; font-size: 13px;">
+                    <span style="font-weight: 700; color: var(--text-muted);">Parent Issue:</span>
+                    <a href="{{ url_for('issues.issue_detail', issue_id=issue.parent_id) }}" style="font-weight: 600;">
+                        {{ issue.parent_issue_key }} · {{ issue.parent_title }}
+                    </a>
                 </div>
-                <p class="comment-text">{{ comment.comment }}</p>
-              </div>
-            </li>
-          {% else %}
-            <li class="empty-state">No comments yet.</li>
-          {% endfor %}
-        </ul>
-      </div>
+            {% endif %}
 
-      <div class="card">
-        <button type="button" class="history-toggle" data-history-toggle>
-          <h2 class="section-title history-toggle-title">History</h2>
-        </button>
-        <ul class="history-list" data-history-list hidden>
-          {% for entry in history %}
-            <li class="history-item">
-              <span class="history-text">
-                <strong>{{ entry.changed_by_name }}</strong>
-                {% if entry.change_note %}
-                  {{ entry.change_note }}
-                {% elif entry.old_status and entry.new_status %}
-                  changed status from {{ entry.old_status }} to {{ entry.new_status }}
-                {% elif entry.new_assigned_to_name %}
-                  assigned to {{ entry.new_assigned_to_name }}
-                {% elif entry.old_assigned_to_name %}
-                  unassigned {{ entry.old_assigned_to_name }}
-                {% endif %}
-              </span>
-              <span class="history-timestamp">{{ entry.changed_at.strftime('%d %b %Y %H:%M') }}</span>
-            </li>
-          {% else %}
-            <li class="empty-state">No history yet.</li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-
-    <div class="issue-detail-side">
-      <div class="card">
-        <dl class="detail-list">
-          <div class="detail-row">
-            <dt>Assignee</dt>
-            <dd>
-              <span class="assignee-display">
-                {% if issue.assigned_to_name %}
-                  <span class="avatar" aria-hidden="true">{{ issue.assigned_to_name[0] | upper }}</span>
-                  {{ issue.assigned_to_name }}
-                {% else %}
-                  <span class="text-muted">Unassigned</span>
-                {% endif %}
-              </span>
-            </dd>
-          </div>
-          {% if can_assign %}
-          <div class="detail-row">
-            <dt>Reassign</dt>
-            <dd>
-              <form method="post" action="{{ url_for('issues.assign_issue', issue_id=issue.id) }}" class="assign-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <select name="assigned_to" class="input assign-select">
-                  <option value="">Unassigned</option>
-                  {% for developer in assignable_developers %}
-                    <option value="{{ developer.id }}" {{ 'selected' if developer.id == issue.assigned_to else '' }}>{{ developer.full_name }}</option>
-                  {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-secondary btn-sm">Assign</button>
-              </form>
-            </dd>
-          </div>
-          {% endif %}
-          <div class="detail-row">
-            <dt>Reporter</dt>
-            <dd>{{ issue.reporter_name }}</dd>
-          </div>
-          <div class="detail-row">
-            <dt>Category</dt>
-            <dd>{{ issue.category }}</dd>
-          </div>
-          <div class="detail-row">
-            <dt>Story Points</dt>
-            <dd>{{ issue.story_points if issue.story_points is not none else '-' }}</dd>
-          </div>
-          <div class="detail-row">
-            <dt>Due Date</dt>
-            <dd>{{ issue.due_date.strftime('%d %b %Y') if issue.due_date else '-' }}</dd>
-          </div>
-          <div class="detail-row">
-            <dt>Parent</dt>
-            <dd>
-              {% if issue.parent_id %}
-                <a href="{{ url_for('issues.issue_detail', issue_id=issue.parent_id) }}">{{ issue.parent_issue_key }} - {{ issue.parent_title }}</a>
-              {% else %}
-                -
-              {% endif %}
-            </dd>
-          </div>
-          <div class="detail-row">
-            <dt>Fix Version</dt>
-            <dd>{{ fix_version.name if fix_version else '-' }}</dd>
-          </div>
-        </dl>
-
-        {% if issue.labels %}
-        <div class="label-pills">
-          {% for label in issue.labels.split(',') %}
-            <span class="label-pill">{{ label.strip() }}</span>
-          {% endfor %}
-        </div>
-        {% endif %}
-      </div>
-
-      {% if custom_field_values %}
-      <div class="card">
-        <h2 class="section-title">Custom Fields</h2>
-        <dl class="detail-list">
-          {% for field in custom_field_values %}
-            <div class="detail-row">
-              <dt>{{ field.name }}</dt>
-              <dd>
-                {% if field.field_type == 'checkbox' %}
-                  {{ '✓' if field.value == '1' else '✗' }}
-                {% elif field.value is none %}
-                  -
-                {% else %}
-                  {{ field.value }}
-                {% endif %}
-              </dd>
+            <!-- Description -->
+            <h2>Description</h2>
+            <div style="margin-top: 10px;">
+                <p style="white-space: pre-wrap;">{{ issue.description }}</p>
             </div>
-          {% endfor %}
-        </dl>
-      </div>
-      {% endif %}
 
-      <div class="card">
-        <h2 class="section-title">Time Tracking</h2>
-        <div class="time-tracking-stats">
-          <div class="time-stat">
-            <span class="time-stat-label">Estimate</span>
-            <span class="time-stat-value">{{ issue.time_estimate if issue.time_estimate is not none else '-' }}</span>
-          </div>
-          <div class="time-stat">
-            <span class="time-stat-label">Spent</span>
-            <span class="time-stat-value">{{ time_spent }}</span>
-          </div>
-          <div class="time-stat">
-            <span class="time-stat-label">Remaining</span>
-            <span class="time-stat-value">{{ issue.time_remaining if issue.time_remaining is not none else '-' }}</span>
-          </div>
-        </div>
+            <!-- Reproduction Steps -->
+            <h2>Reproduction Steps</h2>
+            <div style="margin-top: 10px;">
+                {% if issue.reproduction_steps %}
+                    <p style="white-space: pre-wrap;">{{ issue.reproduction_steps }}</p>
+                {% else %}
+                    <p style="color: var(--text-muted); font-style: italic;">No reproduction steps provided.</p>
+                {% endif %}
+            </div>
 
-        {% if can_edit %}
-        <form method="post" action="{{ url_for('issues.update_estimate', issue_id=issue.id) }}" class="estimate-form">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="field">
-            <label class="label" for="time_estimate">Original Estimate (hours)</label>
-            <input class="input" type="number" id="time_estimate" name="time_estimate" min="0" step="0.25"
-                   value="{{ issue.time_estimate if issue.time_estimate is not none else '' }}">
-          </div>
-          <div class="field">
-            <label class="label" for="time_remaining">Remaining (hours)</label>
-            <input class="input" type="number" id="time_remaining" name="time_remaining" min="0" step="0.25"
-                   value="{{ issue.time_remaining if issue.time_remaining is not none else '' }}">
-          </div>
-          <button type="submit" class="btn btn-secondary btn-sm">Update Estimate</button>
-        </form>
+            <!-- Labels row -->
+            {% if issue.labels %}
+                <h2 style="margin-top: 20px;">Labels</h2>
+                <div class="label-row" style="margin-top: 8px;">
+                    {% for label in issue.labels.split(',') %}
+                        <span class="issue-label" style="font-size: 11px; padding: 2px 8px;">{{ label.strip() }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Screenshot if exists -->
+            {% if issue.screenshot_path %}
+                <h2 style="margin-top: 24px;">Screenshot attachment</h2>
+                <div style="margin-top: 10px;">
+                    <a href="{{ url_for('issues.issue_screenshot', issue_id=issue.id) }}" target="_blank">
+                        <img class="screenshot" src="{{ url_for('issues.issue_screenshot', issue_id=issue.id) }}" alt="Issue Screenshot Attachment">
+                    </a>
+                </div>
+            {% endif %}
+
+            <!-- Metadata info footer -->
+            <p class="muted" style="margin-top: 32px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 12px; text-align: right;">
+                Created by <strong>{{ issue.reporter_name }}</strong> on {{ issue.created_at }}
+            </p>
+        </article>
+
+        <!-- Linked Issues -->
+        {% if links %}
+            <section class="panel">
+                <h2 style="margin-bottom: 12px; font-size: 16px; font-weight: 600;">Linked Issues</h2>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    {% for link in links %}
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--border);">
+                            <span style="color: var(--text-muted); font-size: 11px; min-width: 90px;">{{ link.label }}</span>
+                            <a href="{{ url_for('issues.issue_detail', issue_id=link.other_issue_id) }}" style="font-weight: 600;">
+                                {{ link.other_issue_key }}
+                            </a>
+                            <span style="color: var(--text-subtle); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ link.other_issue_title }}</span>
+                            {% if current_user.role in ['admin', 'project_manager'] %}
+                                <form method="POST" action="{{ url_for('issues.remove_link', issue_id=issue.id, link_id=link.id) }}" style="margin:0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" style="font-size:11px;padding:1px 6px;min-height:20px;background:none;border:1px solid var(--border);border-radius:3px;color:var(--text-muted);cursor:pointer;">✕</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
         {% endif %}
 
-        <form method="post" action="{{ url_for('issues.log_time', issue_id=issue.id) }}" class="log-time-form">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="field">
-            <label class="label" for="hours_spent">Log Time (hours)</label>
-            <input class="input" type="number" id="hours_spent" name="hours_spent" min="0.01" step="0.25" required>
-          </div>
-          <div class="field">
-            <label class="label" for="time_entry_description">Description</label>
-            <input class="input" type="text" id="time_entry_description" name="description" placeholder="What did you work on?">
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm">Log Time</button>
-        </form>
+        <!-- Child issues list if exists -->
+        {% if children %}
+            <section class="panel">
+                <h2 style="margin-bottom: 12px; font-size: 16px; font-weight: 600;">Child Issues (Subtasks)</h2>
+                <div class="issue-children">
+                    {% for child in children %}
+                        <a href="{{ url_for('issues.issue_detail', issue_id=child.id) }}">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="issue-type-badge type-{{ child.issue_type.lower() }}" style="font-size: 9px; padding: 1px 4px; display: inline-flex; align-items: center; gap: 4px;">
+                                    {{ render_type_icon(child.issue_type, 11) }}
+                                    {{ child.issue_type }}
+                                </span>
+                                <strong style="color: var(--text-muted);">{{ child.issue_key }}</strong>
+                                <span>{{ child.title }}</span>
+                            </div>
+                            <span class="status-badge status-{{ child.status.lower().replace(' ', '_') }}">{{ child.status }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
 
-        <ul class="time-entry-list">
-          {% for entry in time_entries %}
-            <li class="time-entry-row">
-              <span class="time-entry-hours">{{ entry.hours_spent }}h</span>
-              <span class="time-entry-user">{{ entry.user_name }}</span>
-              {% if entry.description %}<span class="time-entry-desc">{{ entry.description }}</span>{% endif %}
-              <span class="time-entry-timestamp">{{ entry.logged_at.strftime('%d %b %Y %H:%M') }}</span>
-            </li>
-          {% else %}
-            <li class="empty-state">No time logged yet.</li>
-          {% endfor %}
-        </ul>
-      </div>
+        <!-- Comments -->
+        <section class="panel">
+            <h2 style="font-size: 16px; font-weight: 600; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 16px;">Comments</h2>
 
-      <div class="card">
-        <h2 class="section-title">Linked Issues</h2>
-        <ul class="linked-issue-list">
-          {% for link in links %}
-            <li class="linked-issue-row">
-              <span class="linked-issue-label">{{ link.label }}</span>
-              <a href="{{ url_for('issues.issue_detail', issue_id=link.other_issue_id) }}" class="linked-issue-key">{{ link.other_issue_key }}</a>
-              <span class="linked-issue-title">{{ link.other_issue_title }}</span>
-              <form method="post" action="{{ url_for('issues.remove_link', issue_id=issue.id, link_id=link.id) }}" class="linked-issue-remove-form">
+            <!-- Comment Create Form -->
+            <form class="ajax-comment-form" method="POST" action="{{ url_for('issues.add_comment', issue_id=issue.id) }}" novalidate style="margin-bottom: 24px;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="linked-issue-remove-btn" title="Remove link">&times;</button>
-              </form>
-            </li>
-          {% else %}
-            <li class="empty-state">No linked issues yet.</li>
-          {% endfor %}
-        </ul>
+                <div class="form-group">
+                    <textarea name="comment" placeholder="Add a comment on this issue..." required style="min-height: 80px;"></textarea>
+                </div>
+                <button type="submit">Save Comment</button>
+            </form>
 
-        <form method="post" action="{{ url_for('issues.add_link', issue_id=issue.id) }}" class="add-link-form">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <select name="link_type" class="input add-link-type-select">
-            {% for value, label, a_is_current, link_type in link_form_options %}
-              <option value="{{ value }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-          <input type="text" name="target_key" class="input add-link-target-input" placeholder="Issue key (e.g. WEB-12)" required>
-          <button type="submit" class="btn btn-secondary btn-sm">Add Link</button>
-        </form>
-      </div>
+            <!-- Comments List -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                {% for comment in comments %}
+                    <div class="comment-box">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="user-avatar-initial" style="width: 24px; height: 24px; font-size: 10px; background: var(--primary-subtle); color: var(--primary);">
+                                    {{ comment.author_name[:1]|upper }}
+                                </span>
+                                <strong>{{ comment.author_name }}</strong>
+                            </div>
+                            <small>{{ comment.created_at }}</small>
+                        </div>
+                        <p>{{ comment.comment }}</p>
+                    </div>
+                {% else %}
+                    <p class="empty" style="padding: 12px 0;">No comments have been posted yet.</p>
+                {% endfor %}
+            </div>
+        </section>
 
-      {% if children %}
-      <div class="card">
-        <h2 class="section-title">Child Issues</h2>
-        <ul class="child-issue-list">
-          {% for child in children %}
-            <li>
-              <a href="{{ url_for('issues.issue_detail', issue_id=child.id) }}">{{ child.issue_key }}</a>
-              <span class="type-badge type-{{ child.issue_type | lower }}">{{ child.issue_type }}</span>
-              {{ child.title }}
-            </li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
+        <!-- Audit History -->
+        <section class="panel">
+            <h2 style="font-size: 16px; font-weight: 600; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 16px;">History</h2>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% for item in history %}
+                    <div class="history-item">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <strong>{{ item.change_note or "Issue updated" }}</strong>
+                            <small>{{ item.changed_at }}</small>
+                        </div>
+                        <p style="font-size: 12px;">
+                            Updated by <strong>{{ item.changed_by_name }}</strong>.
+                            {% if item.old_status or item.new_status %}
+                                Status changed from <span class="status-badge status-{{ (item.old_status or 'To Do').lower().replace(' ', '_') }}" style="font-size: 9px; padding: 0 4px;">{{ item.old_status or "None" }}</span> to <span class="status-badge status-{{ (item.new_status or 'To Do').lower().replace(' ', '_') }}" style="font-size: 9px; padding: 0 4px;">{{ item.new_status or "None" }}</span>.
+                            {% endif %}
+                            {% if item.old_assigned_to_name or item.new_assigned_to_name %}
+                                Assignment changed from <em>{{ item.old_assigned_to_name or "Unassigned" }}</em> to <em>{{ item.new_assigned_to_name or "Unassigned" }}</em>.
+                            {% endif %}
+                        </p>
+                    </div>
+                {% else %}
+                    <p class="empty" style="padding: 12px 0;">No changes logged yet.</p>
+                {% endfor %}
+            </div>
+        </section>
     </div>
-  </div>
 
+    <!-- Right Column: Context Attributes & Action sidebar -->
+    <div class="details-sidebar">
+        <!-- Status Transition Box -->
+        <div class="detail-stats-panel">
+            <h2 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 14px;">Workflow Status</h2>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px;">
+                <span class="status-badge status-{{ issue.status.lower().replace(' ', '_') }}" style="font-size: 13px; padding: 4px 10px;">
+                    {{ issue.status }}
+                </span>
+            </div>
+
+            {% if can_change_status %}
+                <form method="POST" action="{{ url_for('issues.change_status', issue_id=issue.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label for="status" style="font-size: 11px;">Transition to Status</label>
+                    <div style="display: flex; gap: 4px;">
+                        <select id="status" name="status" style="flex-grow: 1; min-height: 32px; padding: 4px 8px; font-size: 13px;">
+                            {% for status in statuses %}
+                                <option value="{{ status }}" {% if issue.status == status %}selected{% endif %}>{{ status }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" style="min-height: 32px; padding: 4px 12px; font-size: 12px;">Update</button>
+                    </div>
+                </form>
+            {% elif current_user.role == 'developer' %}
+                <div style="background: var(--warning-subtle); color: var(--warning); padding: 8px; border-radius: var(--radius); font-size: 12px; font-weight: 600;">
+                    🔒 Status transition locked (Assigned developer access only).
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Issue Attributes Stats -->
+        <div class="detail-stats-panel">
+            <h2 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 14px;">Details</h2>
+            <div class="detail-stats-list">
+                <!-- Assignee -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Assignee</span>
+                    <span class="detail-stat-value">
+                        {% if issue.assigned_to_name %}
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span class="user-avatar-initial" style="width: 20px; height: 20px; font-size: 9px; background: var(--primary-subtle); color: var(--primary);">
+                                    {{ issue.assigned_to_name[:1]|upper }}
+                                </span>
+                                {{ issue.assigned_to_name }}
+                            </div>
+                        {% else %}
+                            <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                <!-- Reporter -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Reporter</span>
+                    <span class="detail-stat-value">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span class="user-avatar-initial" style="width: 20px; height: 20px; font-size: 9px; background: var(--accent-subtle); color: var(--accent);">
+                                {{ issue.reporter_name[:1]|upper }}
+                            </span>
+                            {{ issue.reporter_name }}
+                        </div>
+                    </span>
+                </div>
+
+                <!-- Priority -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Priority</span>
+                    <span class="detail-stat-value">
+                        <span class="priority-badge" style="display: inline-flex; align-items: center; gap: 4px;">
+                            {{ render_priority_icon(issue.priority, 13) }}
+                            <span>{{ issue.priority }}</span>
+                        </span>
+                    </span>
+                </div>
+
+                <!-- Severity -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Severity</span>
+                    <span class="detail-stat-value">{{ issue.severity }}</span>
+                </div>
+
+                <!-- Category -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Category</span>
+                    <span class="detail-stat-value">{{ issue.category or "General" }}</span>
+                </div>
+
+                <!-- Fix Version -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Fix Version</span>
+                    <span class="detail-stat-value">
+                        {% if fix_version %}
+                            {{ fix_version.name }}
+                        {% else %}
+                            <span style="color: var(--text-muted);">None</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                <!-- Story Points -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Story Points</span>
+                    <span class="detail-stat-value">
+                        {% if issue.story_points %}
+                            <span class="story-points-badge" style="width: 24px; height: 24px; font-size: 12px;">{{ issue.story_points }}</span>
+                        {% else %}
+                            <span style="color: var(--text-muted);">—</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                <!-- Due Date -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Due Date</span>
+                    <span class="detail-stat-value">
+                        {% if issue.due_date %}
+                            {{ issue.due_date }}
+                        {% else %}
+                            <span style="color: var(--text-muted);">None</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                <!-- Time Estimate -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Time Estimate</span>
+                    <span class="detail-stat-value">
+                        {% if issue.time_estimate %}
+                            {{ issue.time_estimate }}h
+                        {% else %}
+                            <span style="color: var(--text-muted);">—</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                <!-- Time Spent -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Time Spent</span>
+                    <span class="detail-stat-value">
+                        {% if time_spent %}
+                            {{ time_spent }}h
+                        {% else %}
+                            <span style="color: var(--text-muted);">0h</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                <!-- Time Remaining -->
+                <div class="detail-stat-item">
+                    <span class="detail-stat-label">Time Remaining</span>
+                    <span class="detail-stat-value">
+                        {% if issue.time_remaining %}
+                            {{ issue.time_remaining }}h
+                        {% else %}
+                            <span style="color: var(--text-muted);">—</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assign Developer Panel -->
+        {% if can_assign %}
+            <div class="detail-stats-panel">
+                <h2 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 14px;">Assign Developer</h2>
+                <form class="ajax-assign-form" method="POST" action="{{ url_for('issues.assign_issue', issue_id=issue.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <select id="assigned_to" name="assigned_to" style="min-height: 32px; font-size: 13px;">
+                            <option value="">Not Assigned</option>
+                            {% for developer in assignable_developers %}
+                                <option value="{{ developer.id }}" {% if issue.assigned_to == developer.id %}selected{% endif %}>{{ developer.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" style="width: 100%; min-height: 32px; font-size: 12px; margin-top: 8px;">Update Assignment</button>
+                </form>
+            </div>
+        {% endif %}
+
+        <!-- Link Issue panel -->
+        {% if current_user.role in ['admin', 'project_manager', 'developer'] %}
+            <div class="detail-stats-panel">
+                <h2 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 14px;">Link Issue</h2>
+                <form method="POST" action="{{ url_for('issues.add_link', issue_id=issue.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <label for="target_key" style="font-size: 11px;">Issue Key</label>
+                        <input type="text" id="target_key" name="target_key" placeholder="e.g. WEB-42" style="width:100%;min-height:28px;padding:4px 8px;font-size:13px;">
+                    </div>
+                    <div class="form-group" style="margin-top:6px;">
+                        <label for="link_type" style="font-size: 11px;">Link Type</label>
+                        <select id="link_type" name="link_type" style="width:100%;min-height:28px;font-size:13px;">
+                            {% for value, label, a_is_current, link_type in link_form_options %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" style="width:100%;min-height:28px;font-size:12px;margin-top:8px;">Link</button>
+                </form>
+            </div>
+        {% endif %}
+
+        <!-- Custom Fields panel -->
+        {% if custom_field_values %}
+            <div class="detail-stats-panel">
+                <h2 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 14px;">Custom Fields</h2>
+                {% for field in custom_field_values %}
+                    <div class="detail-stat-item" style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px;">
+                        <span class="detail-stat-label">{{ field.name }}</span>
+                        <span class="detail-stat-value">
+                            {% if field.field_type == 'checkbox' %}
+                                {% if field.value == '1' %}
+                                    <span style="color: var(--success);">✓ Yes</span>
+                                {% else %}
+                                    <span style="color: var(--text-muted);">No</span>
+                                {% endif %}
+                            {% elif field.value is not none %}
+                                {{ field.value }}
+                            {% else %}
+                                <span style="color: var(--text-muted);">—</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!--
+            Time Tracking panel. Reference gates the whole panel (log time +
+            set estimate/remaining) behind one admin/PM/developer role check.
+            This app's actual permissions split differently:
+            time_tracking_service.log_time is open to any org member who can
+            view the issue (see its own docstring), while the estimate is
+            gated by issue_service.get_editor_permission (`can_edit` --
+            Admin/PM or the issue's own reporter). Matched to the real
+            permission split rather than the reference's single gate, so
+            this doesn't hide a control from someone the backend would
+            actually let use it, or show one that would just flash a
+            permission error on submit.
+        -->
+        <div class="detail-stats-panel" id="time-tracking-panel">
+            <h2 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 14px;">Time Tracking</h2>
+
+            <!-- Log Time -->
+            <form method="POST" action="{{ url_for('issues.log_time', issue_id=issue.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="hours_spent" style="font-size: 11px;">Hours Spent</label>
+                    <input type="number" step="0.5" min="0.5" id="hours_spent" name="hours_spent" placeholder="e.g. 2.5" style="width:100%;min-height:28px;padding:4px 8px;font-size:13px;">
+                </div>
+                <div class="form-group" style="margin-top:6px;">
+                    <label for="time_entry_description" style="font-size: 11px;">Work Description</label>
+                    <input type="text" id="time_entry_description" name="description" placeholder="What did you do?" style="width:100%;min-height:28px;padding:4px 8px;font-size:13px;">
+                </div>
+                <button type="submit" style="width:100%;min-height:28px;font-size:12px;margin-top:8px;">Log Time</button>
+            </form>
+
+            {% if can_edit %}
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 14px 0;">
+
+                <!-- Update Estimate + Remaining (one route handles both, see issues.update_estimate) -->
+                <form method="POST" action="{{ url_for('issues.update_estimate', issue_id=issue.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <label for="time_estimate" style="font-size: 11px;">Original Estimate (hours)</label>
+                        <input type="number" step="0.5" min="0" id="time_estimate" name="time_estimate" value="{{ issue.time_estimate or '' }}" placeholder="e.g. 8" style="width:100%;min-height:28px;padding:4px 8px;font-size:13px;">
+                    </div>
+                    <div class="form-group" style="margin-top:6px;">
+                        <label for="time_remaining" style="font-size: 11px;">Remaining Estimate (hours)</label>
+                        <input type="number" step="0.5" min="0" id="time_remaining" name="time_remaining" value="{{ issue.time_remaining or '' }}" placeholder="e.g. 5" style="width:100%;min-height:28px;padding:4px 8px;font-size:13px;">
+                    </div>
+                    <button type="submit" style="width:100%;min-height:28px;font-size:12px;margin-top:8px;">Set Estimate</button>
+                </form>
+            {% endif %}
+
+            {% if time_entries %}
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 14px 0;">
+                <h3 style="font-size: 12px; font-weight: 600; margin-bottom: 8px;">Logged Work</h3>
+                {% for entry in time_entries %}
+                    <div style="font-size: 11px; padding: 6px 0; border-bottom: 1px solid var(--border);">
+                        <div style="display: flex; justify-content: space-between;">
+                            <strong>{{ entry.user_name }}</strong>
+                            <span>{{ entry.hours_spent }}h</span>
+                        </div>
+                        {% if entry.description %}
+                            <div style="color: var(--text-muted); margin-top: 2px;">{{ entry.description }}</div>
+                        {% endif %}
+                        <div style="color: var(--text-subtle); margin-top: 2px;">{{ entry.logged_at }}</div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Watchers Toggle panel -->
+        <div class="detail-stats-panel">
+            <h2 style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 14px;">Watchers</h2>
+            <p style="font-size: 12px; color: var(--text-subtle); margin-bottom: 10px;"><strong>{{ watcher_count }}</strong> people watching this issue</p>
+            <form class="ajax-watch-form" method="POST" action="{{ url_for('issues.toggle_watch', issue_id=issue.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if watching %}
+                    <input type="hidden" name="action" value="unwatch">
+                    <button class="button-secondary" type="submit" style="width: 100%; min-height: 32px; font-size: 12px;">Stop Watching</button>
+                {% else %}
+                    <input type="hidden" name="action" value="watch">
+                    <button type="submit" style="width: 100%; min-height: 32px; font-size: 12px;">Watch Issue</button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}

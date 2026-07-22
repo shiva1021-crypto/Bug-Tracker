@@ -1,168 +1,162 @@
 {% extends "base.html" %}
-{% block title %}Edit {{ issue.issue_key }} · Bug Tracker{% endblock %}
+{% from "macros.html" import render_type_icon %}
+
+{% block title %}Edit {{ issue.issue_key }} — BugTracker{% endblock %}
 
 {% block content %}
-<div class="page page-wide">
-
-  {% include "partials/flashes.html" %}
-
-  <h1 class="page-title">
-    <span class="project-key-badge">{{ issue.issue_key }}</span>
-    Edit Issue
-  </h1>
-
-  <form method="post" action="{{ url_for('issues.edit_issue', issue_id=issue.id) }}"
-        enctype="multipart/form-data" novalidate class="issue-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-    <div class="issue-form-grid">
-      <div class="issue-form-main">
-        <div class="field">
-          <label class="label" for="title">Title</label>
-          <input class="input" type="text" id="title" name="title" value="{{ title or '' }}"
-                 maxlength="255" required autofocus>
+<div class="jira-main-content-narrow">
+    <div class="page-heading" style="margin-bottom: 20px;">
+        <div>
+            <p class="eyebrow">{{ issue.project_name }} · Edit lifecycle</p>
+            <h1>Edit {{ issue.issue_key }}</h1>
         </div>
-
-        <div class="field">
-          <label class="label" for="description">Description</label>
-          <textarea class="input" id="description" name="description" rows="8" required>{{ description or '' }}</textarea>
-        </div>
-
-        <div class="field">
-          <label class="label" for="reproduction_steps">Reproduction Steps</label>
-          <textarea class="input" id="reproduction_steps" name="reproduction_steps" rows="5"
-                    placeholder="Mainly useful for Bugs">{{ reproduction_steps or '' }}</textarea>
-        </div>
-      </div>
-
-      <div class="issue-form-side">
-        <div class="field">
-          <label class="label">Project</label>
-          <p class="static-value">{{ issue.project_key }} - {{ issue.project_name }}</p>
-          <p class="hint">Project can't be changed after an issue is created.</p>
-        </div>
-
-        <div class="field">
-          <label class="label">Issue Type</label>
-          <p class="static-value">
-            <span class="type-badge type-{{ issue.issue_type | lower }}">{{ issue.issue_type }}</span>
-          </p>
-          <p class="hint">Type can't be changed after an issue is created.</p>
-        </div>
-
-        <div class="field">
-          <label class="label" for="priority">Priority</label>
-          <select class="input" id="priority" name="priority" required>
-            {% for p in priorities %}
-              <option value="{{ p }}" {{ "selected" if selected_priority == p else "" }}>{{ p }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="label" for="severity">Severity</label>
-          <select class="input" id="severity" name="severity" required>
-            {% for s in severities %}
-              <option value="{{ s }}" {{ "selected" if selected_severity == s else "" }}>{{ s }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="label" for="category">Category</label>
-          <input class="input" type="text" id="category" name="category" value="{{ category or 'General' }}" maxlength="80">
-        </div>
-
-        <div class="field">
-          <label class="label" for="parent_id">Parent</label>
-          <select class="input" id="parent_id" name="parent_id">
-            <option value="">No parent</option>
-            {% for p in parent_options %}
-              <option value="{{ p.id }}" {{ "selected" if (selected_parent_id | string) == (p.id | string) else "" }}>{{ p.issue_key }} - {{ p.title }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="label" for="labels">Labels</label>
-          <input class="input" type="text" id="labels" name="labels" value="{{ labels or '' }}" placeholder="frontend, urgent">
-          <p class="hint">Comma-separated.</p>
-        </div>
-
-        <div class="field">
-          <label class="label" for="story_points">Story Points</label>
-          <input class="input" type="number" id="story_points" name="story_points" min="0" step="1" value="{{ story_points or '' }}">
-        </div>
-
-        <div class="field">
-          <label class="label" for="due_date">Due Date</label>
-          <input class="input" type="date" id="due_date" name="due_date" value="{{ due_date or '' }}">
-        </div>
-
-        <div class="field">
-          <label class="label" for="fix_version_id">Fix Version</label>
-          <select class="input" id="fix_version_id" name="fix_version_id">
-            <option value="">No fix version</option>
-            {% for v in selectable_versions %}
-              <option value="{{ v.id }}" {{ "selected" if (selected_fix_version_id | string) == (v.id | string) else "" }}>{{ v.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="field">
-          <label class="label">Screenshot</label>
-          {% if issue.screenshot_path %}
-            <img class="screenshot-preview screenshot-preview-existing" src="{{ url_for('issues.issue_screenshot', issue_id=issue.id) }}" alt="Current screenshot">
-            <label class="checkbox-line">
-              <input type="checkbox" name="remove_screenshot">
-              Remove the current screenshot
-            </label>
-            <p class="hint">Or choose a new file below to replace it.</p>
-          {% endif %}
-          <input class="input" type="file" id="screenshot" name="screenshot"
-                 accept=".png,.jpg,.jpeg,.gif,.webp" data-screenshot-input>
-          <img class="screenshot-preview" data-screenshot-preview hidden alt="New screenshot preview">
-        </div>
-      </div>
     </div>
 
-    {% if custom_fields %}
-    <div class="card custom-fields-section">
-      <h2 class="section-title">Custom Fields</h2>
-      {% for field in custom_fields %}
-        <div class="field">
-          <label class="label" for="custom_field_{{ field.id }}">
-            {{ field.name }}{% if field.required %} *{% endif %}
-          </label>
-          {% if field.field_type == 'dropdown' %}
-            <select class="input" id="custom_field_{{ field.id }}" name="custom_field_{{ field.id }}" {{ "required" if field.required else "" }}>
-              <option value="">Select…</option>
-              {% for option in field.options or [] %}
-                <option value="{{ option }}" {{ "selected" if field.value == option else "" }}>{{ option }}</option>
-              {% endfor %}
-            </select>
-          {% elif field.field_type == 'checkbox' %}
-            <label class="checkbox-line">
-              <input type="checkbox" id="custom_field_{{ field.id }}" name="custom_field_{{ field.id }}" {{ "checked" if field.value == '1' else "" }}>
-              Yes
-            </label>
-          {% elif field.field_type == 'number' %}
-            <input class="input" type="number" id="custom_field_{{ field.id }}" name="custom_field_{{ field.id }}"
-                   value="{{ field.value if field.value is not none else '' }}" {{ "required" if field.required else "" }}>
-          {% elif field.field_type == 'date' %}
-            <input class="input" type="date" id="custom_field_{{ field.id }}" name="custom_field_{{ field.id }}"
-                   value="{{ field.value if field.value is not none else '' }}" {{ "required" if field.required else "" }}>
-          {% else %}
-            <input class="input" type="text" id="custom_field_{{ field.id }}" name="custom_field_{{ field.id }}"
-                   value="{{ field.value if field.value is not none else '' }}" {{ "required" if field.required else "" }}>
-          {% endif %}
-        </div>
-      {% endfor %}
-    </div>
-    {% endif %}
+    <section class="panel form-card">
+        <form method="POST" action="{{ url_for('issues.edit_issue', issue_id=issue.id) }}" enctype="multipart/form-data" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <button type="submit" class="btn btn-primary">Save Changes</button>
-  </form>
+            <div class="form-group">
+                <label for="title">Summary (Title) *</label>
+                <input id="title" type="text" name="title" maxlength="255" value="{{ title or '' }}" required placeholder="Enter summary">
+            </div>
 
+            <div class="form-group">
+                <label for="description">Description *</label>
+                <textarea id="description" name="description" required placeholder="Provide a detailed description of the issue...">{{ description or '' }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="reproduction_steps">Reproduction Steps</label>
+                <textarea id="reproduction_steps" name="reproduction_steps" placeholder="List steps to reproduce, actual vs expected results..." style="min-height: 80px;">{{ reproduction_steps or '' }}</textarea>
+            </div>
+
+            <div class="two-column">
+                <div class="form-group">
+                    <label>Project</label>
+                    <p style="padding: 8px 0; color: var(--text-subtle); font-weight: 600;">{{ issue.project_key }} - {{ issue.project_name }}</p>
+                    <p class="hint" style="font-size: 11px; color: var(--text-muted);">Project can't be changed after an issue is created.</p>
+                </div>
+                <div class="form-group">
+                    <label>Work Type</label>
+                    <p style="padding: 8px 0;"><span class="issue-type-badge type-{{ issue.issue_type | lower }}">{{ render_type_icon(issue.issue_type, 12) }} {{ issue.issue_type }}</span></p>
+                    <p class="hint" style="font-size: 11px; color: var(--text-muted);">Type can't be changed after an issue is created.</p>
+                </div>
+            </div>
+
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <input id="category" type="text" name="category" value="{{ category or 'General' }}" maxlength="80">
+                </div>
+                <div class="form-group">
+                    <label for="parent_id">Parent Issue</label>
+                    <select id="parent_id" name="parent_id">
+                        <option value="">No parent</option>
+                        {% for parent in parent_options %}
+                            <option value="{{ parent.id }}" {% if (selected_parent_id | string) == (parent.id | string) %}selected{% endif %}>{{ parent.issue_key }} · {{ parent.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="labels">Labels</label>
+                    <input id="labels" type="text" name="labels" maxlength="255" value="{{ labels or '' }}" placeholder="frontend, backend">
+                </div>
+                <div class="form-group">
+                    <label for="fix_version_id">Fix Version</label>
+                    <select id="fix_version_id" name="fix_version_id">
+                        <option value="">None</option>
+                        {% for version in selectable_versions %}
+                            <option value="{{ version.id }}" {% if (selected_fix_version_id | string) == (version.id | string) %}selected{% endif %}>{{ version.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="story_points">Story Points (Estimate)</label>
+                    <input id="story_points" type="number" name="story_points" min="0" step="1" value="{{ story_points or '' }}" placeholder="e.g. 1, 2, 3, 5, 8">
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Due Date</label>
+                    <input id="due_date" type="date" name="due_date" value="{{ due_date or '' }}">
+                </div>
+            </div>
+
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="priority">Priority *</label>
+                    <select id="priority" name="priority" required>
+                        {% for priority in priorities %}
+                            <option value="{{ priority }}" {% if selected_priority == priority %}selected{% endif %}>{{ priority }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="severity">Severity *</label>
+                    <select id="severity" name="severity" required>
+                        {% for severity in severities %}
+                            <option value="{{ severity }}" {% if selected_severity == severity %}selected{% endif %}>{{ severity }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label>Screenshot</label>
+                {% if issue.screenshot_path %}
+                    <div style="margin-bottom: 10px;">
+                        <img class="screenshot" style="max-width: 260px;" src="{{ url_for('issues.issue_screenshot', issue_id=issue.id) }}" alt="Current screenshot">
+                    </div>
+                    <label style="font-weight: 400; font-size: 13px; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                        <input type="checkbox" name="remove_screenshot" style="width: auto; min-height: 0;">
+                        Remove the current screenshot
+                    </label>
+                    <p class="hint" style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Or choose a new file below to replace it.</p>
+                {% endif %}
+                <label for="screenshot" style="font-weight: 400;">Replace Screenshot Attachment</label>
+                <input id="screenshot" type="file" name="screenshot" accept="image/png,image/jpeg,image/gif,image/webp" style="padding-top: 6px;">
+            </div>
+
+            {% if custom_fields %}
+            <div id="custom-fields-container" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
+                <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Custom Fields</h3>
+                {% for field in custom_fields %}
+                    <div class="form-group">
+                        <label for="custom_field_{{ field.id }}">{{ field.name }}{% if field.required %} <span style="color: var(--danger);">*</span>{% endif %}</label>
+                        {% if field.field_type == 'dropdown' %}
+                            <select id="custom_field_{{ field.id }}" name="custom_field_{{ field.id }}" {{ "required" if field.required else "" }}>
+                                <option value="">-- Select --</option>
+                                {% for option in field.options or [] %}
+                                    <option value="{{ option }}" {% if field.value == option %}selected{% endif %}>{{ option }}</option>
+                                {% endfor %}
+                            </select>
+                        {% elif field.field_type == 'checkbox' %}
+                            <label style="font-weight: 400; font-size: 13px;">
+                                <input type="checkbox" id="custom_field_{{ field.id }}" name="custom_field_{{ field.id }}" {{ "checked" if field.value == '1' else "" }}>
+                                Yes
+                            </label>
+                        {% elif field.field_type == 'number' %}
+                            <input type="number" id="custom_field_{{ field.id }}" name="custom_field_{{ field.id }}" value="{{ field.value if field.value is not none else '' }}" {{ "required" if field.required else "" }}>
+                        {% elif field.field_type == 'date' %}
+                            <input type="date" id="custom_field_{{ field.id }}" name="custom_field_{{ field.id }}" value="{{ field.value if field.value is not none else '' }}" {{ "required" if field.required else "" }}>
+                        {% else %}
+                            <input type="text" id="custom_field_{{ field.id }}" name="custom_field_{{ field.id }}" value="{{ field.value if field.value is not none else '' }}" {{ "required" if field.required else "" }}>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div style="display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
+                <a class="button button-secondary" href="{{ url_for('issues.issue_detail', issue_id=issue.id) }}">Cancel</a>
+                <button type="submit">Save Changes</button>
+            </div>
+        </form>
+    </section>
 </div>
 {% endblock %}

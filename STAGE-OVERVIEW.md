@@ -16,9 +16,3 @@ linked `STAGE-0N-REPORT.md`. For setup/run instructions, see `README.md`.
 | 8 | Agile Planning | Scrum-style sprint planning plus issue linking and saved filters | Backlog, sprint lifecycle (future→active→closed), burndown chart, typed issue links (blocks/relates/duplicates/clones), saved filter chips | Backlog, Issue Detail (links) | ✅ Complete | [STAGE-08-REPORT.md](STAGE-08-REPORT.md) |
 | 9 | Extensibility | Let an org tailor the tool without code changes | Custom fields (5 types), automation rules (trigger + conditions + typed action), time tracking, release versions | Projects › Custom Fields, Automation, Releases | ✅ Complete | [STAGE-09-REPORT.md](STAGE-09-REPORT.md) |
 | 10 | Reporting, Dashboards & Ops | Surface insight and make the app production-ready | Filterable reports with charts + CSV export + print view, configurable dashboard widgets, email outbox worker, login rate limiting, production WSGI entry point, friendly DB-outage page | Dashboard, Reports | ✅ Complete | [STAGE-10-REPORT.md](STAGE-10-REPORT.md) |
-
-All 10 stages are built and their pages have additionally been hand-matched
-to the original reference UI design (structure, classes and wording) -
-see `README.md`'s "Project structure" section for what changed there and
-each `STAGE-0N-REPORT.md` for where the real data model didn't support
-something the reference design assumed.

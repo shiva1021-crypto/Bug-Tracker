@@ -1,4 +1,4 @@
-# Stage 9 - Extensibility
+# Stage 9 — Extensibility
 
 ## Goal
 Let each organization tailor the tool to its own needs without code
@@ -32,7 +32,9 @@ Stage 8 (agile planning) must be complete.
 - Issues can be assigned a "fix version."
 - Versions page shows issue counts per version (total/open/resolved); releasing a version marks it shipped, archiving hides it from the main list.
 
-## Frontend - Design & Layout
+## Frontend — Design & Layout
+
+> **Clone these exactly from `reference-ui/`:** `templates/project_custom_fields.html`, `templates/automation_rules.html`, `templates/versions.html`. For the custom fields and time-tracking sections of the issue detail sidebar, reference the corresponding markup already present in `reference-ui/templates/bug_details.html` (cloned whole in Stage 5). Copy structure, classes, and wording as-is — adapt only route/variable names.
 
 **Project → Fields page** (`/projects/<id>/fields`, Admin/PM only):
 - List of existing custom fields with type, required flag, and a delete button.
@@ -52,19 +54,19 @@ Stage 8 (agile planning) must be complete.
 
 **Add/Edit Issue form (extend):** Fix Version dropdown, and custom fields rendered dynamically below the standard fields once a project is selected.
 
-## Backend - Data Model & API
+## Backend — Data Model & API
 
-**Table: `custom_field_definitions`** - id, organization_id, project_id, name, field_type (enum: text/number/date/dropdown/checkbox), options (JSON, for dropdown), required (bool), display_order.
+**Table: `custom_field_definitions`** — id, organization_id, project_id, name, field_type (enum: text/number/date/dropdown/checkbox), options (JSON, for dropdown), required (bool), display_order.
 
-**Table: `custom_field_values`** - id, bug_id, field_id, value (text), unique on (bug_id, field_id).
+**Table: `custom_field_values`** — id, bug_id, field_id, value (text), unique on (bug_id, field_id).
 
-**Table: `automation_rules`** - id, organization_id, project_id (nullable = org-wide), name, trigger_event (enum), conditions (JSON), actions (JSON), enabled (bool).
+**Table: `automation_rules`** — id, organization_id, project_id (nullable = org-wide), name, trigger_event (enum), conditions (JSON), actions (JSON), enabled (bool).
 
-**Table: `time_entries`** - id, bug_id, user_id, hours_spent (decimal), description, logged_at.
+**Table: `time_entries`** — id, bug_id, user_id, hours_spent (decimal), description, logged_at.
 
 **Alter `bugs`:** add `time_estimate DECIMAL(10,2) NULL`, `time_remaining DECIMAL(10,2) NULL`, `fix_version_id INT NULL` (FK → versions).
 
-**Table: `versions`** - id, organization_id, project_id, name, description, release_date, status (enum: unreleased/released/archived). Unique on (project_id, name).
+**Table: `versions`** — id, organization_id, project_id, name, description, release_date, status (enum: unreleased/released/archived). Unique on (project_id, name).
 
 **Routes (grouped by feature):**
 | Method | Path | Purpose |

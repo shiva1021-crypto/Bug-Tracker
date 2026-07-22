@@ -168,10 +168,18 @@ def logout():
 @auth_bp.get("/profile")
 @login_required
 def profile():
-    user = auth_service.get_profile(current_user()["id"])
-    if user is None:
+    session_user = current_user()
+    page_data = auth_service.get_profile_page_data(
+        session_user["id"], session_user["organization_id"]
+    )
+    if page_data is None:
         # Session points at a user that no longer exists.
         end_session()
         flash("Please log in to continue.", "error")
         return redirect(url_for("auth.login"))
-    return render_template("profile.html", user=user)
+    return render_template(
+        "profile.html",
+        current_user_id=session_user["id"],
+        can_view_email=True,
+        **page_data,
+    )

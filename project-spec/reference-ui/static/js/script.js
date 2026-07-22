@@ -1,11 +1,3 @@
-/*
- * Copied verbatim from project-spec/reference-ui/static/js/script.js, per the
- * project's UI Reference convention (00-README.md), with exactly one
- * adaptation: the drag-and-drop board update reads the page's hidden CSRF
- * field by name, and this app's field is named "csrf_token" (see
- * utils/security.py::CSRF_FORM_FIELD), not "_csrf_token" as in the reference
- * app. That selector below is changed to match; nothing else is touched.
- */
 document.addEventListener("DOMContentLoaded", function () {
     const navToggle = document.querySelector(".nav-toggle");
     const jiraSidebar = document.getElementById("jiraSidebar");
@@ -23,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (localStorage.getItem("sidebarState") === "collapsed") {
             jiraSidebar.classList.add("collapsed");
         }
-
+        
         if (sidebarCollapseBtn) {
             sidebarCollapseBtn.addEventListener("click", function () {
                 jiraSidebar.classList.toggle("collapsed");
@@ -76,14 +68,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 <button class="toast-close" aria-label="Close toast">&times;</button>
             `;
             container.appendChild(toast);
-
+            
             const closeBtn = toast.querySelector(".toast-close");
             closeBtn.addEventListener("click", () => {
                 toast.style.opacity = "0";
                 toast.style.transform = "translateY(10px)";
                 setTimeout(() => toast.remove(), 200);
             });
-
+            
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.style.opacity = "0";
@@ -174,7 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 updateColumnCardCounts();
 
                 // Find CSRF token inside page
-                const csrfInput = document.querySelector('input[name="csrf_token"]');
+                const csrfInput = document.querySelector('input[name="_csrf_token"]');
                 const csrfToken = csrfInput ? csrfInput.value : "";
                 const updateUrl = draggedCard.getAttribute("data-update-url");
                 const issueKey = draggedCard.getAttribute("data-key");
@@ -182,7 +174,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Prepare FormData for the update request
                 const formData = new FormData();
                 formData.append("status", newStatus);
-                formData.append("csrf_token", csrfToken);
+                formData.append("_csrf_token", csrfToken);
                 formData.append("return_to", "board");
 
                 // Perform live asynchronous update
@@ -261,12 +253,12 @@ document.addEventListener("DOMContentLoaded", function () {
         boardSearchInput.addEventListener("input", function () {
             const query = boardSearchInput.value.toLowerCase().trim();
             const cards = document.querySelectorAll(".kanban-card");
-
+            
             cards.forEach(card => {
                 const title = card.querySelector(".kanban-card-title") ? card.querySelector(".kanban-card-title").textContent.toLowerCase() : "";
                 const key = card.querySelector(".kanban-issue-key") ? card.querySelector(".kanban-issue-key").textContent.toLowerCase() : "";
                 const labels = Array.from(card.querySelectorAll(".issue-label")).map(el => el.textContent.toLowerCase()).join(" ");
-
+                
                 if (title.includes(query) || key.includes(query) || labels.includes(query)) {
                     card.style.display = "";
                 } else {
@@ -315,7 +307,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         newComment.style.opacity = "0";
                         newComment.style.transform = "translateY(-10px)";
                         newComment.style.transition = "all 0.3s ease";
-
+                        
                         const initials = document.querySelector(".user-avatar-initial") ? document.querySelector(".user-avatar-initial").textContent.trim() : "U";
                         const userName = document.querySelector(".user-profile-link") ? document.querySelector(".user-profile-link").textContent.trim() : "You";
 
@@ -337,14 +329,14 @@ document.addEventListener("DOMContentLoaded", function () {
                         if (emptyMsg) emptyMsg.remove();
 
                         commentFeed.insertBefore(newComment, commentFeed.querySelector("form").nextSibling);
-
+                        
                         // Force reflow and animate
                         setTimeout(() => {
                             newComment.style.opacity = "1";
                             newComment.style.transform = "translateY(0)";
                         }, 50);
                     }
-
+                    
                     textarea.value = "";
                     Toast.show(payload.message || "Comment posted successfully.", "success");
                 } else {
@@ -366,7 +358,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const actionInput = watcherForm.querySelector("input[name='action']");
             const submitBtn = watcherForm.querySelector("button");
             const countText = watcherForm.querySelector(".muted");
-
+            
             const isUnwatching = actionInput.value === "unwatch";
 
             fetch(action, {
@@ -388,7 +380,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         submitBtn.textContent = "Stop Watching";
                         Toast.show("You are now watching this issue.", "success");
                     }
-
+                    
                     // Increment/decrement watcher counts
                     if (countText) {
                         const match = countText.textContent.match(/\d+/);
@@ -465,7 +457,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g,
+        return str.replace(/[&<>'"]/g, 
             tag => ({
                 '&': '&amp;',
                 '<': '&lt;',
@@ -505,20 +497,20 @@ document.addEventListener("DOMContentLoaded", function () {
         boardGroupBy.addEventListener("change", function() {
             const grouping = this.value;
             const columns = document.querySelectorAll(".kanban-column");
-
+            
             columns.forEach(col => {
                 const cardsContainer = col.querySelector(".kanban-cards");
                 if (!cardsContainer) return;
-
+                
                 const cards = Array.from(cardsContainer.querySelectorAll(".kanban-card"));
-
+                
                 // Store original loaded index if not already present
                 cards.forEach((card, idx) => {
                     if (!card.hasAttribute("data-original-index")) {
                         card.setAttribute("data-original-index", idx);
                     }
                 });
-
+                
                 if (grouping === "none") {
                     cards.sort((a, b) => {
                         return parseInt(a.getAttribute("data-original-index")) - parseInt(b.getAttribute("data-original-index"));
@@ -537,11 +529,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         return pA - pB;
                     });
                 }
-
+                
                 // Re-append sorted cards
                 cards.forEach(card => cardsContainer.appendChild(card));
             });
-
+            
             Toast.show(`Grouped board by: ${grouping.charAt(0).toUpperCase() + grouping.slice(1)}`, "success");
         });
     }

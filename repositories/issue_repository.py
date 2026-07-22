@@ -565,6 +565,104 @@ def search_for_report(organization_id: int, filters: dict) -> list[dict]:
             cursor.close()
 
 
+def list_reported_by_user(user_id: int, organization_id: int, limit: int = 5) -> list[dict]:
+    """Most recently created issues this user filed. Feeds the Stage 2
+    profile page's "Recently Reported Issues" table (see reference-ui's
+    profile.html), which needs real issue/severity data that didn't exist
+    until later stages built the `bugs` table out."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                """
+                SELECT b.id, b.issue_key, b.title, b.status, b.priority, b.severity
+                FROM bugs b
+                WHERE b.reporter_id = %s AND b.organization_id = %s
+                ORDER BY b.created_at DESC
+                LIMIT %s
+                """,
+                (user_id, organization_id, limit),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
+def list_assigned_by_user(user_id: int, organization_id: int, limit: int = 5) -> list[dict]:
+    """Most recently created issues assigned to this user, for the profile
+    page's "Recently Assigned Issues" table."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                """
+                SELECT b.id, b.issue_key, b.title, b.status, b.priority, b.severity
+                FROM bugs b
+                WHERE b.assigned_to = %s AND b.organization_id = %s
+                ORDER BY b.created_at DESC
+                LIMIT %s
+                """,
+                (user_id, organization_id, limit),
+            )
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+
+
+def profile_counts(user_id: int, organization_id: int) -> dict:
+    """Reported / assigned / active-assigned totals for the profile page's
+    stat cards. "Active" means not yet in the terminal `Done` status (see
+    services/workflow_service.py::STATUSES)."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT COUNT(*) FROM bugs WHERE reporter_id = %s AND organization_id = %s",
+                (user_id, organization_id),
+            )
+            reported_count = cursor.fetchone()[0]
+
+            cursor.execute(
+                "SELECT COUNT(*) FROM bugs WHERE assigned_to = %s AND organization_id = %s",
+                (user_id, organization_id),
+            )
+            assigned_count = cursor.fetchone()[0]
+
+            cursor.execute(
+                "SELECT COUNT(*) FROM bugs WHERE assigned_to = %s AND organization_id = %s "
+                "AND status != 'Done'",
+                (user_id, organization_id),
+            )
+            active_assigned_count = cursor.fetchone()[0]
+
+            return {
+                "reported_count": reported_count,
+                "assigned_count": assigned_count,
+                "active_assigned_count": active_assigned_count,
+            }
+        finally:
+            cursor.close()
+
+
+def count_by_project(organization_id: int) -> dict[int, int]:
+    """Issue counts grouped by project, keyed by project_id. Feeds the
+    Projects list page's card footer ("N issues") -- reference-ui's
+    projects.html shows this per card, but `project_repository` only ever
+    returns the bare project columns, so this is queried separately rather
+    than joined into every project read (most callers don't need it)."""
+    with get_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute(
+                "SELECT project_id, COUNT(*) AS issue_count FROM bugs "
+                "WHERE organization_id = %s GROUP BY project_id",
+                (organization_id,),
+            )
+            return {row["project_id"]: row["issue_count"] for row in cursor.fetchall()}
+        finally:
+            cursor.close()
+
+
 def search_issues(organization_id: int, filters: dict) -> list[dict]:
     """The Stage 8 issue list/search page's query.
 

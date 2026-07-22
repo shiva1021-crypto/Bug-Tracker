@@ -11,6 +11,7 @@ from datetime import timedelta
 from flask import Flask, render_template, request
 
 from config import config
+from repositories import organization_repository
 from routes.admin_routes import admin_bp
 from routes.auth_routes import auth_bp
 from routes.automation_routes import automation_bp
@@ -115,10 +116,22 @@ def create_app() -> Flask:
 
     @app.context_processor
     def inject_globals():
-        """Make `current_user` and `csrf_token()` available in every template."""
+        """Make `current_user`, `csrf_token()`, and the caller's organization
+        name available in every template. `current_organization_name` backs
+        the reference-ui sidebar's org badge (base.html) -- the session only
+        caches `organization_id` (see utils/auth.py), so the name is looked
+        up here, once per request, rather than duplicating it into the
+        session cache.
+        """
+        user = current_user()
+        organization_name = None
+        if user is not None:
+            organization = organization_repository.get_by_id(user["organization_id"])
+            organization_name = organization["name"] if organization else None
         return {
-            "current_user": current_user(),
+            "current_user": user,
             "csrf_token": generate_csrf_token,
+            "current_organization_name": organization_name,
         }
 
     return app

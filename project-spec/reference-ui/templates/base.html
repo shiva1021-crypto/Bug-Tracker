@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}BugTracker — Work Management{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
     <div class="app-layout">
@@ -12,31 +12,31 @@
         <header class="jira-header">
             <div class="jira-header-left" style="gap: 12px;">
                 <button class="nav-toggle" type="button" aria-label="Toggle navigation" style="display: none;">Menu</button>
-                <a class="brand" href="{{ url_for('auth.landing') }}" style="margin-right: 12px;">
+                <a class="brand" href="{{ url_for('index') }}" style="margin-right: 12px;">
                     <svg class="brand-logo" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px; overflow: visible;">
                         <path d="M11.5 12.5L7.5 6.5C7.2 6.1 6.6 6.0 6.2 6.3L2.2 9.3C1.8 9.6 1.7 10.2 2.0 10.6L10.0 22.0C10.3 22.4 10.9 22.5 11.3 22.2L15.3 19.2C15.7 18.9 15.8 18.3 15.5 17.9L11.5 12.5Z" fill="#0C66E4"/>
                         <path d="M22.0 10.5L17.0 3.5C16.7 3.1 16.1 3.0 15.7 3.3L11.7 6.3C11.3 6.6 11.2 7.2 11.5 7.6L19.5 19.0C19.8 19.4 20.4 19.5 20.8 19.2L24.8 16.2C25.2 15.9 25.3 15.3 25.0 14.9L22.0 10.5Z" fill="#2684FF"/>
                     </svg>
                     <span style="font-weight: 800; font-size: 19px; color: var(--text);">BugTracker</span>
                 </a>
-
-                {% if current_user %}
-                <a class="btn-create-issue" href="{{ url_for('issues.add_issue') }}" style="text-decoration: none; border-radius: 4px !important; padding: 4px 12px !important; font-size: 14px !important; min-height: 28px !important; line-height: 1.4 !important; font-weight: 600 !important; background: var(--primary) !important;">+ Create</a>
+                
+                {% if current_user_id %}
+                <a class="btn-create-issue" href="{{ url_for('bug.add_bug') }}" style="text-decoration: none; border-radius: 4px !important; padding: 4px 12px !important; font-size: 14px !important; min-height: 28px !important; line-height: 1.4 !important; font-weight: 600 !important; background: var(--primary) !important;">+ Create</a>
                 <nav class="header-nav" style="display: flex; align-items: center; gap: 16px; margin-left: 16px; font-size: 13.5px;">
-                    <a href="{{ url_for('dashboard.dashboard') }}" style="color: var(--text-subtle); text-decoration: none; font-weight: 500;">Dashboard</a>
-                    <a href="{{ url_for('projects.list_projects') }}" style="color: var(--text-subtle); text-decoration: none; font-weight: 500;">Projects</a>
-                    <a href="{{ url_for('issues.list_issues') }}" style="color: var(--text-subtle); text-decoration: none; font-weight: 500;">Issues</a>
-                    <a href="{{ url_for('backlog.backlog') }}" style="color: var(--text-subtle); text-decoration: none; font-weight: 500;">Backlog</a>
+                    <a href="{{ url_for('bug.dashboard') }}" style="color: var(--text-subtle); text-decoration: none; font-weight: 500;">Dashboard</a>
+                    <a href="{{ url_for('project.projects') }}" style="color: var(--text-subtle); text-decoration: none; font-weight: 500;">Projects</a>
+                    <a href="{{ url_for('bug.view_bugs') }}" style="color: var(--text-subtle); text-decoration: none; font-weight: 500;">Issues</a>
+                    <a href="{{ url_for('bug.backlog') }}" style="color: var(--text-subtle); text-decoration: none; font-weight: 500;">Backlog</a>
                 </nav>
                 {% endif %}
             </div>
-
+            
             <div class="jira-header-right" style="gap: 8px;">
-                {% if current_user %}
+                {% if current_user_id %}
                     <span class="premium-badge" style="background: #FFF0EC; color: #AE2A19; border: 1px solid #FFECEB; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap;">Premium trial <small style="font-size:10px; color:#AE2A19;">29d</small></span>
-
+                    
                     <a class="user-profile-link" href="{{ url_for('auth.profile') }}" style="padding:0; margin-left: 4px; flex-shrink: 0; text-decoration: none;">
-                        <span class="user-avatar-initial" style="background:#DEEBFF; color:#0C66E4; width: 28px; height: 28px; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: 800; border-radius: 50%;">{{ current_user.full_name[:1]|upper }}</span>
+                        <span class="user-avatar-initial" style="background:#DEEBFF; color:#0C66E4; width: 28px; height: 28px; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: 800; border-radius: 50%;">{{ current_user_name[:1]|upper }}</span>
                     </a>
                 {% else %}
                     <a class="button-secondary" href="{{ url_for('auth.login') }}" style="min-height: 32px; padding: 6px 12px; font-size: 13px; font-weight: 700; margin-right: 8px;">Log In</a>
@@ -48,13 +48,13 @@
 
         <div class="app-body">
             <!-- Collapsible Left Sidebar (Visible if logged in and not on public landing/auth pages) -->
-            {% if current_user %}
+            {% if current_user_id %}
             <aside class="jira-sidebar" id="jiraSidebar">
                 <div class="sidebar-top">
                     <!-- Menu Navigation list -->
                     <ul class="jira-sidebar-nav" style="padding-top: 12px;">
                         <li>
-                            <a href="{{ url_for('automation.list_rules') }}" style="font-weight: 500; {% if request.path == url_for('automation.list_rules') %}color:var(--primary);{% endif %}">
+                            <a href="{{ url_for('bug.automation_rules') }}" style="font-weight: 500; {% if request.path == url_for('bug.automation_rules') %}color:var(--primary);{% endif %}">
                                 <span class="sidebar-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                                 </span>
@@ -63,23 +63,23 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{ url_for('versions.list_versions') }}" style="font-weight: 500; {% if request.path == url_for('versions.list_versions') %}color:var(--primary);{% endif %}">
+                            <a href="{{ url_for('bug.versions') }}" style="font-weight: 500; {% if request.path == url_for('bug.versions') %}color:var(--primary);{% endif %}">
                                 <span class="sidebar-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="10" y2="21"></line></svg>
                                 </span>
                                 <span class="sidebar-text">Releases</span>
                             </a>
                         </li>
-
+                        
                         <li>
-                            <a href="{{ url_for('board.board') }}" class="{% if request.path == url_for('board.board') %}active{% endif %}" style="font-weight: 600;">
+                            <a href="{{ url_for('project.board') }}" class="{% if request.path == url_for('project.board') or request.path == '/' %}active{% endif %}" style="font-weight: 600;">
                                 <span class="sidebar-icon" style="background: #8777D9; color: #FFF; border-radius: 3px; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; line-height: 1;">{{ (current_organization_name or 'P')[:1]|upper }}</span>
                                 <span class="sidebar-text">{{ current_organization_name or 'Project' }}</span>
                             </a>
                         </li>
-
+                        
                         <li>
-                            <a href="{{ url_for('issues.list_issues') }}" class="{% if request.path == url_for('issues.list_issues') %}active{% endif %}" style="font-weight: 500;">
+                            <a href="{{ url_for('bug.view_bugs') }}" class="{% if request.path == url_for('bug.view_bugs') %}active{% endif %}" style="font-weight: 500;">
                                 <span class="sidebar-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
                                 </span>
@@ -87,7 +87,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{ url_for('backlog.backlog') }}" class="{% if request.path == url_for('backlog.backlog') %}active{% endif %}" style="font-weight: 500;">
+                            <a href="{{ url_for('bug.backlog') }}" class="{% if request.path == url_for('bug.backlog') %}active{% endif %}" style="font-weight: 500;">
                                 <span class="sidebar-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
                                 </span>
@@ -95,16 +95,16 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{ url_for('dashboard.dashboard') }}" class="{% if request.path == url_for('dashboard.dashboard') %}active{% endif %}" style="font-weight: 500;">
+                            <a href="{{ url_for('bug.dashboard') }}" class="{% if request.path == url_for('bug.dashboard') %}active{% endif %}" style="font-weight: 500;">
                                 <span class="sidebar-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4-2"></path></svg>
                                 </span>
                                 <span class="sidebar-text">Dashboard</span>
                             </a>
                         </li>
-                        {% if current_user.role in ['admin', 'project_manager'] %}
+                        {% if current_user_role in ['admin', 'project_manager'] %}
                         <li>
-                            <a href="{{ url_for('reports.reports') }}" class="{% if request.path == url_for('reports.reports') %}active{% endif %}" style="font-weight: 500;">
+                            <a href="{{ url_for('report.reports') }}" class="{% if request.path == url_for('report.reports') %}active{% endif %}" style="font-weight: 500;">
                                 <span class="sidebar-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
                                 </span>
@@ -113,9 +113,9 @@
                             </a>
                         </li>
                         {% endif %}
-                        {% if current_user.role == 'admin' %}
+                        {% if current_user_role == 'admin' %}
                         <li>
-                            <a href="{{ url_for('admin.users_page') }}" class="{% if request.path == url_for('admin.users_page') %}active{% endif %}" style="font-weight: 500;">
+                            <a href="{{ url_for('admin.users') }}" class="{% if request.path == url_for('admin.users') %}active{% endif %}" style="font-weight: 500;">
                                 <span class="sidebar-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                                 </span>
@@ -125,7 +125,7 @@
                         </li>
                         {% endif %}
                         <li>
-                            <a href="{{ url_for('projects.list_projects') }}" class="{% if request.path == url_for('projects.list_projects') %}active{% endif %}" style="font-weight: 500;">
+                            <a href="{{ url_for('project.projects') }}" class="{% if request.path == url_for('project.projects') %}active{% endif %}" style="font-weight: 500;">
                                 <span class="sidebar-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                                 </span>
@@ -134,7 +134,7 @@
                             </a>
                         </li>
 
-
+                        
                         <!-- Theme Toggle & Logout Links -->
                         <li style="margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 8px;">
                             <a href="#" class="theme-toggle" style="font-weight: 500; font-size: 13px; color: var(--text-subtle); display: flex; align-items: center; gap: 12px; padding: 6px 12px; border-radius: 4px;">
@@ -144,7 +144,7 @@
                         </li>
                         <li>
                             <form method="post" action="{{ url_for('auth.logout') }}" style="display: block; margin: 0; padding: 0;">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" style="background: none !important; border: none !important; padding: 6px 12px !important; color: var(--text-subtle) !important; font-weight: 500 !important; font-size: 13px !important; text-align: left; width: 100%; display: flex; align-items: center; gap: 12px; box-shadow: none !important; min-height: 28px !important; cursor: pointer; border-radius: 4px;">
                                     <span class="sidebar-icon" style="font-size: 15px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; font-weight: normal;">🚪</span>
                                     <span class="sidebar-text">Log Out</span>
@@ -177,7 +177,7 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

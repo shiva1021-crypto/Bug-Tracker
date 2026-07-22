@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Releases — BugTracker{% endblock %}
+
+{% block content %}
+<style>
+.version-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+.version-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.version-name {
+    font-weight: 600;
+    font-size: 15px;
+}
+.version-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.version-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.version-badge.unreleased { background: #eef; color: #338; }
+.version-badge.released { background: #dee; color: #060; }
+.version-badge.archived { background: #eee; color: #666; }
+.version-progress {
+    width: 120px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.version-progress-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+.version-body { padding: 8px 16px 12px; }
+.version-desc { font-size: 12px; color: var(--text-muted); margin: 4px 0 8px; font-style: italic; }
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+    <h1 style="font-size:22px;font-weight:600;margin:0;">Releases</h1>
+    <div style="display:flex;align-items:center;gap:8px;">
+        <form method="GET">
+            <select name="project" onchange="this.form.submit()" style="min-height:32px;padding:4px 8px;font-size:13px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                {% for project in projects %}
+                    <option value="{{ project.id }}" {% if selected_project == project.id|string %}selected{% endif %}>{{ project.project_key }} · {{ project.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% if current_user_role in ['admin', 'project_manager'] %}
+            <button class="button" onclick="document.getElementById('createVersionModal').classList.add('open')">+ Create Version</button>
+        {% endif %}
+    </div>
+</div>
+
+{% if not selected_project %}
+    <p style="font-size:13px;color:var(--text-muted);padding:24px;text-align:center;">Select a project to view its releases.</p>
+{% else %}
+    {% for version in version_list %}
+        <div class="version-panel">
+            <div class="version-header">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="version-name">{{ version.name }}</span>
+                    <span class="version-badge {{ version.status }}">{{ version.status }}</span>
+                </div>
+                <div class="version-meta">
+                    <span>{{ version.issue_count }} issues</span>
+                    {% if version.issue_count > 0 %}
+                        <div class="version-progress" title="{{ version.resolved_count }}/{{ version.issue_count }} resolved">
+                            <div class="version-progress-fill" style="width:{{ (version.resolved_count / version.issue_count * 100)|round }}%"></div>
+                        </div>
+                    {% endif %}
+                    {% if version.release_date %}
+                        <span>{{ version.release_date }}</span>
+                    {% endif %}
+                    {% if current_user_role in ['admin', 'project_manager'] %}
+                        {% if version.status == 'unreleased' %}
+                            <form method="POST" action="{{ url_for('bug.version_release', version_id=version.id) }}" style="display:inline">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                <button class="button-secondary" style="font-size:11px;min-height:24px;padding:2px 8px;">Release</button>
+                            </form>
+                        {% endif %}
+                        {% if version.status != 'archived' %}
+                            <form method="POST" action="{{ url_for('bug.version_archive', version_id=version.id) }}" style="display:inline">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                <button class="button-secondary" style="font-size:11px;min-height:24px;padding:2px 8px;">Archive</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="version-body">
+                {% if version.description %}<div class="version-desc">{{ version.description }}</div>{% endif %}
+                {% for issue in version.issues %}
+                    <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border);">
+                        <span style="font-size:11px;min-width:80px;font-weight:700;color:var(--text-muted);">{{ issue.issue_key }}</span>
+                        <a href="{{ url_for('bug.bug_details', bug_id=issue.id) }}" style="flex:1;color:var(--text);text-decoration:none;">{{ issue.title }}</a>
+                        {% if issue.story_points %}
+                            <span style="font-size:10px;font-weight:700;color:var(--text-subtle);width:20px;height:20px;border-radius:50%;border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;">{{ issue.story_points }}</span>
+                        {% endif %}
+                        <span class="status-badge status-{{ issue.status.lower().replace(' ', '_') }}" style="font-size:10px;padding:0 6px;">{{ issue.status }}</span>
+                    </div>
+                {% else %}
+                    <p style="font-size:12px;color:var(--text-muted);padding:8px 0;">No issues assigned to this version.</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <p style="font-size:13px;color:var(--text-muted);padding:24px;text-align:center;">No versions created yet.</p>
+    {% endfor %}
+{% endif %}
+
+<!-- Create Version Modal -->
+<div class="modal-overlay" id="createVersionModal">
+    <div class="modal-box">
+        <h2>Create Version</h2>
+        <form method="POST" action="{{ url_for('bug.version_create') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="project_id" value="{{ selected_project }}">
+            <label for="ver_name">Version Name</label>
+            <input type="text" id="ver_name" name="name" required placeholder="e.g. v1.0">
+            <label for="ver_desc">Description</label>
+            <textarea id="ver_desc" name="description" placeholder="What's in this release?"></textarea>
+            <label for="ver_date">Release Date</label>
+            <input type="date" id="ver_date" name="release_date">
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+                <button type="button" class="button-secondary" onclick="this.closest('.modal-overlay').classList.remove('open')">Cancel</button>
+                <button type="submit" class="button">Create Version</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px;
+    min-width: 400px;
+    max-width: 90vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.modal-box h2 { margin: 0 0 16px; font-size: 18px; }
+.modal-box label { display: block; font-size: 13px; font-weight: 600; margin: 8px 0 4px; }
+.modal-box input, .modal-box textarea {
+    width: 100%;
+    padding: 8px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    box-sizing: border-box;
+}
+.modal-box textarea { min-height: 60px; }
+</style>
+{% endblock %}

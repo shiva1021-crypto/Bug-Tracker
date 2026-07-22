@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}{{ user.full_name }} — Profile{% endblock %}
+{% block title %}{{ profile_user.full_name }} — Profile{% endblock %}
 
 {% block content %}
 <div class="page-heading">
     <div>
         <p class="eyebrow">User Profile</p>
-        <h1>{{ user.full_name }}</h1>
+        <h1>{{ profile_user.full_name }}</h1>
     </div>
-    {% if current_user_id == user.id %}
+    {% if current_user_id == profile_user.id %}
         <form class="nav-logout" method="post" action="{{ url_for('auth.logout') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
             <button class="button-secondary" type="submit">Log Out</button>
         </form>
     {% endif %}
@@ -19,26 +19,26 @@
 <section class="profile-layout">
     <!-- Left Card: Profile stats details -->
     <aside class="panel profile-card">
-        <div class="profile-avatar">{{ user.full_name[:2]|upper }}</div>
-        <h2 style="font-size: 18px; margin-top: 10px;">{{ user.full_name }}</h2>
+        <div class="profile-avatar">{{ profile_user.full_name[:2]|upper }}</div>
+        <h2 style="font-size: 18px; margin-top: 10px;">{{ profile_user.full_name }}</h2>
         <span class="status-badge" style="background: var(--primary-subtle); color: var(--primary); font-size: 11px; margin-top: 4px;">
-            {{ user.role.replace("_", " ").title() }}
+            {{ profile_user.role.replace("_", " ").title() }}
         </span>
 
         <dl class="profile-list" style="margin-top: 24px;">
             <div>
                 <dt>User ID</dt>
-                <dd>#{{ user.id }}</dd>
+                <dd>#{{ profile_user.id }}</dd>
             </div>
             {% if can_view_email %}
                 <div>
                     <dt>Email Address</dt>
-                    <dd style="word-break: break-all;">{{ user.email }}</dd>
+                    <dd style="word-break: break-all;">{{ profile_user.email }}</dd>
                 </div>
             {% endif %}
             <div>
                 <dt>Joined Workspace</dt>
-                <dd>{{ user.created_at }}</dd>
+                <dd>{{ profile_user.created_at }}</dd>
             </div>
         </dl>
     </aside>
@@ -68,7 +68,7 @@
         <section class="panel">
             <div class="section-heading">
                 <h2>Recently Reported Issues</h2>
-                <a href="{{ url_for('issues.list_issues') }}" class="button button-secondary" style="min-height: 28px; padding: 4px 10px; font-size: 12px;">Search issues</a>
+                <a href="{{ url_for('bug.view_bugs') }}" class="button button-secondary" style="min-height: 28px; padding: 4px 10px; font-size: 12px;">Search issues</a>
             </div>
             <div class="table-wrap">
                 <table>
@@ -85,10 +85,10 @@
                         {% for bug in reported_bugs %}
                             <tr>
                                 <td><strong style="color: var(--text-muted);">{{ bug.issue_key }}</strong></td>
-                                <td><a href="{{ url_for('issues.issue_detail', issue_id=bug.id) }}" style="font-weight: 600; color: var(--text);">{{ bug.title }}</a></td>
+                                <td><a href="{{ url_for('bug.bug_details', bug_id=bug.id) }}" style="font-weight: 600; color: var(--text);">{{ bug.title }}</a></td>
                                 <td>
                                     <span class="priority-badge">
-                                        {% if bug.priority in ['Urgent', 'Highest', 'Critical'] %}
+                                        {% if bug.priority in ['Urgent', 'Highest'] %}
                                             <span class="priority-icon priority-highest">▲</span>
                                         {% elif bug.priority == 'High' %}
                                             <span class="priority-icon priority-high">▲</span>
@@ -133,10 +133,10 @@
                         {% for bug in assigned_bugs %}
                             <tr>
                                 <td><strong style="color: var(--text-muted);">{{ bug.issue_key }}</strong></td>
-                                <td><a href="{{ url_for('issues.issue_detail', issue_id=bug.id) }}" style="font-weight: 600; color: var(--text);">{{ bug.title }}</a></td>
+                                <td><a href="{{ url_for('bug.bug_details', bug_id=bug.id) }}" style="font-weight: 600; color: var(--text);">{{ bug.title }}</a></td>
                                 <td>
                                     <span class="priority-badge">
-                                        {% if bug.priority in ['Urgent', 'Highest', 'Critical'] %}
+                                        {% if bug.priority in ['Urgent', 'Highest'] %}
                                             <span class="priority-icon priority-highest">▲</span>
                                         {% elif bug.priority == 'High' %}
                                             <span class="priority-icon priority-high">▲</span>
@@ -170,7 +170,7 @@
                 {% for comment in recent_comments %}
                     <div class="comment-box">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <strong>On <a href="{{ url_for('issues.issue_detail', issue_id=comment.bug_id) }}">{{ comment.bug_title }}</a></strong>
+                            <strong>On <a href="{{ url_for('bug.bug_details', bug_id=comment.bug_id) }}">{{ comment.bug_title }}</a></strong>
                             <small>{{ comment.created_at }}</small>
                         </div>
                         <p>{{ comment.comment }}</p>

@@ -1,18 +1,12 @@
-/*
+/* 
  * Software Bug Tracking and Reporting Tool — Design System
  * Curated typography, harmonious colors, micro-animations, and dual navigation.
- *
- * Copied verbatim from project-spec/reference-ui/static/css/style.css per the
- * project's UI Reference convention (00-README.md). Do not hand-edit colors,
- * spacing, or component rules here piecemeal -- if a later stage needs a new
- * component with no existing styles to reuse, add a new rule; don't fork the
- * ones already defined.
  */
 
 :root {
     /* Fonts */
     --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-
+    
     /* Layout Sizes */
     --header-height: 56px;
     --sidebar-width: 240px;
@@ -29,32 +23,32 @@
     --text: #172B4D;
     --text-subtle: #44546F;
     --text-muted: #626F86;
-
+    
     --primary: #0C66E4;
     --primary-hover: #0052CC;
     --primary-active: #09326C;
     --primary-subtle: #DEEBFF;
-
+    
     --success: #1F845A;
     --success-subtle: #DFFCF0;
-
+    
     --warning: #E56910;
     --warning-subtle: #FFF0EC;
-
+    
     --danger: #AE2A19;
     --danger-subtle: #FFECEB;
-
+    
     --accent: #0C66E4;
     --accent-subtle: #DEEBFF;
-
+    
     --radius-sm: 3px;
     --radius: 4px;
     --radius-lg: 8px;
-
+    
     --shadow-card: 0 1px 1px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31);
     --shadow-raised: 0 3px 5px rgba(9, 30, 66, 0.2), 0 0 1px rgba(9, 30, 66, 0.3);
     --shadow-modal: 0 8px 16px -4px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31);
-
+    
     --transition-speed: 0.2s;
 }
 
@@ -70,24 +64,24 @@ body.dark-mode {
     --text: #E3E9F0;
     --text-subtle: #8C9BAB;
     --text-muted: #7A869A;
-
+    
     --primary: #579DFF;
     --primary-hover: #85B8FF;
     --primary-active: #B3D4FF;
     --primary-subtle: #1C2B42;
-
+    
     --success: #216E4E;
     --success-subtle: #1C3F2D;
-
+    
     --warning: #F18D00;
     --warning-subtle: #3B2C12;
-
+    
     --danger: #E05342;
     --danger-subtle: #3B1D1D;
-
+    
     --accent: #579DFF;
     --accent-subtle: #1C2B42;
-
+    
     --shadow-card: 0 1px 1px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.5);
     --shadow-raised: 0 3px 5px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.5);
     --shadow-modal: 0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.5);
@@ -1995,24 +1989,24 @@ body.dark-mode .landing-feature.feature-blue {
         text-align: center;
         padding: 40px 20px;
     }
-
+    
     .landing-actions {
         justify-content: center;
     }
-
+    
     .premium-grid {
         grid-template-columns: 1fr;
     }
-
+    
     .landing-feature.feature-wide {
         grid-column: span 1;
         grid-template-columns: 1fr;
     }
-
+    
     .details-layout {
         grid-template-columns: 1fr;
     }
-
+    
     .details-sidebar {
         position: static;
     }
@@ -2028,11 +2022,11 @@ body.dark-mode .landing-feature.feature-blue {
         box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         transform: translateX(-100%);
     }
-
+    
     .jira-sidebar.open-mobile {
         transform: translateX(0);
     }
-
+    
     .kanban-board {
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     }
@@ -2143,110 +2137,4 @@ body.dark-mode .landing-feature.feature-blue {
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite linear;
     border-radius: var(--radius);
-}
-
-/* ---------------------------------------------------------------------
-   TEMPORARY interim containment -- not part of the reference design.
-
-   Pages from Stage 3 onward haven't had their own UI-alignment pass yet,
-   so their markup still uses the old app's class names (.page, .card,
-   .btn, etc.), which this stylesheet no longer defines. Most of those old
-   names don't need a rule here at all -- this sheet already styles the
-   bare <input>, <select>, <textarea>, <label>, and <button> tags
-   directly, so old forms/buttons still look reasonable regardless of
-   what class is on them.
-
-   The one real breakage: `.card` used to be a bounded box, and several
-   Stage 10 pages (dashboard.html, reports.html) put a Chart.js canvas
-   inside one with `responsive: true`. With no width on `.card` at all,
-   Chart.js sizes the canvas to whatever ancestor width it can find --
-   which is how a doughnut chart ends up filling the entire browser
-   window. This block gives `.card`/`.page` a real box again (using the
-   new design tokens, so it's not visually foreign) purely to stop things
-   from blowing up in size before each page gets its real rebuild.
-
-   Remove the rules below for a given selector once that page's own stage
-   pass replaces its markup with the reference-ui classes.
-   --------------------------------------------------------------------- */
-canvas, img, svg {
-    max-width: 100%;
-}
-
-.page {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    box-sizing: border-box;
-}
-
-.page-wide {
-    max-width: 1400px;
-}
-
-.page-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 16px;
-}
-
-.page-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--text);
-}
-
-.page-head-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.card {
-    box-sizing: border-box;
-    max-width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    box-shadow: var(--shadow-card);
-    margin-bottom: 16px;
-}
-
-.section-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 12px;
-}
-
-.empty-state {
-    text-align: center;
-    color: var(--text-muted);
-    padding: 24px;
-    font-weight: 600;
-}
-
-/* Chart.js containers specifically: fixed, sane height so
-   maintainAspectRatio:false (or the default) can't stretch a doughnut/bar
-   chart to fill an entire unconstrained row. */
-.dashboard-chart-container,
-.report-charts-grid .card {
-    position: relative;
-    max-width: 480px;
-    height: 260px;
-    margin: 0 auto;
-}
-
-.dashboard-chart-container canvas,
-.report-bar-chart {
-    max-height: 100%;
-}
-
-.dashboard-grid,
-.report-charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 16px;
 }

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Fields — {{ project.name }} — BugTracker{% endblock %}
+
+{% block content %}
+<div class="jira-main-content-narrow">
+    <div class="page-heading" style="margin-bottom: 20px;">
+        <div>
+            <p class="eyebrow">{{ project.project_key }} · Project settings</p>
+            <h1>Custom Fields</h1>
+        </div>
+        <a class="button button-secondary" href="{{ url_for('project.projects') }}">Back to Projects</a>
+    </div>
+
+    <section class="panel form-card" style="margin-bottom: 24px;">
+        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Add Custom Field</h2>
+        <form method="POST" novalidate>
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="name">Field Name</label>
+                    <input id="name" name="name" maxlength="100" required placeholder="e.g. Environment, Epic Link">
+                </div>
+                <div class="form-group">
+                    <label for="field_type">Field Type</label>
+                    <select id="field_type" name="field_type" required onchange="toggleOptions(this.value);">
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="dropdown">Dropdown</option>
+                        <option value="checkbox">Checkbox</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" id="options-group" style="display: none;">
+                <label for="options">Dropdown Options (one per line)</label>
+                <textarea id="options" name="options" placeholder="Option 1&#10;Option 2&#10;Option 3" style="min-height: 80px;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="required">
+                    Required field
+                </label>
+            </div>
+            <button type="submit">Add Field</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Existing Fields ({{ fields|length }})</h2>
+        {% if fields %}
+            {% for field in fields %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+                    <div>
+                        <strong>{{ field.name }}</strong>
+                        <span class="eyebrow" style="margin-left: 8px;">{{ field.field_type }}</span>
+                        {% if field.required %}
+                            <span style="color: var(--danger); font-size: 11px; margin-left: 4px;">required</span>
+                        {% endif %}
+                        {% if field.options %}
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                Options: {{ field.options|join(', ') }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <form method="POST" action="{{ url_for('bug.delete_custom_field', project_id=project.id, field_id=field.id) }}" onsubmit="return confirm('Delete field &#39;{{ field.name }}&#39; and all its values?');">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <button class="button-secondary" style="min-height: 24px; padding: 2px 8px; font-size: 11px; color: var(--danger);">Delete</button>
+                    </form>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="empty">No custom fields defined for this project yet.</p>
+        {% endif %}
+    </section>
+</div>
+
+<script>
+function toggleOptions(fieldType) {
+    document.getElementById('options-group').style.display = fieldType === 'dropdown' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

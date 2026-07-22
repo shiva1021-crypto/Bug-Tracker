@@ -14,9 +14,9 @@
                 Plan projects, prioritize backlogs, coordinate developers, and track delivery from concept to deployment. All in one focused, lightning-fast workspace.
             </p>
             <div class="landing-actions">
-                {% if current_user %}
-                    <a class="button" href="{{ url_for('board.board') }}">Open Kanban board <span>→</span></a>
-                    <a class="button button-secondary" href="{{ url_for('issues.add_issue') }}">Create an issue</a>
+                {% if current_user_id %}
+                    <a class="button" href="{{ url_for('project.board') }}">Open Kanban board <span>→</span></a>
+                    <a class="button button-secondary" href="{{ url_for('bug.add_bug') }}">Create an issue</a>
                 {% else %}
                     <a class="button" href="{{ url_for('auth.register') }}">Get BugTracker free <span>→</span></a>
                     <a class="button button-secondary" href="{{ url_for('auth.login') }}">Sign In</a>

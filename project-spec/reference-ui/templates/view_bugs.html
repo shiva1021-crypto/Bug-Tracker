@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% from "macros.html" import render_type_icon, render_priority_icon %}
+
+{% block title %}Issues — BugTracker{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Issue navigator</p>
+        <h1>Issues</h1>
+    </div>
+    <a class="button" href="{{ url_for('bug.add_bug') }}">+ Create Issue</a>
+</div>
+
+<!-- Saved Filters Bar -->
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+    {% if saved_filters %}
+    <div style="display: flex; align-items: center; gap: 4px;">
+        <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Saved:</span>
+        {% for sf in saved_filters %}
+            <a href="{{ url_for('bug.load_filter', filter_id=sf.id) }}"
+               style="font-size: 12px; padding: 2px 8px; border-radius: 3px; background: var(--surface-hover); border: 1px solid var(--border); color: var(--text); text-decoration: none; white-space: nowrap;">
+                {{ sf.name }}
+            </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <button type="button" class="button-secondary" style="font-size:12px;min-height:28px;padding:4px 10px;" onclick="document.getElementById('saveFilterModal').classList.add('open')">
+        Save current filters
+    </button>
+</div>
+
+<!-- Search & Filters Toolbar -->
+<form method="GET" class="filter-box">
+    <input type="search" name="q" placeholder="Search by key, title, reporter, or assignee..." value="{{ filters.get('q', '') }}" style="max-width: 280px; min-width: 200px;" title="Search across issue key, title, description, reporter name, and assignee name">
+    
+    <select name="project" aria-label="Filter by Project">
+        <option value="">All Projects</option>
+        {% for project in projects %}
+            <option value="{{ project.id }}" {% if filters.get('project') == project.id|string %}selected{% endif %}>{{ project.project_key }}</option>
+        {% endfor %}
+    </select>
+    
+    <select name="issue_type" aria-label="Filter by Type">
+        <option value="">All Types</option>
+        {% for issue_type in issue_types %}
+            <option value="{{ issue_type }}" {% if filters.get('issue_type') == issue_type %}selected{% endif %}>{{ issue_type }}</option>
+        {% endfor %}
+    </select>
+    
+    <select name="status" aria-label="Filter by Status">
+        <option value="">All Statuses</option>
+        {% for status in statuses %}
+            <option value="{{ status }}" {% if filters.get('status') == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+    </select>
+    
+    <select name="priority" aria-label="Filter by Priority">
+        <option value="">All Priorities</option>
+        {% for priority in priorities %}
+            <option value="{{ priority }}" {% if filters.get('priority') == priority %}selected{% endif %}>{{ priority }}</option>
+        {% endfor %}
+    </select>
+    
+    <select name="severity" aria-label="Filter by Severity">
+        <option value="">All Severities</option>
+        {% for severity in severities %}
+            <option value="{{ severity }}" {% if filters.get('severity') == severity %}selected{% endif %}>{{ severity }}</option>
+        {% endfor %}
+    </select>
+    
+    <select name="assigned_to" aria-label="Filter by Assignee">
+        <option value="">All Assignees</option>
+        {% for developer in developers %}
+            <option value="{{ developer.id }}" {% if filters.get('assigned_to') == developer.id|string %}selected{% endif %}>{{ developer.full_name }}</option>
+        {% endfor %}
+    </select>
+    
+    <button type="submit" style="min-height: 38px;">Search</button>
+    <a href="{{ url_for('bug.view_bugs') }}" class="button button-secondary" style="min-height: 38px; display: inline-flex; align-items: center; justify-content: center;">Clear</a>
+</form>
+
+<!-- Issues Table -->
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 100px;">Key</th>
+                    <th style="width: 120px;">Type</th>
+                    <th>Summary</th>
+                    <th style="width: 120px;">Priority</th>
+                    <th style="width: 140px;">Status</th>
+                    <th style="width: 160px;">Assignee</th>
+                    <th style="width: 120px;">Due Date</th>
+                    <th style="width: 80px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bug in bugs %}
+                    <tr>
+                        <td><strong style="color: var(--text-muted);">{{ bug.issue_key }}</strong></td>
+                        <td>
+                            <span class="issue-type-badge type-{{ bug.issue_type.lower() }}" style="display: inline-flex; align-items: center; gap: 4px;">
+                                {{ render_type_icon(bug.issue_type, 13) }}
+                                {{ bug.issue_type }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('bug.bug_details', bug_id=bug.id) }}" style="font-weight: 600; color: var(--text);">{{ bug.title }}</a>
+                        </td>
+                        <td>
+                            <span class="priority-badge" title="Priority: {{ bug.priority }}" style="display: inline-flex; align-items: center; gap: 4px;">
+                                {{ render_priority_icon(bug.priority, 13) }}
+                                <span style="font-size: 13px; font-weight: 600; color: var(--text-subtle);">{{ bug.priority }}</span>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ bug.status.lower().replace(' ', '_') }}">{{ bug.status }}</span>
+                        </td>
+                        <td>
+                            {% if bug.developer_name %}
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="user-avatar-initial" style="width: 22px; height: 22px; font-size: 10px; background: var(--accent-subtle); color: var(--accent);">
+                                        {{ bug.developer_name[:1]|upper }}{{ bug.developer_name.split(' ')[1][:1]|upper if ' ' in bug.developer_name else '' }}
+                                    </span>
+                                    <span style="font-weight: 500;">{{ bug.developer_name }}</span>
+                                </div>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if bug.due_date %}
+                                <span style="font-weight: 500;">{{ bug.due_date }}</span>
+                            {% else %}
+                                <span style="color: var(--text-muted);">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('bug.bug_details', bug_id=bug.id) }}" class="button button-secondary" style="min-height: 26px; padding: 2px 8px; font-size: 11px;">View</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="empty">
+                            No issues match the selected filters.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Pagination Control -->
+{% if pagination.total_pages > 1 %}
+    <nav class="pagination" aria-label="Bug list pages">
+        {% if pagination.has_previous %}
+            <a href="{{ url_for('bug.view_bugs', page=pagination.page - 1, **page_args) }}">◀ Previous</a>
+        {% endif %}
+        <span style="color: var(--text-muted); font-size: 13px;">Page <strong>{{ pagination.page }}</strong> of {{ pagination.total_pages }} · {{ pagination.total_items }} issues</span>
+        {% if pagination.has_next %}
+            <a href="{{ url_for('bug.view_bugs', page=pagination.page + 1, **page_args) }}">Next ▶</a>
+        {% endif %}
+    </nav>
+{% endif %}
+
+<!-- Save Filter Modal -->
+<div class="modal-overlay" id="saveFilterModal">
+    <div class="modal-box">
+        <h2>Save Current Filters</h2>
+        <form method="POST" action="{{ url_for('bug.save_filter') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            {% for key in ('q', 'status', 'priority', 'severity', 'assigned_to', 'project', 'issue_type') %}
+                {% if filters.get(key) %}
+                    <input type="hidden" name="{{ key }}" value="{{ filters[key] }}">
+                {% endif %}
+            {% endfor %}
+            <label for="filter_name">Filter Name</label>
+            <input type="text" id="filter_name" name="name" required placeholder="e.g. My High Priority Bugs" style="width:100%;padding:8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;">
+            <div class="modal-actions" style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+                <button type="button" class="button-secondary" onclick="document.getElementById('saveFilterModal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="button">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px;
+    min-width: 360px;
+    max-width: 90vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.modal-box h2 { margin: 0 0 16px; font-size: 18px; }
+.modal-box label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+</style>
+{% endblock %}

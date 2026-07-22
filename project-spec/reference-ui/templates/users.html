@@ -10,46 +10,31 @@
     </div>
 </div>
 
-<!--
-    The reference design also has an "Admin creates a user directly" panel
-    here (posting to admin.create_user with a temporary password). This
-    app's Stage 3 spec never defined that feature -- there is no
-    create_user route/service, no schema decision about who sets the
-    temporary password, and STAGE-03-REPORT.md's own "deliberately not
-    built" list only covers auto-created default projects, not direct user
-    creation. Adding it now would be a new feature, not a UI-alignment
-    pass, so it's left out here rather than guessed at. Flagging this
-    explicitly rather than silently dropping it -- happy to build it as
-    its own piece of work if wanted.
--->
-
-{% if pending %}
+{% if pending_registrations %}
 <section class="panel" style="margin-bottom: 20px;">
     <h2 style="font-size: 16px; margin-bottom: 12px;">Pending access requests</h2>
     <div class="table-wrap">
         <table>
-            <thead><tr><th>User</th><th>Email</th><th>Requested</th><th>Approval role</th><th>Action</th></tr></thead>
+            <thead><tr><th>User</th><th>Email</th><th>Verified</th><th>Requested</th><th>Approval role</th><th>Action</th></tr></thead>
             <tbody>
-                {% for registration in pending %}
+                {% for registration in pending_registrations %}
                 <tr>
                     <td>{{ registration.full_name }}</td>
+                    <td>{{ registration.email }}</td>
+                    <td>{{ "Yes" if registration.verified_at else "Pending" }}</td>
+                    <td>{{ registration.requested_at }}</td>
                     <td>
-                        {{ registration.email }}
-                        {% if registration.requester_ip %}<br><small style="color: var(--text-muted);">from {{ registration.requester_ip }}</small>{% endif %}
-                    </td>
-                    <td>{{ registration.created_at }}</td>
-                    <td>
-                        <form class="inline-form" method="POST" action="{{ url_for('admin.approve_request', request_id=registration.id) }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <form class="inline-form" method="POST" action="{{ url_for('admin.approve_registration', request_id=registration.id) }}">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                             <select name="role" aria-label="Role for {{ registration.full_name }}">
                                 {% for role in roles %}<option value="{{ role }}" {% if role == registration.requested_role %}selected{% endif %}>{{ role.replace('_', ' ').title() }}</option>{% endfor %}
                             </select>
-                            <button type="submit">Approve</button>
+                            <button type="submit" {% if require_email_verification and not registration.verified_at %}disabled{% endif %}>Approve</button>
                         </form>
                     </td>
                     <td>
-                        <form method="POST" action="{{ url_for('admin.reject_request', request_id=registration.id) }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <form method="POST" action="{{ url_for('admin.reject_registration', request_id=registration.id) }}">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                             <button class="button-secondary" type="submit">Reject</button>
                         </form>
                     </td>
@@ -60,6 +45,37 @@
     </div>
 </section>
 {% endif %}
+
+<!-- Admin User Creation Panel -->
+<section class="panel user-create-panel">
+    <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Create organization user</h2>
+    <form method="POST" action="{{ url_for('admin.create_user') }}" novalidate>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="user-create-grid">
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input id="full_name" type="text" name="full_name" required placeholder="e.g. John Doe">
+            </div>
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input id="email" type="email" name="email" required placeholder="e.g. john.doe@example.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Temporary Password</label>
+                <input id="password" type="password" name="password" minlength="8" required placeholder="Min 8 characters">
+            </div>
+            <div class="form-group">
+                <label for="role">System Role</label>
+                <select id="role" name="role" required>
+                    {% for role in roles %}
+                        <option value="{{ role }}">{{ role.replace('_', ' ').title() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <button type="submit">Create user</button>
+    </form>
+</section>
 
 <!-- Active Users List -->
 <section class="panel">
@@ -84,7 +100,9 @@
                                 <span class="user-avatar-initial" style="background: var(--accent-subtle); color: var(--accent);">
                                     {{ user.full_name[:1]|upper }}
                                 </span>
-                                <span style="font-weight: 600; color: var(--text);">{{ user.full_name }}</span>
+                                <a href="{{ url_for('auth.user_profile', user_id=user.id) }}" style="font-weight: 600; color: var(--text);">
+                                    {{ user.full_name }}
+                                </a>
                             </div>
                         </td>
                         <td>{{ user.email }}</td>
@@ -95,8 +113,8 @@
                         </td>
                         <td>{{ user.created_at }}</td>
                         <td>
-                            <form class="inline-form" method="POST" action="{{ url_for('admin.change_role', user_id=user.id) }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <form class="inline-form" method="POST" action="{{ url_for('admin.update_user_role', user_id=user.id) }}">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                 <select name="role" aria-label="Update {{ user.full_name }} system role" style="min-height: 28px; padding: 2px 6px; font-size: 12px; width: 140px;">
                                     {% for role in roles %}
                                         <option value="{{ role }}" {% if user.role == role %}selected{% endif %}>{{ role.replace('_', ' ').title() }}</option>

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Reports — BugTracker{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Reporting & Analytics</p>
+        <h1>Issue Reports</h1>
+    </div>
+    <div class="action-row">
+        <button class="button button-secondary print-report" type="button">
+            <span>🖨️</span> Export PDF / Print
+        </button>
+        <a class="button button-secondary" href="{{ export_url }}">
+            <span>📥</span> Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Summary statistics strip -->
+<section class="stats-grid compact-grid" style="margin-bottom: 24px;">
+    {% for item in status_counts %}
+        <article class="stat-card">
+            <span>{{ item.status }} Status</span>
+            <strong>{{ item.total }}</strong>
+        </article>
+    {% endfor %}
+    {% for item in priority_counts %}
+        <article class="stat-card">
+            <span>{{ item.priority }} Priority</span>
+            <strong>{{ item.total }}</strong>
+        </article>
+    {% endfor %}
+</section>
+
+<!-- Chart progress bar bars -->
+<section class="chart-grid" style="margin-bottom: 24px;">
+    <article class="panel">
+        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Status Chart</h2>
+        {% for item in status_chart %}
+            <div class="chart-row">
+                <div class="chart-label">
+                    <span>{{ item.label }}</span>
+                    <strong>{{ item.total }} ({{ item.percent }}%)</strong>
+                </div>
+                <div class="chart-track"><span data-percent="{{ item.percent }}" style="background: var(--primary);"></span></div>
+            </div>
+        {% else %}
+            <p class="empty" style="padding: 12px 0;">No status data available.</p>
+        {% endfor %}
+    </article>
+    <article class="panel">
+        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Priority Chart</h2>
+        {% for item in priority_chart %}
+            <div class="chart-row">
+                <div class="chart-label">
+                    <span>{{ item.label }}</span>
+                    <strong>{{ item.total }} ({{ item.percent }}%)</strong>
+                </div>
+                <div class="chart-track"><span data-percent="{{ item.percent }}" style="background: var(--accent);"></span></div>
+            </div>
+        {% else %}
+            <p class="empty" style="padding: 12px 0;">No priority data available.</p>
+        {% endfor %}
+    </article>
+    <article class="panel">
+        <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Category Analytics</h2>
+        {% for item in category_chart %}
+            <div class="chart-row">
+                <div class="chart-label">
+                    <span>{{ item.label }}</span>
+                    <strong>{{ item.total }} ({{ item.percent }}%)</strong>
+                </div>
+                <div class="chart-track"><span data-percent="{{ item.percent }}" style="background: var(--success);"></span></div>
+            </div>
+        {% else %}
+            <p class="empty" style="padding: 12px 0;">No category data available.</p>
+        {% endfor %}
+    </article>
+</section>
+
+<!-- Filter box form -->
+<form method="GET" class="filter-box report-filter">
+    <select name="project" aria-label="Filter by Project">
+        <option value="">All Projects</option>
+        {% for project in projects %}
+            <option value="{{ project.id }}" {% if filters.get('project') == project.id|string %}selected{% endif %}>{{ project.project_key }}</option>
+        {% endfor %}
+    </select>
+    <select name="issue_type" aria-label="Filter by Issue Type">
+        <option value="">All Types</option>
+        {% for issue_type in issue_types %}
+            <option value="{{ issue_type }}" {% if filters.get('issue_type') == issue_type %}selected{% endif %}>{{ issue_type }}</option>
+        {% endfor %}
+    </select>
+    <select name="status" aria-label="Filter by Status">
+        <option value="">All Statuses</option>
+        {% for status in statuses %}
+            <option value="{{ status }}" {% if filters.get('status') == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+    </select>
+    <select name="priority" aria-label="Filter by Priority">
+        <option value="">All Priorities</option>
+        {% for priority in priorities %}
+            <option value="{{ priority }}" {% if filters.get('priority') == priority %}selected{% endif %}>{{ priority }}</option>
+        {% endfor %}
+    </select>
+    <select name="severity" aria-label="Filter by Severity">
+        <option value="">All Severities</option>
+        {% for severity in severities %}
+            <option value="{{ severity }}" {% if filters.get('severity') == severity %}selected{% endif %}>{{ severity }}</option>
+        {% endfor %}
+    </select>
+    <input type="date" name="start_date" value="{{ filters.get('start_date', '') }}" aria-label="Start Date">
+    <input type="date" name="end_date" value="{{ filters.get('end_date', '') }}" aria-label="End Date">
+    <button type="submit" style="min-height: 38px;">Generate Report</button>
+</form>
+
+<!-- Results List -->
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 90px;">Key</th>
+                    <th style="width: 110px;">Type</th>
+                    <th>Summary</th>
+                    <th style="width: 140px;">Project</th>
+                    <th style="width: 130px;">Status</th>
+                    <th style="width: 110px;">Priority</th>
+                    <th style="width: 110px;">Severity</th>
+                    <th style="width: 150px;">Assignee</th>
+                    <th style="width: 100px;">Due Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bug in bugs %}
+                    <tr>
+                        <td><strong style="color: var(--text-muted);">{{ bug.issue_key }}</strong></td>
+                        <td>
+                            <span class="issue-type-badge type-{{ bug.issue_type.lower() }}" style="font-size: 10px; padding: 1px 4px;">{{ bug.issue_type }}</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('bug.bug_details', bug_id=bug.id) }}" style="font-weight: 600; color: var(--text);">{{ bug.title }}</a>
+                        </td>
+                        <td>{{ bug.project_name }}</td>
+                        <td>
+                            <span class="status-badge status-{{ bug.status.lower().replace(' ', '_') }}">{{ bug.status }}</span>
+                        </td>
+                        <td>
+                            <span class="priority-badge">
+                                {% if bug.priority in ['Urgent', 'Highest'] %}
+                                    <span class="priority-icon priority-highest">▲</span>
+                                {% elif bug.priority == 'High' %}
+                                    <span class="priority-icon priority-high">▲</span>
+                                {% elif bug.priority == 'Medium' %}
+                                    <span class="priority-icon priority-medium">＝</span>
+                                {% elif bug.priority == 'Low' %}
+                                    <span class="priority-icon priority-low">▼</span>
+                                {% else %}
+                                    <span class="priority-icon priority-lowest">▼</span>
+                                {% endif %}
+                                <span style="font-size: 11px; margin-left: 2px;">{{ bug.priority }}</span>
+                            </span>
+                        </td>
+                        <td><span style="font-size: 12px; font-weight: 500;">{{ bug.severity }}</span></td>
+                        <td>
+                            {% if bug.developer_name %}
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="user-avatar-initial" style="width: 20px; height: 20px; font-size: 9px; background: var(--primary-subtle); color: var(--primary);">
+                                        {{ bug.developer_name[:1]|upper }}
+                                    </span>
+                                    <span>{{ bug.developer_name }}</span>
+                                </div>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-style: italic;">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ bug.due_date or "—" }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="9" class="empty">No report rows match the selected filters.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Pagination Control -->
+{% if pagination and pagination.total_pages > 1 %}
+    <nav class="pagination" aria-label="Report pages">
+        {% if pagination.has_previous %}
+            <a href="{{ url_for('report.reports', page=pagination.page - 1, **page_args) }}">◀ Previous</a>
+        {% endif %}
+        <span style="color: var(--text-muted); font-size: 13px;">Page <strong>{{ pagination.page }}</strong> of {{ pagination.total_pages }} · {{ pagination.total_items }} issues</span>
+        {% if pagination.has_next %}
+            <a href="{{ url_for('report.reports', page=pagination.page + 1, **page_args) }}">Next ▶</a>
+        {% endif %}
+    </nav>
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.chart-track span').forEach(function(span) {
+            const percent = span.getAttribute('data-percent');
+            if (percent) {
+                span.style.width = percent + '%';
+            }
+        });
+    });
+</script>
+{% endblock %}

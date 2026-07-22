@@ -20,7 +20,13 @@ import re
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from repositories import organization_repository, registration_request_repository, user_repository
+from repositories import (
+    comment_repository,
+    issue_repository,
+    organization_repository,
+    registration_request_repository,
+    user_repository,
+)
 from services import dashboard_service, project_service
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -191,3 +197,24 @@ def authenticate(email: str, password: str) -> dict | None:
 def get_profile(user_id: int) -> dict | None:
     """Fetch the display data for the profile page."""
     return user_repository.get_by_id(user_id)
+
+
+def get_profile_page_data(user_id: int, organization_id: int) -> dict | None:
+    """Everything the reference-ui profile.html layout needs: the user row,
+    the stat-card counts, a handful of recently reported/assigned issues,
+    and recent comments. The page itself is Stage 2 scope, but its reference
+    layout assumes issue/comment data that only exists once later stages
+    are built -- which they now are, so this pulls it for real rather than
+    leaving those sections empty."""
+    user = user_repository.get_by_id(user_id)
+    if user is None:
+        return None
+    stats = issue_repository.profile_counts(user_id, organization_id)
+    stats["comment_count"] = comment_repository.count_by_user(user_id, organization_id)
+    return {
+        "user": user,
+        "stats": stats,
+        "reported_bugs": issue_repository.list_reported_by_user(user_id, organization_id),
+        "assigned_bugs": issue_repository.list_assigned_by_user(user_id, organization_id),
+        "recent_comments": comment_repository.list_recent_by_user(user_id, organization_id),
+    }

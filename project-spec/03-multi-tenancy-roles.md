@@ -1,4 +1,4 @@
-# Stage 3 - Multi-Tenancy & Roles
+# Stage 3 — Multi-Tenancy & Roles
 
 ## Goal
 Turn the single-user login system into a multi-organization system with
@@ -12,9 +12,9 @@ Stage 2 (working login/session) must be complete.
 - Every user belongs to exactly one **organization**.
 - Registering with a **new** organization name makes you that org's first user, automatically an **Admin**.
 - Registering with an organization name that **already exists** creates a pending registration request that an admin of that org must approve or reject.
-- Four roles: **Admin**, **Project Manager**, **Developer**, **Tester** - each with different permissions (defined below and enforced in every later stage).
+- Four roles: **Admin**, **Project Manager**, **Developer**, **Tester** — each with different permissions (defined below and enforced in every later stage).
 - Admin panel: list all users in the org, change a user's role, approve/reject pending registration requests.
-- Every database query from this point forward must filter by `organization_id` - this is the tenant isolation boundary and must never be skipped.
+- Every database query from this point forward must filter by `organization_id` — this is the tenant isolation boundary and must never be skipped.
 
 ## Role permission matrix (enforce this everywhere going forward)
 | Action | Admin | Project Manager | Developer | Tester |
@@ -27,7 +27,9 @@ Stage 2 (working login/session) must be complete.
 | Manage users | ✓ | ✗ | ✗ | ✗ |
 | View reports | ✓ | ✓ | ✗ | ✗ |
 
-## Frontend - Design & Layout
+## Frontend — Design & Layout
+
+> **Clone this exactly from `reference-ui/templates/users.html`.** Copy structure, classes, and wording as-is — adapt only route/variable names. The sidebar shown here is part of `base.html` (already cloned in Stage 2) — extend its nav links per role, don't rebuild the sidebar itself.
 
 **Register page (update from Stage 2):** add an "Organization Name" field. Show helper text: "New name → you become the admin. Existing name → your request needs approval."
 
@@ -35,11 +37,11 @@ Stage 2 (working login/session) must be complete.
 
 **Admin → Users page** (`/admin/users`):
 - Table of all users in the organization: Name, Email, Role, Joined date, with a role dropdown per row (admin can change any user's role inline).
-- A separate section/tab: "Pending Registrations" - table of requests with Approve/Reject buttons and the requester's IP address shown for context.
+- A separate section/tab: "Pending Registrations" — table of requests with Approve/Reject buttons and the requester's IP address shown for context.
 
-**Sidebar (introduce now, used by every later stage):** collapsible left sidebar with navigation links. Which links appear depends on role - e.g. only Admin sees "Users"; only Admin/PM see "Reports" (added Stage 10).
+**Sidebar (introduce now, used by every later stage):** collapsible left sidebar with navigation links. Which links appear depends on role — e.g. only Admin sees "Users"; only Admin/PM see "Reports" (added Stage 10).
 
-## Backend - Data Model & API
+## Backend — Data Model & API
 
 **Table: `organizations`**
 | Column | Type | Notes |

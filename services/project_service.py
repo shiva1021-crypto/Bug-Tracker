@@ -10,7 +10,7 @@ takes effect on the user's very next request just like the admin panel.
 
 import re
 
-from repositories import project_repository, user_repository
+from repositories import issue_repository, project_repository, user_repository
 
 PROJECT_KEY_PATTERN = re.compile(r"^[A-Z]{2,6}$")
 MAX_PROJECT_NAME_LENGTH = 150
@@ -35,7 +35,14 @@ def verify_project_creator(user_id: int) -> dict | None:
 
 
 def list_projects(organization_id: int) -> list[dict]:
-    return project_repository.list_by_organization(organization_id)
+    """Every project in the organization, each annotated with `issue_count`
+    for the Projects list page's card footer (see reference-ui's
+    projects.html)."""
+    projects = project_repository.list_by_organization(organization_id)
+    counts = issue_repository.count_by_project(organization_id)
+    for project in projects:
+        project["issue_count"] = counts.get(project["id"], 0)
+    return projects
 
 
 def get_project(project_id: int, organization_id: int) -> dict | None:

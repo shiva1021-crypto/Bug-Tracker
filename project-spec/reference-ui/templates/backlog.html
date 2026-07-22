@@ -1,0 +1,526 @@
+{% extends "base.html" %}
+{% from "macros.html" import render_type_icon, render_priority_icon %}
+
+{% block title %}Backlog — BugTracker{% endblock %}
+
+{% block content %}
+<style>
+    .backlog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .backlog-header h1 {
+        font-size: 22px;
+        font-weight: 600;
+        margin: 0;
+    }
+    .backlog-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .backlog-controls select {
+        min-height: 32px;
+        padding: 4px 8px;
+        font-size: 13px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+    }
+    .sprint-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+    .sprint-panel.active {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 1px var(--primary-subtle);
+    }
+    .sprint-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        cursor: pointer;
+        background: var(--surface-hover);
+        border-bottom: 1px solid var(--border);
+        user-select: none;
+    }
+    .sprint-panel-header:hover {
+        background: var(--surface);
+    }
+    .sprint-panel-header .sprint-name {
+        font-weight: 600;
+        font-size: 14px;
+    }
+    .sprint-panel-header .sprint-dates {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-left: 8px;
+    }
+    .sprint-panel-header .sprint-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-left: 8px;
+    }
+    .sprint-badge.active { background: #dee; color: #060; }
+    .sprint-badge.future { background: #eef; color: #338; }
+    .sprint-badge.closed { background: #eee; color: #666; }
+    .sprint-panel-body {
+        padding: 8px 16px 12px;
+    }
+    .sprint-panel-body.collapsed {
+        display: none;
+    }
+    .sprint-goal {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin: 4px 0 8px;
+        font-style: italic;
+    }
+    .sprint-actions {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+    }
+    .sprint-actions form {
+        display: inline;
+    }
+    .backlog-issue-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 13px;
+        border-bottom: 1px solid var(--border);
+    }
+    .backlog-issue-row:last-child {
+        border-bottom: none;
+    }
+    .backlog-issue-row:hover {
+        background: var(--surface-hover);
+    }
+    .backlog-issue-key {
+        font-weight: 700;
+        color: var(--text-muted);
+        font-size: 12px;
+        min-width: 80px;
+    }
+    .backlog-issue-title {
+        flex: 1;
+        color: var(--text);
+        text-decoration: none;
+    }
+    .backlog-issue-title:hover {
+        color: var(--primary);
+        text-decoration: underline;
+    }
+    .backlog-issue-type-icon {
+        font-size: 12px;
+        width: 20px;
+        text-align: center;
+    }
+    .backlog-issue-points {
+        background: var(--surface-hover);
+        color: var(--text-subtle);
+        font-size: 11px;
+        font-weight: 700;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+    }
+    .backlog-issue-priority {
+        font-size: 11px;
+        width: 16px;
+        text-align: center;
+    }
+    .backlog-section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        margin: 16px 0 8px;
+        padding-bottom: 4px;
+        border-bottom: 2px solid var(--border);
+    }
+    .empty-backlog {
+        font-size: 13px;
+        color: var(--text-muted);
+        padding: 24px;
+        text-align: center;
+    }
+    .burndown-mini {
+        margin: 12px 0 8px;
+        padding: 12px;
+        background: var(--bg);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+    }
+    .burndown-mini h4 {
+        margin: 0 0 8px;
+        font-size: 13px;
+    }
+    .burndown-canvas {
+        display: block;
+        width: 100%;
+        height: 120px;
+        background: var(--surface);
+        border-radius: 4px;
+    }
+    .assign-sprint-form {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .assign-sprint-form select {
+        font-size: 11px;
+        padding: 2px 4px;
+        min-height: 22px;
+        border-radius: 3px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+    }
+    .assign-sprint-form button {
+        font-size: 11px;
+        padding: 2px 6px;
+        min-height: 22px;
+    }
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 24px;
+        min-width: 400px;
+        max-width: 90vw;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .modal-box h2 { margin: 0 0 16px; font-size: 18px; }
+    .modal-box label { display: block; font-size: 13px; font-weight: 600; margin: 8px 0 4px; }
+    .modal-box input, .modal-box textarea {
+        width: 100%;
+        padding: 8px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--text);
+        font-size: 13px;
+    }
+    .modal-box textarea { min-height: 60px; }
+    .modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+</style>
+
+<div class="backlog-header">
+    <h1>Backlog</h1>
+    <div class="backlog-controls">
+        <form method="GET">
+            <select name="project" onchange="this.form.submit()" aria-label="Filter by project">
+                {% for project in projects %}
+                    <option value="{{ project.id }}" {% if selected_project == project.id|string %}selected{% endif %}>
+                        {{ project.project_key }} · {{ project.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+        {% if current_user_role in ['admin', 'project_manager'] %}
+            <button class="button" onclick="document.getElementById('createSprintModal').classList.add('open')">
+                + Create Sprint
+            </button>
+        {% endif %}
+    </div>
+</div>
+
+{% if not selected_project %}
+    <p class="empty-backlog">Select a project to view its backlog.</p>
+{% else %}
+
+<!-- Active Sprint -->
+{% if active_sprint %}
+<div class="sprint-panel active">
+    <div class="sprint-panel-header" onclick="this.nextElementSibling.classList.toggle('collapsed')">
+        <div>
+            <span class="sprint-name">{{ active_sprint.name }}</span>
+            <span class="sprint-badge active">Active</span>
+            {% if active_sprint.start_date or active_sprint.end_date %}
+                <span class="sprint-dates">
+                    {{ active_sprint.start_date or '…' }} → {{ active_sprint.end_date or '…' }}
+                </span>
+            {% endif %}
+        </div>
+        <div class="sprint-actions">
+            {% if current_user_role in ['admin', 'project_manager'] %}
+                <button class="button-secondary" style="font-size:11px;min-height:24px;padding:2px 8px;"
+                        onclick="editSprint({{ active_sprint.id }}, '{{ active_sprint.name|e }}', '{{ active_sprint.goal or ''|e }}', '{{ active_sprint.start_date or '' }}', '{{ active_sprint.end_date or '' }}')">
+                    Edit
+                </button>
+                <form method="POST" action="{{ url_for('bug.sprint_close', sprint_id=active_sprint.id) }}" style="display:inline">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="project" value="{{ selected_project }}">
+                    <button class="button-secondary" style="font-size:11px;min-height:24px;padding:2px 8px;" type="submit">Close</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    <div class="sprint-panel-body">
+        {% if active_sprint.goal %}<div class="sprint-goal">{{ active_sprint.goal }}</div>{% endif %}
+        <!-- Burndown -->
+        <div class="burndown-mini">
+            <h4>Burndown</h4>
+            <canvas class="burndown-canvas" id="burndownChart" data-sprint-id="{{ active_sprint.id }}"></canvas>
+        </div>
+        {% for issue in active_sprint.issues %}
+            <div class="backlog-issue-row" data-id="{{ issue.id }}" data-sprint-id="{{ active_sprint.id }}">
+                <span class="backlog-issue-type-icon">
+                    {{ render_type_icon(issue.issue_type, 13) }}
+                </span>
+                <span class="backlog-issue-key">{{ issue.issue_key }}</span>
+                <a class="backlog-issue-title" href="{{ url_for('bug.bug_details', bug_id=issue.id) }}">{{ issue.title }}</a>
+                {% if issue.story_points %}
+                    <span class="backlog-issue-points" title="Story points">{{ issue.story_points }}</span>
+                {% endif %}
+                <span class="backlog-issue-priority">
+                    {{ render_priority_icon(issue.priority, 13) }}
+                </span>
+                {% if current_user_role in ['admin', 'project_manager'] %}
+                    <form method="POST" action="{{ url_for('bug.issue_sprint', bug_id=issue.id) }}" class="assign-sprint-form">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="sprint_id" value="">
+                        <button type="submit" title="Remove from sprint" style="font-size:11px;padding:2px 6px;min-height:22px;">✕</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="empty-backlog" style="padding:12px;">No issues in this sprint.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Other Sprints (future & closed) -->
+{% for sprint in sprints %}
+    {% if sprint.status != 'active' %}
+    <div class="sprint-panel">
+        <div class="sprint-panel-header" onclick="this.nextElementSibling.classList.toggle('collapsed')">
+            <div>
+                <span class="sprint-name">{{ sprint.name }}</span>
+                <span class="sprint-badge {{ sprint.status }}">{{ sprint.status }}</span>
+                {% if sprint.start_date or sprint.end_date %}
+                    <span class="sprint-dates">{{ sprint.start_date or '…' }} → {{ sprint.end_date or '…' }}</span>
+                {% endif %}
+            </div>
+            <div class="sprint-actions">
+                {% if current_user_role in ['admin', 'project_manager'] %}
+                    {% if sprint.status == 'future' %}
+                        <form method="POST" action="{{ url_for('bug.sprint_start', sprint_id=sprint.id) }}" style="display:inline">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="project" value="{{ selected_project }}">
+                            <button class="button-secondary" style="font-size:11px;min-height:24px;padding:2px 8px;" type="submit">Start</button>
+                        </form>
+                    {% endif %}
+                    <button class="button-secondary" style="font-size:11px;min-height:24px;padding:2px 8px;"
+                            onclick="editSprint({{ sprint.id }}, '{{ sprint.name|e }}', '{{ sprint.goal or ''|e }}', '{{ sprint.start_date or '' }}', '{{ sprint.end_date or '' }}')">
+                        Edit
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="sprint-panel-body">
+            {% if sprint.goal %}<div class="sprint-goal">{{ sprint.goal }}</div>{% endif %}
+            {% for issue in sprint.issues %}
+                <div class="backlog-issue-row" data-id="{{ issue.id }}" data-sprint-id="{{ sprint.id }}">
+                    <span class="backlog-issue-type-icon">
+                        {{ render_type_icon(issue.issue_type, 13) }}
+                    </span>
+                    <span class="backlog-issue-key">{{ issue.issue_key }}</span>
+                    <a class="backlog-issue-title" href="{{ url_for('bug.bug_details', bug_id=issue.id) }}">{{ issue.title }}</a>
+                    {% if issue.story_points %}
+                        <span class="backlog-issue-points" title="Story points">{{ issue.story_points }}</span>
+                    {% endif %}
+                    <span class="backlog-issue-priority">
+                        {{ render_priority_icon(issue.priority, 13) }}
+                    </span>
+                    {% if current_user_role in ['admin', 'project_manager'] and sprint.status != 'closed' %}
+                        <form method="POST" action="{{ url_for('bug.issue_sprint', bug_id=issue.id) }}" class="assign-sprint-form">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="sprint_id" value="">
+                            <button type="submit" title="Remove from sprint" style="font-size:11px;padding:2px 6px;min-height:22px;">✕</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p class="empty-backlog" style="padding:12px;">No issues in this sprint.</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+
+<!-- Backlog (issues not in active/future sprints) -->
+<h2 class="backlog-section-title">Backlog</h2>
+{% for issue in backlog_issues %}
+    <div class="backlog-issue-row" data-id="{{ issue.id }}">
+        <span class="backlog-issue-type-icon">
+            {{ render_type_icon(issue.issue_type, 13) }}
+        </span>
+        <span class="backlog-issue-key">{{ issue.issue_key }}</span>
+        <a class="backlog-issue-title" href="{{ url_for('bug.bug_details', bug_id=issue.id) }}">{{ issue.title }}</a>
+        {% if issue.story_points %}
+            <span class="backlog-issue-points" title="Story points">{{ issue.story_points }}</span>
+        {% endif %}
+        <span class="backlog-issue-priority">
+            {{ render_priority_icon(issue.priority, 13) }}
+        </span>
+        {% if current_user_role in ['admin', 'project_manager'] and sprints|selectattr('status', 'in', ['active', 'future'])|list %}
+            <form method="POST" action="{{ url_for('bug.issue_sprint', bug_id=issue.id) }}" class="assign-sprint-form">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <select name="sprint_id">
+                    <option value="">— No sprint —</option>
+                    {% for s in sprints if s.status in ['active', 'future'] %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" style="font-size:11px;padding:2px 6px;min-height:22px;">Assign</button>
+            </form>
+        {% endif %}
+    </div>
+{% else %}
+    <p class="empty-backlog">All issues are assigned to sprints. Create new issues to see them here.</p>
+{% endfor %}
+
+{% endif %}
+
+<!-- Create Sprint Modal -->
+<div class="modal-overlay" id="createSprintModal">
+    <div class="modal-box">
+        <h2>Create Sprint</h2>
+        <form method="POST" action="{{ url_for('bug.sprint_create') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="project_id" value="{{ selected_project }}">
+            <label for="create_name">Sprint Name</label>
+            <input type="text" id="create_name" name="name" required placeholder="e.g. Sprint 1">
+            <label for="create_goal">Sprint Goal</label>
+            <textarea id="create_goal" name="goal" placeholder="What should this sprint achieve?"></textarea>
+            <label for="create_start">Start Date</label>
+            <input type="date" id="create_start" name="start_date">
+            <label for="create_end">End Date</label>
+            <input type="date" id="create_end" name="end_date">
+            <div class="modal-actions">
+                <button type="button" class="button-secondary" onclick="this.closest('.modal-overlay').classList.remove('open')">Cancel</button>
+                <button type="submit" class="button">Create Sprint</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Sprint Modal -->
+<div class="modal-overlay" id="editSprintModal">
+    <div class="modal-box">
+        <h2>Edit Sprint</h2>
+        <form method="POST" id="editSprintForm">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <label for="edit_name">Sprint Name</label>
+            <input type="text" id="edit_name" name="name" required>
+            <label for="edit_goal">Sprint Goal</label>
+            <textarea id="edit_goal" name="goal"></textarea>
+            <label for="edit_start">Start Date</label>
+            <input type="date" id="edit_start" name="start_date">
+            <label for="edit_end">End Date</label>
+            <input type="date" id="edit_end" name="end_date">
+            <div class="modal-actions">
+                <button type="button" class="button-secondary" onclick="this.closest('.modal-overlay').classList.remove('open')">Cancel</button>
+                <button type="submit" class="button">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editSprint(id, name, goal, start, end) {
+    const form = document.getElementById('editSprintForm');
+    form.action = '{{ url_for("bug.sprint_edit", sprint_id=0) }}'.replace('0', id);
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_goal').value = goal;
+    document.getElementById('edit_start').value = start;
+    document.getElementById('edit_end').value = end;
+    document.getElementById('editSprintModal').classList.add('open');
+}
+
+// Burndown Chart
+const canvas = document.getElementById('burndownChart');
+if (canvas) {
+    const sprintId = canvas.dataset.sprintId;
+    fetch('{{ url_for("bug.burndown", sprint_id=0) }}'.replace('0', sprintId))
+        .then(r => r.json())
+        .then(data => {
+            if (!data.length) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            const w = rect.width, h = rect.height;
+            const pad = {top: 8, right: 8, bottom: 16, left: 32};
+            const cw = w - pad.left - pad.right;
+            const ch = h - pad.top - pad.bottom;
+            const maxVal = Math.max(...data.map(d => Math.max(d.remaining, d.ideal)), 1);
+
+            function x(i) { return pad.left + (i / (data.length - 1 || 1)) * cw; }
+            function y(v) { return pad.top + ch - (v / maxVal) * ch; }
+
+            ctx.clearRect(0, 0, w, h);
+            // Ideal line
+            ctx.beginPath();
+            ctx.strokeStyle = '#999';
+            ctx.setLineDash([4, 4]);
+            data.forEach((d, i) => { i === 0 ? ctx.moveTo(x(i), y(d.ideal)) : ctx.lineTo(x(i), y(d.ideal)); });
+            ctx.stroke();
+            ctx.setLineDash([]);
+            // Remaining line
+            ctx.beginPath();
+            ctx.strokeStyle = '#0747A6';
+            data.forEach((d, i) => { i === 0 ? ctx.moveTo(x(i), y(d.remaining)) : ctx.lineTo(x(i), y(d.remaining)); });
+            ctx.stroke();
+            // Axis labels
+            ctx.fillStyle = '#888';
+            ctx.font = '9px sans-serif';
+            ctx.fillText(maxVal, 2, pad.top + 8);
+            ctx.fillText(0, 2, h - pad.bottom);
+            ctx.fillText(data[0].day.slice(-5), pad.left, h - 2);
+            ctx.fillText(data[data.length-1].day.slice(-5), w - pad.right - 30, h - 2);
+        });
+}
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
-# Stage 5 - Core Issue CRUD & Hierarchy
+# Stage 5 — Core Issue CRUD & Hierarchy
 
 ## Goal
 This is the heart of the app: creating, viewing, and editing issues, with a
@@ -16,23 +16,25 @@ Stage 4 (projects with issue keys) must be complete.
 - Screenshot upload: validate both file extension AND actual file content (open the image and check its real format) so someone can't upload a disguised executable with a `.png` extension. Limit file size. Store outside of anything web-servable directly with a random filename, not the original filename.
 - Every issue gets an auto-generated key like `WEB-1`, `WEB-2` using the project's counter from Stage 4.
 
-## Frontend - Design & Layout
+## Frontend — Design & Layout
+
+> **Clone these exactly from `reference-ui/`:** `templates/add_bug.html`, `templates/edit_bug.html`, `templates/bug_details.html`, `templates/macros.html` (issue-type icon SVGs), `templates/view_bugs.html`. Copy structure, classes, and wording as-is — adapt only route/variable names. `bug_details.html` and `view_bugs.html` are large files that later stages (6, 8, 9) will extend further — clone the whole file now even though some of its sections (comments, history, linking, custom fields, time tracking) won't be wired up until those later stages.
 
 **Add Issue page** (`/issues/add`):
-- Two-column form layout: main column has Title, Description, Reproduction Steps (large textareas); side column has Project, Issue Type (icon-labeled dropdown - each type gets a distinct small icon/color, e.g. Epic=purple, Story=green, Task=blue, Bug=red, Subtask=gray), Priority, Severity, Category, Parent (dropdown filtered to valid parent types only, loaded based on chosen project), Labels (comma input), Story Points (number), Due Date, Screenshot (file picker with a preview thumbnail after selection).
+- Two-column form layout: main column has Title, Description, Reproduction Steps (large textareas); side column has Project, Issue Type (icon-labeled dropdown — each type gets a distinct small icon/color, e.g. Epic=purple, Story=green, Task=blue, Bug=red, Subtask=gray), Priority, Severity, Category, Parent (dropdown filtered to valid parent types only, loaded based on chosen project), Labels (comma input), Story Points (number), Due Date, Screenshot (file picker with a preview thumbnail after selection).
 - Submit button "Create Issue"; on success, redirect straight to the new issue's detail page.
 
 **Issue Detail page** (`/issues/<id>`):
 - Header: issue key + title, issue-type icon, priority/severity badges.
 - Left/main column: full description, reproduction steps, screenshot (if present), and (later stages add) comments/history/time-tracking here too.
-- Right sidebar: metadata panel - Reporter, Category, Labels (as small pill tags), Story Points, Due Date, Parent issue link (if any), list of child issues (if any).
+- Right sidebar: metadata panel — Reporter, Category, Labels (as small pill tags), Story Points, Due Date, Parent issue link (if any), list of child issues (if any).
 - "Edit" button (visible only if the current user is allowed to edit this issue).
 
 **Edit Issue page:** same layout as Add, pre-filled, plus the ability to replace or remove the existing screenshot.
 
-## Backend - Data Model & API
+## Backend — Data Model & API
 
-**Table: `bugs`** (this is the single "issue" table - every issue type lives here, not in separate tables)
+**Table: `bugs`** (this is the single "issue" table — every issue type lives here, not in separate tables)
 | Column | Type | Notes |
 |---|---|---|
 | id | INT PK AUTO_INCREMENT | |
@@ -47,7 +49,7 @@ Stage 4 (projects with issue keys) must be complete.
 | category | VARCHAR(80) | DEFAULT 'General' |
 | priority | ENUM(...) | e.g. Low/Medium/High/Critical |
 | severity | ENUM(...) | e.g. Minor/Major/Critical/Blocker |
-| status | VARCHAR(50) | NOT ENUM - keep flexible for Stage 6, default 'Idea' or 'To Do' |
+| status | VARCHAR(50) | NOT ENUM — keep flexible for Stage 6, default 'Idea' or 'To Do' |
 | reporter_id | INT | FK → users, NOT NULL |
 | assigned_to | INT | FK → users, nullable (used from Stage 6) |
 | screenshot_path | VARCHAR(255) | nullable, stores generated filename only |

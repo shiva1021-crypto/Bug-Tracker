@@ -8,30 +8,29 @@
         <p class="eyebrow">Workspace directory</p>
         <h1>Projects</h1>
     </div>
-    <a class="button button-secondary" href="{{ url_for('board.board') }}">
+    <a class="button button-secondary" href="{{ url_for('project.board') }}">
         <span style="margin-right: 4px;">📋</span> View Kanban Board
     </a>
 </div>
 
-{% if current_user.role in ['admin', 'project_manager'] %}
+{% if current_user_role in ['admin', 'project_manager'] %}
 <section class="panel project-create" style="margin-bottom: 24px;">
     <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;">Create a new project</h2>
-    <form method="POST" action="{{ url_for('projects.create_project') }}" novalidate>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="POST" novalidate>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <div class="two-column">
             <div class="form-group">
                 <label for="name">Project Name</label>
-                <input id="name" name="name" value="{{ name or '' }}" maxlength="150" required placeholder="e.g. Customer Web Portal">
+                <input id="name" name="name" maxlength="120" required placeholder="e.g. Customer Web Portal">
             </div>
             <div class="form-group">
                 <label for="project_key">Project Key</label>
-                <input id="project_key" name="project_key" value="{{ project_key or '' }}" minlength="2" maxlength="6" pattern="[A-Za-z]{2,6}" placeholder="e.g. WEB" required>
-                <p class="hint" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">2-6 letters (A-Z). Always stored uppercase.</p>
+                <input id="project_key" name="project_key" minlength="2" maxlength="10" pattern="[A-Za-z][A-Za-z0-9]+" placeholder="e.g. WEB (Uppercase alphanumeric)" required>
             </div>
         </div>
         <div class="form-group">
             <label for="description">Description</label>
-            <textarea id="description" name="description" placeholder="Describe the purpose of this project..." style="min-height: 80px;">{{ description or '' }}</textarea>
+            <textarea id="description" name="description" placeholder="Describe the purpose of this project..." style="min-height: 80px;"></textarea>
         </div>
         <button type="submit">Create project</button>
     </form>
@@ -52,10 +51,10 @@
             <div class="project-card-footer">
                 <span style="color: var(--text-muted);">📊 {{ project.issue_count }} issues</span>
                 <div style="display: flex; gap: 4px;">
-                    {% if current_user.role in ['admin', 'project_manager'] %}
-                        <a href="{{ url_for('fields.manage_fields', project_id=project.id) }}" class="button button-secondary" style="min-height: 28px; padding: 4px 8px; font-size: 11px;">Fields</a>
+                    {% if current_user_role in ['admin', 'project_manager'] %}
+                        <a href="{{ url_for('bug.project_custom_fields', project_id=project.id) }}" class="button button-secondary" style="min-height: 28px; padding: 4px 8px; font-size: 11px;">Fields</a>
                     {% endif %}
-                    <a href="{{ url_for('board.board', project=project.id) }}" class="button button-secondary" style="min-height: 28px; padding: 4px 10px; font-size: 12px;">Open Board</a>
+                    <a href="{{ url_for('project.board', project=project.id) }}" class="button button-secondary" style="min-height: 28px; padding: 4px 10px; font-size: 12px;">Open Board</a>
                 </div>
             </div>
         </article>

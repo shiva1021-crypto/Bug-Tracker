@@ -1,4 +1,4 @@
-# Stage 8 - Agile Planning
+# Stage 8 — Agile Planning
 
 ## Goal
 Add Scrum-style planning: a backlog, sprints with a burndown chart, plus
@@ -24,7 +24,9 @@ Stage 7 (board) must be complete.
 - On the issue list/search page, let a user save their current filter combination (status, priority, project, assignee, etc.) under a name.
 - Saved filters appear as clickable shortcut chips above the results table; clicking one re-applies that exact filter set.
 
-## Frontend - Design & Layout
+## Frontend — Design & Layout
+
+> **Clone `reference-ui/templates/backlog.html` exactly** for the sprint/backlog page. For the linked-issues panel and saved-filter chips, reference the corresponding sections already present in `reference-ui/templates/bug_details.html` and `reference-ui/templates/view_bugs.html` (both cloned whole in Stage 5) — wire up the logic, don't redesign the markup.
 
 **Backlog page** (`/backlog`):
 - Project selector at top.
@@ -32,11 +34,11 @@ Stage 7 (board) must be complete.
 - One collapsible section per sprint (future/active), each showing its issues, a story-point total, and Start/Close buttons as appropriate for its state.
 - Active sprint section additionally shows the burndown chart inline (line chart, x-axis = sprint days, y-axis = remaining story points/issues).
 
-**Issue Detail page (extend):** add a "Linked Issues" panel in the sidebar - list of "Blocks WEB-12", "Relates to API-4", etc., each clickable, plus a small form to add a new link (pick link type + target issue by key/search).
+**Issue Detail page (extend):** add a "Linked Issues" panel in the sidebar — list of "Blocks WEB-12", "Relates to API-4", etc., each clickable, plus a small form to add a new link (pick link type + target issue by key/search).
 
 **Issue List page (extend):** row of saved-filter chips above the filter form; a "Save current filter" button next to the filter controls that prompts for a name.
 
-## Backend - Data Model & API
+## Backend — Data Model & API
 
 **Table: `sprints`**
 | Column | Type | Notes |
